@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase-server";
+import { supabaseServer } from "@/lib/supabase-server";
 import { sendShippingNotificationAlimtalk } from "@/lib/kakao/alimtalk";
 
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 주문 정보 조회
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await supabaseServer
       .from("orders")
       .select("*")
       .eq("id", orderId)

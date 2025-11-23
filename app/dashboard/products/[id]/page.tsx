@@ -120,7 +120,7 @@ export default function ProductEditPage({
         name: formData.name,
         description: formData.description,
         price: parseInt(formData.price),
-        stock: formData.stock ? parseInt(formData.stock) : null,
+        stock: formData.stock ? parseInt(formData.stock) : undefined,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,

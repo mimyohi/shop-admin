@@ -13,7 +13,7 @@ import {
   createProductOption,
   deleteProductOption,
   createOptionValue,
-  deleteOptionValue,
+  deleteOptionValue as deleteOptionValueAction,
   createAddon,
   deleteAddon,
   updateAddon,
@@ -130,7 +130,7 @@ export default function ProductOptionsManager({
 
         if (!result.success) throw new Error(result.error)
 
-        setOptions([...options, { ...result.data, values: [] }])
+        setOptions([...options, { ...result.data, values: [] } as ProductOption])
         setNewOption({ name: '', is_required: false })
       }
     } catch (error: any) {
@@ -194,7 +194,7 @@ export default function ProductOptionsManager({
 
         setOptions(options.map(o =>
           o.id === optionId
-            ? { ...o, values: [...(o.values || []), result.data] }
+            ? { ...o, values: [...(o.values || []), result.data] as ProductOptionValue[] }
             : o
         ))
       }
@@ -215,7 +215,7 @@ export default function ProductOptionsManager({
         setOptions(updatedOptions)
         onOptionsChange?.(updatedOptions)
       } else {
-        const result = await deleteOptionValue(valueId)
+        const result = await deleteOptionValueAction(valueId)
 
         if (!result.success) throw new Error(result.error)
 
@@ -269,7 +269,7 @@ export default function ProductOptionsManager({
 
         if (!result.success) throw new Error(result.error)
 
-        setAddons([...addons, result.data])
+        setAddons([...addons, result.data as ProductAddon])
         setNewAddon({
           name: '',
           description: '',

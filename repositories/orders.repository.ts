@@ -193,6 +193,130 @@ export const ordersRepository = {
   },
 
   /**
+   * 상담 상태 업데이트
+   */
+  async updateConsultationStatus(
+    orderId: string,
+    consultationStatus: string
+  ): Promise<OrderWithDetails> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({
+        consultation_status: consultationStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error || !order) {
+      console.error('Error updating consultation status:', error)
+      throw new Error('Failed to update consultation status')
+    }
+
+    const fullOrder = await this.findById(order.id)
+    if (!fullOrder) {
+      throw new Error('Failed to fetch updated order')
+    }
+
+    return fullOrder
+  },
+
+  /**
+   * 배송 정보 업데이트
+   */
+  async updateShippingInfo(
+    orderId: string,
+    shippingData: {
+      shipping_company?: string
+      tracking_number?: string
+      shipping_status?: string
+    }
+  ): Promise<OrderWithDetails> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({
+        ...shippingData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error || !order) {
+      console.error('Error updating shipping info:', error)
+      throw new Error('Failed to update shipping info')
+    }
+
+    const fullOrder = await this.findById(order.id)
+    if (!fullOrder) {
+      throw new Error('Failed to fetch updated order')
+    }
+
+    return fullOrder
+  },
+
+  /**
+   * 주문을 관리자에게 배정
+   */
+  async assignToAdmin(
+    orderId: string,
+    adminId: string
+  ): Promise<OrderWithDetails> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({
+        assigned_admin_id: adminId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error || !order) {
+      console.error('Error assigning order to admin:', error)
+      throw new Error('Failed to assign order to admin')
+    }
+
+    const fullOrder = await this.findById(order.id)
+    if (!fullOrder) {
+      throw new Error('Failed to fetch updated order')
+    }
+
+    return fullOrder
+  },
+
+  /**
+   * 관리자 메모 업데이트
+   */
+  async updateAdminMemo(
+    orderId: string,
+    adminMemo: string
+  ): Promise<OrderWithDetails> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({
+        admin_memo: adminMemo,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error || !order) {
+      console.error('Error updating admin memo:', error)
+      throw new Error('Failed to update admin memo')
+    }
+
+    const fullOrder = await this.findById(order.id)
+    if (!fullOrder) {
+      throw new Error('Failed to fetch updated order')
+    }
+
+    return fullOrder
+  },
+
+  /**
    * 주문 건강 상담 업데이트
    */
   async updateHealthConsultation(
