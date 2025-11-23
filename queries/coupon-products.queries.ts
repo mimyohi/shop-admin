@@ -1,11 +1,11 @@
 import { queryOptions } from '@tanstack/react-query'
-import { couponsRepository } from '@/repositories/coupons.repository'
+import { fetchCouponProductIds } from '@/lib/actions/coupons'
 
 export const couponProductsQueries = {
   byCouponId: (couponId: string) =>
     queryOptions({
       queryKey: ['admin-couponProducts', couponId] as const,
-      queryFn: () => couponsRepository.findAssignedProductIds(couponId),
+      queryFn: () => fetchCouponProductIds(couponId),
       enabled: !!couponId,
     }),
 }

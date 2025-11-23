@@ -1,11 +1,11 @@
 import { queryOptions } from '@tanstack/react-query'
-import { pointsRepository } from '@/repositories/points.repository'
+import { fetchPointHistory } from '@/lib/actions/points'
 
 export const pointsQueries = {
   history: (userId: string, limit = 50) =>
     queryOptions({
       queryKey: ['admin-pointHistory', userId, limit] as const,
-      queryFn: () => pointsRepository.findHistoryByUserId(userId, limit),
+      queryFn: () => fetchPointHistory(userId, limit),
       enabled: !!userId,
     }),
 }

@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabaseServer as supabase } from "@/lib/supabase-server";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -30,6 +29,7 @@ import {
 import { PointAdjustDialog } from "@/components/point-adjust-dialog";
 import { PointHistoryDialog } from "@/components/point-history-dialog";
 import { IssueCouponToUserDialog } from "@/components/issue-coupon-to-user-dialog";
+import { fetchUserOrderHistory, fetchUserProfileWithPoints } from "@/lib/actions/users";
 
 interface UserDetail {
   id: string;
@@ -124,19 +124,10 @@ export default function UserDetailPage() {
     if (!userId) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select(
-          `
-          *,
-          user_points(points, total_earned, total_used)
-        `
-        )
-        .eq("user_id", userId)
-        .single();
+      const data = await fetchUserProfileWithPoints(userId as string);
 
-      if (error || !data) {
-        throw error || new Error("유저 정보를 찾을 수 없습니다.");
+      if (!data) {
+        throw new Error("유저 정보를 찾을 수 없습니다.");
       }
 
       const formattedUser: UserDetail = {
@@ -172,23 +163,7 @@ export default function UserDetailPage() {
 
   const loadOrderHistory = async (email: string) => {
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(
-          `
-          id,
-          order_id,
-          status,
-          consultation_status,
-          total_amount,
-          created_at,
-          order_items(id, product_name, quantity)
-        `
-        )
-        .eq("user_email", email)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchUserOrderHistory(email);
       setOrders(data || []);
     } catch (error) {
       console.error("Error loading order history:", error);

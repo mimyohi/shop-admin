@@ -29,8 +29,8 @@ import { Search, Filter, X } from "lucide-react";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
-import { supabaseServer as supabase } from "@/lib/supabase-server";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
+import { bulkUpdateConsultationStatus } from "@/lib/actions/orders";
 
 interface AdminUser {
   id: string;
@@ -348,12 +348,10 @@ export default function OrdersPage() {
 
     try {
       setIsBulkUpdating(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({ consultation_status: targetStatus })
-        .in("id", selected);
-
-      if (error) throw error;
+      const result = await bulkUpdateConsultationStatus(selected, targetStatus);
+      if (!result.success) {
+        throw new Error(result.error || "주문 상태 변경에 실패했습니다.");
+      }
 
       toast({
         title: "성공",
@@ -485,12 +483,12 @@ export default function OrdersPage() {
                 />
               </TableHead>
               <TableHead>주문번호</TableHead>
-              <TableHead>담당자</TableHead>
+              <TableHead>차팅 담당자</TableHead>
               <TableHead>주문자</TableHead>
               <TableHead>주문일시</TableHead>
               <TableHead>금액</TableHead>
               <TableHead>연락처</TableHead>
-              <TableHead>처리담당자</TableHead>
+              <TableHead>상담 담당자</TableHead>
               <TableHead>처리일시</TableHead>
             </TableRow>
           </TableHeader>
@@ -651,7 +649,7 @@ export default function OrdersPage() {
             {/* 담당자 필터 */}
             <div className="space-y-2">
               <Label htmlFor="admin-filter" className="text-sm font-medium">
-                담당자
+                차팅 담당자
               </Label>
               <Select
                 value={assignedAdminFilter}

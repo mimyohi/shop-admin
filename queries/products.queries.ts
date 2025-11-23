@@ -1,5 +1,12 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { productsRepository } from '@/repositories/products.repository'
+import {
+  createProduct as createProductAction,
+  deleteProduct as deleteProductAction,
+  fetchProduct,
+  fetchProductCategories,
+  fetchProducts,
+  updateProduct as updateProductAction,
+} from '@/lib/actions/products'
 import { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
 
 export type { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
@@ -12,7 +19,7 @@ export const productsQueries = {
   list: (filters: ProductFilters = {}) =>
     queryOptions({
       queryKey: [...productsQueries.lists(), filters] as const,
-      queryFn: () => productsRepository.findMany(filters),
+      queryFn: () => fetchProducts(filters),
     }),
 
   details: () => [...productsQueries.all(), 'detail'] as const,
@@ -20,14 +27,14 @@ export const productsQueries = {
   detail: (id: string) =>
     queryOptions({
       queryKey: [...productsQueries.details(), id] as const,
-      queryFn: () => productsRepository.findById(id),
+      queryFn: () => fetchProduct(id),
       enabled: !!id,
     }),
 
   categories: () =>
     queryOptions({
       queryKey: [...productsQueries.all(), 'categories'] as const,
-      queryFn: () => productsRepository.findCategories(),
+      queryFn: () => fetchProductCategories(),
       staleTime: 5 * 60 * 1000,
     }),
 }
@@ -39,7 +46,7 @@ export function useCreateProduct() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (productData: CreateProductData) => productsRepository.create(productData),
+    mutationFn: (productData: CreateProductData) => createProductAction(productData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
     },
@@ -54,7 +61,7 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProductData }) =>
-      productsRepository.update(id, data),
+      updateProductAction(id, data),
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
       queryClient.invalidateQueries({
@@ -71,7 +78,7 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => productsRepository.delete(id),
+    mutationFn: (id: string) => deleteProductAction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
     },

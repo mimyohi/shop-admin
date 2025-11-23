@@ -28,7 +28,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number;
+  stock: number | null;
   category: string;
   image_url: string;
   detail_images?: string[];
@@ -74,7 +74,7 @@ export default function ProductEditPage({
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
-        stock: product.stock.toString(),
+        stock: product.stock !== null ? product.stock.toString() : "",
         category: product.category,
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],

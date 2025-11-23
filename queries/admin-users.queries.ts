@@ -1,5 +1,9 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { adminUsersRepository } from '@/repositories/admin-users.repository'
+import {
+  deleteAdminUser as deleteAdminUserAction,
+  fetchAdminUsers,
+  resetAdminPassword as resetAdminPasswordAction,
+} from '@/lib/actions/admin-users'
 
 export const adminUsersQueries = {
   all: () => ['admin-adminUsers'] as const,
@@ -7,7 +11,7 @@ export const adminUsersQueries = {
   list: (filters: { is_active?: boolean } = {}) =>
     queryOptions({
       queryKey: [...adminUsersQueries.all(), filters] as const,
-      queryFn: () => adminUsersRepository.findMany(filters),
+      queryFn: () => fetchAdminUsers(filters),
     }),
 }
 
@@ -15,7 +19,7 @@ export function useDeleteAdminUser() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => adminUsersRepository.delete(id),
+    mutationFn: (id: string) => deleteAdminUserAction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminUsersQueries.all() })
     },
@@ -34,7 +38,7 @@ export function useResetAdminPassword() {
       masterAdminId: string
       targetAdminId: string
       newPassword: string
-    }) => adminUsersRepository.resetPassword(masterAdminId, targetAdminId, newPassword),
+    }) => resetAdminPasswordAction({ masterAdminId, targetAdminId, newPassword }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminUsersQueries.all() })
     },

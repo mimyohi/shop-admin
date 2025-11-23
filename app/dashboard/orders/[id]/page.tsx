@@ -25,9 +25,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { supabaseServer as supabase } from "@/lib/supabase-server";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
+import {
+  setAdminMemo,
+  setAssignedAdmin,
+  setConsultationStatus,
+  setHandlerAdmin,
+  setShippingInfo,
+} from "@/lib/actions/orders";
 
 interface HealthConsultation {
   id: string;
@@ -256,10 +262,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  const copyHealthField = (
-    label: string,
-    value?: string | number | null
-  ) => {
+  const copyHealthField = (label: string, value?: string | number | null) => {
     if (value === null || value === undefined || value === "") return;
     copyToClipboard(String(value), label);
   };
@@ -276,60 +279,85 @@ export default function OrderDetailPage() {
     // 신체 정보
     if (hc.current_height) result += `[현재 키]: ${hc.current_height}cm\n`;
     if (hc.current_weight) result += `[현재 체중]: ${hc.current_weight}kg\n`;
-    if (hc.min_weight_since_20s) result += `[20대 이후 최소 체중]: ${hc.min_weight_since_20s}kg\n`;
-    if (hc.max_weight_since_20s) result += `[20대 이후 최대 체중]: ${hc.max_weight_since_20s}kg\n`;
+    if (hc.min_weight_since_20s)
+      result += `[20대 이후 최소 체중]: ${hc.min_weight_since_20s}kg\n`;
+    if (hc.max_weight_since_20s)
+      result += `[20대 이후 최대 체중]: ${hc.max_weight_since_20s}kg\n`;
     if (hc.target_weight) result += `[목표 체중]: ${hc.target_weight}kg\n`;
-    if (hc.target_weight_loss_period) result += `[목표 감량 기간]: ${hc.target_weight_loss_period}\n`;
+    if (hc.target_weight_loss_period)
+      result += `[목표 감량 기간]: ${hc.target_weight_loss_period}\n`;
     if (hc.current_height || hc.current_weight) result += "\n";
 
     // 이전 치료 이력
-    if (hc.previous_western_medicine) result += `[이전 양방 치료]: ${hc.previous_western_medicine}\n`;
-    if (hc.previous_herbal_medicine) result += `[이전 한방 치료]: ${hc.previous_herbal_medicine}\n`;
-    if (hc.previous_other_medicine) result += `[기타 치료]: ${hc.previous_other_medicine}\n`;
-    if (hc.previous_western_medicine || hc.previous_herbal_medicine || hc.previous_other_medicine) result += "\n";
+    if (hc.previous_western_medicine)
+      result += `[이전 양방 치료]: ${hc.previous_western_medicine}\n`;
+    if (hc.previous_herbal_medicine)
+      result += `[이전 한방 치료]: ${hc.previous_herbal_medicine}\n`;
+    if (hc.previous_other_medicine)
+      result += `[기타 치료]: ${hc.previous_other_medicine}\n`;
+    if (
+      hc.previous_western_medicine ||
+      hc.previous_herbal_medicine ||
+      hc.previous_other_medicine
+    )
+      result += "\n";
 
     // 생활 패턴
     if (hc.occupation) result += `[직업]: ${hc.occupation}\n`;
     if (hc.work_hours) result += `[근무 시간]: ${hc.work_hours}\n`;
-    if (hc.has_shift_work !== null && hc.has_shift_work !== undefined) result += `[교대 근무]: ${hc.has_shift_work ? '예' : '아니오'}\n`;
+    if (hc.has_shift_work !== null && hc.has_shift_work !== undefined)
+      result += `[교대 근무]: ${hc.has_shift_work ? "예" : "아니오"}\n`;
     if (hc.wake_up_time) result += `[기상 시간]: ${hc.wake_up_time}\n`;
     if (hc.bedtime) result += `[취침 시간]: ${hc.bedtime}\n`;
-    if (hc.has_daytime_sleepiness !== null && hc.has_daytime_sleepiness !== undefined) result += `[주간 졸림]: ${hc.has_daytime_sleepiness ? '있음' : '없음'}\n`;
+    if (
+      hc.has_daytime_sleepiness !== null &&
+      hc.has_daytime_sleepiness !== undefined
+    )
+      result += `[주간 졸림]: ${hc.has_daytime_sleepiness ? "있음" : "없음"}\n`;
     if (hc.occupation || hc.work_hours) result += "\n";
 
     // 식습관
     if (hc.meal_pattern) {
       const mealPatternMap: Record<string, string> = {
-        '1meals': '1끼',
-        '2meals': '2끼',
-        '3meals': '3끼',
-        'irregular': '불규칙'
+        "1meals": "1끼",
+        "2meals": "2끼",
+        "3meals": "3끼",
+        irregular: "불규칙",
       };
-      result += `[하루 식사]: ${mealPatternMap[hc.meal_pattern] || hc.meal_pattern}\n`;
+      result += `[하루 식사]: ${
+        mealPatternMap[hc.meal_pattern] || hc.meal_pattern
+      }\n`;
     }
     if (hc.alcohol_frequency) {
       const alcoholMap: Record<string, string> = {
-        'weekly_1_or_less': '주 1회 이하',
-        'weekly_2_or_more': '주 2회 이상'
+        weekly_1_or_less: "주 1회 이하",
+        weekly_2_or_more: "주 2회 이상",
       };
-      result += `[음주 빈도]: ${alcoholMap[hc.alcohol_frequency] || hc.alcohol_frequency}\n`;
+      result += `[음주 빈도]: ${
+        alcoholMap[hc.alcohol_frequency] || hc.alcohol_frequency
+      }\n`;
     }
     if (hc.water_intake) {
       const waterMap: Record<string, string> = {
-        '1L_or_less': '1L 이하',
-        'over_1L': '1L 이상'
+        "1L_or_less": "1L 이하",
+        over_1L: "1L 이상",
       };
-      result += `[하루 수분 섭취]: ${waterMap[hc.water_intake] || hc.water_intake}\n`;
+      result += `[하루 수분 섭취]: ${
+        waterMap[hc.water_intake] || hc.water_intake
+      }\n`;
     }
-    if (hc.meal_pattern || hc.alcohol_frequency || hc.water_intake) result += "\n";
+    if (hc.meal_pattern || hc.alcohol_frequency || hc.water_intake)
+      result += "\n";
 
     // 다이어트 접근법
     if (hc.diet_approach) {
       const approachMap: Record<string, string> = {
-        'sustainable': '지속 가능한 방식',
-        'fast': '빠른 방식'
+        sustainable: "지속 가능한 방식",
+        fast: "빠른 방식",
       };
-      result += `[다이어트 접근법]: ${approachMap[hc.diet_approach] || hc.diet_approach}\n`;
+      result += `[다이어트 접근법]: ${
+        approachMap[hc.diet_approach] || hc.diet_approach
+      }\n`;
     }
     if (hc.preferred_stage) {
       result += `[선호 단계]: ${hc.preferred_stage}\n`;
@@ -376,14 +404,14 @@ export default function OrderDetailPage() {
 
   const updateAssignedAdmin = async (adminId: string) => {
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          assigned_admin_id: adminId === "none" ? null : adminId,
-        })
-        .eq("id", orderId);
+      const result = await setAssignedAdmin(
+        orderId as string,
+        adminId === "none" ? null : adminId
+      );
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || "담당자 설정 실패");
+      }
 
       toast({
         title: "성공",
@@ -403,25 +431,18 @@ export default function OrderDetailPage() {
 
   const updateHandlerAdmin = async (adminId: string) => {
     try {
-      const updateData: any = {
-        handler_admin_id: adminId === "none" ? null : adminId,
-      };
+      const result = await setHandlerAdmin(
+        orderId as string,
+        adminId === "none" ? null : adminId
+      );
 
-      // 처리자를 설정할 때 처리일시도 함께 업데이트
-      if (adminId !== "none") {
-        updateData.handled_at = new Date().toISOString();
+      if (!result.success) {
+        throw new Error(result.error || "상담 담당자 설정 실패");
       }
-
-      const { error } = await supabase
-        .from("orders")
-        .update(updateData)
-        .eq("id", orderId);
-
-      if (error) throw error;
 
       toast({
         title: "성공",
-        description: "처리 담당자가 설정되었습니다.",
+        description: "상담 담당자가 설정되었습니다.",
       });
 
       refetchOrder(); // 주문 정보 다시 로드
@@ -429,7 +450,7 @@ export default function OrderDetailPage() {
       console.error("Error updating handler admin:", error);
       toast({
         title: "오류",
-        description: "처리 담당자 설정에 실패했습니다.",
+        description: "상담 담당자 설정에 실패했습니다.",
         variant: "destructive",
       });
     }
@@ -440,12 +461,10 @@ export default function OrderDetailPage() {
   ) => {
     try {
       setIsStatusUpdating(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({ consultation_status: newStatus })
-        .eq("id", orderId);
-
-      if (error) throw error;
+      const result = await setConsultationStatus(orderId as string, newStatus);
+      if (!result.success) {
+        throw new Error(result.error || "상담 상태 변경 실패");
+      }
 
       toast({
         title: "성공",
@@ -478,16 +497,14 @@ export default function OrderDetailPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          shipping_company: shippingCompany,
-          tracking_number: trackingNumber,
-          shipped_at: new Date().toISOString(),
-        })
-        .eq("id", orderId);
+      const result = await setShippingInfo(orderId as string, {
+        shipping_company: shippingCompany,
+        tracking_number: trackingNumber,
+      });
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || "배송 정보 업데이트 실패");
+      }
 
       toast({
         title: "성공",
@@ -539,14 +556,11 @@ export default function OrderDetailPage() {
 
     try {
       setIsSavingMemo(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          admin_memo: memoValue,
-        })
-        .eq("id", orderId);
+      const result = await setAdminMemo(orderId as string, memoValue);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || "메모 저장 실패");
+      }
 
       toast({
         title: "성공",
@@ -830,7 +844,7 @@ export default function OrderDetailPage() {
                     htmlFor="assigned-admin"
                     className="text-xs text-gray-500"
                   >
-                    담당자
+                    차팅 담당자
                   </Label>
                   <Select
                     value={selectedAssignedAdmin}
@@ -853,13 +867,13 @@ export default function OrderDetailPage() {
                   </Select>
                 </div>
 
-                {/* 처리 담당자 설정 */}
+                {/* 상담 담당자 설정 */}
                 <div className="space-y-2">
                   <Label
                     htmlFor="handler-admin"
                     className="text-xs text-gray-500"
                   >
-                    처리 담당자
+                    상담 담당자
                   </Label>
                   <Select
                     value={selectedHandlerAdmin}
@@ -903,7 +917,9 @@ export default function OrderDetailPage() {
                     size="sm"
                     variant="secondary"
                     onClick={() =>
-                      router.push(`/dashboard/users/${healthConsultation.user_id}`)
+                      router.push(
+                        `/dashboard/users/${healthConsultation.user_id}`
+                      )
                     }
                     className="h-8"
                   >
@@ -945,7 +961,9 @@ export default function OrderDetailPage() {
                 )}
 
                 {/* 기본 정보 */}
-                {(healthConsultation.name || healthConsultation.phone || healthConsultation.referral_source) && (
+                {(healthConsultation.name ||
+                  healthConsultation.phone ||
+                  healthConsultation.referral_source) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       기본 정보
@@ -970,7 +988,10 @@ export default function OrderDetailPage() {
                           <div
                             className={copyableRowClass}
                             onClick={() =>
-                              copyHealthField("연락처", healthConsultation.phone)
+                              copyHealthField(
+                                "연락처",
+                                healthConsultation.phone
+                              )
                             }
                             title="클릭하여 복사"
                           >
@@ -1003,46 +1024,93 @@ export default function OrderDetailPage() {
                 )}
 
                 {/* 신체 정보 */}
-                {(healthConsultation.current_height || healthConsultation.current_weight) && (
+                {(healthConsultation.current_height ||
+                  healthConsultation.current_weight) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       신체 정보
                     </h4>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-sm space-y-1">
-                        {(healthConsultation.current_height || healthConsultation.current_weight) && (
+                        {(healthConsultation.current_height ||
+                          healthConsultation.current_weight) && (
                           <div
                             className={copyableRowClass}
                             onClick={() =>
                               copyHealthField(
                                 "키/체중",
-                                `${healthConsultation.current_height ? `${Number(healthConsultation.current_height).toFixed(1)}cm` : "-"} / ${healthConsultation.current_weight ? `${Number(healthConsultation.current_weight).toFixed(1)}kg` : "-"}`
+                                `${
+                                  healthConsultation.current_height
+                                    ? `${Number(
+                                        healthConsultation.current_height
+                                      ).toFixed(1)}cm`
+                                    : "-"
+                                } / ${
+                                  healthConsultation.current_weight
+                                    ? `${Number(
+                                        healthConsultation.current_weight
+                                      ).toFixed(1)}kg`
+                                    : "-"
+                                }`
                               )
                             }
                             title="클릭하여 복사"
                           >
                             <span className="text-gray-500">키/체중:</span>
                             <span className="ml-2 font-medium">
-                              {healthConsultation.current_height ? `${Number(healthConsultation.current_height).toFixed(1)}cm` : "-"} /{" "}
-                              {healthConsultation.current_weight ? `${Number(healthConsultation.current_weight).toFixed(1)}kg` : "-"}
+                              {healthConsultation.current_height
+                                ? `${Number(
+                                    healthConsultation.current_height
+                                  ).toFixed(1)}cm`
+                                : "-"}{" "}
+                              /{" "}
+                              {healthConsultation.current_weight
+                                ? `${Number(
+                                    healthConsultation.current_weight
+                                  ).toFixed(1)}kg`
+                                : "-"}
                             </span>
                           </div>
                         )}
-                        {(healthConsultation.min_weight_since_20s || healthConsultation.max_weight_since_20s) && (
+                        {(healthConsultation.min_weight_since_20s ||
+                          healthConsultation.max_weight_since_20s) && (
                           <div
                             className={copyableRowClass}
                             onClick={() =>
                               copyHealthField(
                                 "20대 이후 체중 범위",
-                                `${healthConsultation.min_weight_since_20s ? `${Number(healthConsultation.min_weight_since_20s).toFixed(1)}kg` : "-"} ~ ${healthConsultation.max_weight_since_20s ? `${Number(healthConsultation.max_weight_since_20s).toFixed(1)}kg` : "-"}`
+                                `${
+                                  healthConsultation.min_weight_since_20s
+                                    ? `${Number(
+                                        healthConsultation.min_weight_since_20s
+                                      ).toFixed(1)}kg`
+                                    : "-"
+                                } ~ ${
+                                  healthConsultation.max_weight_since_20s
+                                    ? `${Number(
+                                        healthConsultation.max_weight_since_20s
+                                      ).toFixed(1)}kg`
+                                    : "-"
+                                }`
                               )
                             }
                             title="클릭하여 복사"
                           >
-                            <span className="text-gray-500">20대 이후 체중 범위:</span>
+                            <span className="text-gray-500">
+                              20대 이후 체중 범위:
+                            </span>
                             <span className="ml-2 font-medium">
-                              {healthConsultation.min_weight_since_20s ? `${Number(healthConsultation.min_weight_since_20s).toFixed(1)}kg` : "-"} ~{" "}
-                              {healthConsultation.max_weight_since_20s ? `${Number(healthConsultation.max_weight_since_20s).toFixed(1)}kg` : "-"}
+                              {healthConsultation.min_weight_since_20s
+                                ? `${Number(
+                                    healthConsultation.min_weight_since_20s
+                                  ).toFixed(1)}kg`
+                                : "-"}{" "}
+                              ~{" "}
+                              {healthConsultation.max_weight_since_20s
+                                ? `${Number(
+                                    healthConsultation.max_weight_since_20s
+                                  ).toFixed(1)}kg`
+                                : "-"}
                             </span>
                           </div>
                         )}
@@ -1052,14 +1120,19 @@ export default function OrderDetailPage() {
                             onClick={() =>
                               copyHealthField(
                                 "목표 체중",
-                                `${Number(healthConsultation.target_weight).toFixed(1)}kg`
+                                `${Number(
+                                  healthConsultation.target_weight
+                                ).toFixed(1)}kg`
                               )
                             }
                             title="클릭하여 복사"
                           >
                             <span className="text-gray-500">목표 체중:</span>
                             <span className="ml-2 font-medium">
-                              {Number(healthConsultation.target_weight).toFixed(1)}kg
+                              {Number(healthConsultation.target_weight).toFixed(
+                                1
+                              )}
+                              kg
                             </span>
                           </div>
                         )}
@@ -1074,7 +1147,9 @@ export default function OrderDetailPage() {
                             }
                             title="클릭하여 복사"
                           >
-                            <span className="text-gray-500">목표 감량 기간:</span>
+                            <span className="text-gray-500">
+                              목표 감량 기간:
+                            </span>
                             <span className="ml-2 font-medium">
                               {healthConsultation.target_weight_loss_period}
                             </span>
@@ -1086,7 +1161,10 @@ export default function OrderDetailPage() {
                 )}
 
                 {/* 생활 패턴 */}
-                {(healthConsultation.occupation || healthConsultation.work_hours || healthConsultation.wake_up_time || healthConsultation.bedtime) && (
+                {(healthConsultation.occupation ||
+                  healthConsultation.work_hours ||
+                  healthConsultation.wake_up_time ||
+                  healthConsultation.bedtime) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       생활 패턴
@@ -1097,7 +1175,10 @@ export default function OrderDetailPage() {
                           <div
                             className={copyableRowClass}
                             onClick={() =>
-                              copyHealthField("직업", healthConsultation.occupation)
+                              copyHealthField(
+                                "직업",
+                                healthConsultation.occupation
+                              )
                             }
                             title="클릭하여 복사"
                           >
@@ -1111,7 +1192,10 @@ export default function OrderDetailPage() {
                           <div
                             className={copyableRowClass}
                             onClick={() =>
-                              copyHealthField("근무 시간", healthConsultation.work_hours)
+                              copyHealthField(
+                                "근무 시간",
+                                healthConsultation.work_hours
+                              )
                             }
                             title="클릭하여 복사"
                           >
@@ -1121,64 +1205,81 @@ export default function OrderDetailPage() {
                             </span>
                           </div>
                         )}
-                        {healthConsultation.has_shift_work !== null && healthConsultation.has_shift_work !== undefined && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "교대 근무",
-                                healthConsultation.has_shift_work ? "예" : "아니오"
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">교대 근무:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.has_shift_work ? "예" : "아니오"}
-                            </span>
-                          </div>
-                        )}
-                        {(healthConsultation.wake_up_time || healthConsultation.bedtime) && (
+                        {healthConsultation.has_shift_work !== null &&
+                          healthConsultation.has_shift_work !== undefined && (
+                            <div
+                              className={copyableRowClass}
+                              onClick={() =>
+                                copyHealthField(
+                                  "교대 근무",
+                                  healthConsultation.has_shift_work
+                                    ? "예"
+                                    : "아니오"
+                                )
+                              }
+                              title="클릭하여 복사"
+                            >
+                              <span className="text-gray-500">교대 근무:</span>
+                              <span className="ml-2 font-medium">
+                                {healthConsultation.has_shift_work
+                                  ? "예"
+                                  : "아니오"}
+                              </span>
+                            </div>
+                          )}
+                        {(healthConsultation.wake_up_time ||
+                          healthConsultation.bedtime) && (
                           <div
                             className={copyableRowClass}
                             onClick={() =>
                               copyHealthField(
                                 "수면 시간",
-                                `${healthConsultation.wake_up_time || "-"} ~ ${healthConsultation.bedtime || "-"}`
+                                `${healthConsultation.wake_up_time || "-"} ~ ${
+                                  healthConsultation.bedtime || "-"
+                                }`
                               )
                             }
                             title="클릭하여 복사"
                           >
                             <span className="text-gray-500">수면 시간:</span>
                             <span className="ml-2 font-medium">
-                              {healthConsultation.wake_up_time || "-"} ~ {healthConsultation.bedtime || "-"}
+                              {healthConsultation.wake_up_time || "-"} ~{" "}
+                              {healthConsultation.bedtime || "-"}
                             </span>
                           </div>
                         )}
-                        {healthConsultation.has_daytime_sleepiness !== null && healthConsultation.has_daytime_sleepiness !== undefined && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "주간 졸림",
-                                healthConsultation.has_daytime_sleepiness ? "있음" : "없음"
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">주간 졸림:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.has_daytime_sleepiness ? "있음" : "없음"}
-                            </span>
-                          </div>
-                        )}
+                        {healthConsultation.has_daytime_sleepiness !== null &&
+                          healthConsultation.has_daytime_sleepiness !==
+                            undefined && (
+                            <div
+                              className={copyableRowClass}
+                              onClick={() =>
+                                copyHealthField(
+                                  "주간 졸림",
+                                  healthConsultation.has_daytime_sleepiness
+                                    ? "있음"
+                                    : "없음"
+                                )
+                              }
+                              title="클릭하여 복사"
+                            >
+                              <span className="text-gray-500">주간 졸림:</span>
+                              <span className="ml-2 font-medium">
+                                {healthConsultation.has_daytime_sleepiness
+                                  ? "있음"
+                                  : "없음"}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* 식습관 */}
-                {(healthConsultation.meal_pattern || healthConsultation.alcohol_frequency || healthConsultation.water_intake) && (
+                {(healthConsultation.meal_pattern ||
+                  healthConsultation.alcohol_frequency ||
+                  healthConsultation.water_intake) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       식습관
@@ -1190,12 +1291,15 @@ export default function OrderDetailPage() {
                             className={copyableRowClass}
                             onClick={() => {
                               const value =
-                                ({
-                                  '1meals': '1끼',
-                                  '2meals': '2끼',
-                                  '3meals': '3끼',
-                                  'irregular': '불규칙'
-                                } as Record<string, string>)[healthConsultation.meal_pattern ?? ''] || healthConsultation.meal_pattern;
+                                (
+                                  {
+                                    "1meals": "1끼",
+                                    "2meals": "2끼",
+                                    "3meals": "3끼",
+                                    irregular: "불규칙",
+                                  } as Record<string, string>
+                                )[healthConsultation.meal_pattern ?? ""] ||
+                                healthConsultation.meal_pattern;
                               copyHealthField("하루 식사", value);
                             }}
                             title="클릭하여 복사"
@@ -1203,11 +1307,12 @@ export default function OrderDetailPage() {
                             <span className="text-gray-500">하루 식사:</span>
                             <span className="ml-2 font-medium">
                               {{
-                                '1meals': '1끼',
-                                '2meals': '2끼',
-                                '3meals': '3끼',
-                                'irregular': '불규칙'
-                              }[healthConsultation.meal_pattern] || healthConsultation.meal_pattern}
+                                "1meals": "1끼",
+                                "2meals": "2끼",
+                                "3meals": "3끼",
+                                irregular: "불규칙",
+                              }[healthConsultation.meal_pattern] ||
+                                healthConsultation.meal_pattern}
                             </span>
                           </div>
                         )}
@@ -1216,10 +1321,13 @@ export default function OrderDetailPage() {
                             className={copyableRowClass}
                             onClick={() => {
                               const value =
-                                ({
-                                  'weekly_1_or_less': '주 1회 이하',
-                                  'weekly_2_or_more': '주 2회 이상'
-                                } as Record<string, string>)[healthConsultation.alcohol_frequency ?? ''] || healthConsultation.alcohol_frequency;
+                                (
+                                  {
+                                    weekly_1_or_less: "주 1회 이하",
+                                    weekly_2_or_more: "주 2회 이상",
+                                  } as Record<string, string>
+                                )[healthConsultation.alcohol_frequency ?? ""] ||
+                                healthConsultation.alcohol_frequency;
                               copyHealthField("음주 빈도", value);
                             }}
                             title="클릭하여 복사"
@@ -1227,9 +1335,10 @@ export default function OrderDetailPage() {
                             <span className="text-gray-500">음주 빈도:</span>
                             <span className="ml-2 font-medium">
                               {{
-                                'weekly_1_or_less': '주 1회 이하',
-                                'weekly_2_or_more': '주 2회 이상'
-                              }[healthConsultation.alcohol_frequency] || healthConsultation.alcohol_frequency}
+                                weekly_1_or_less: "주 1회 이하",
+                                weekly_2_or_more: "주 2회 이상",
+                              }[healthConsultation.alcohol_frequency] ||
+                                healthConsultation.alcohol_frequency}
                             </span>
                           </div>
                         )}
@@ -1238,20 +1347,26 @@ export default function OrderDetailPage() {
                             className={copyableRowClass}
                             onClick={() => {
                               const value =
-                                ({
-                                  '1L_or_less': '1L 이하',
-                                  'over_1L': '1L 이상'
-                                } as Record<string, string>)[healthConsultation.water_intake ?? ''] || healthConsultation.water_intake;
+                                (
+                                  {
+                                    "1L_or_less": "1L 이하",
+                                    over_1L: "1L 이상",
+                                  } as Record<string, string>
+                                )[healthConsultation.water_intake ?? ""] ||
+                                healthConsultation.water_intake;
                               copyHealthField("하루 수분 섭취", value);
                             }}
                             title="클릭하여 복사"
                           >
-                            <span className="text-gray-500">하루 수분 섭취:</span>
+                            <span className="text-gray-500">
+                              하루 수분 섭취:
+                            </span>
                             <span className="ml-2 font-medium">
                               {{
-                                '1L_or_less': '1L 이하',
-                                'over_1L': '1L 이상'
-                              }[healthConsultation.water_intake] || healthConsultation.water_intake}
+                                "1L_or_less": "1L 이하",
+                                over_1L: "1L 이상",
+                              }[healthConsultation.water_intake] ||
+                                healthConsultation.water_intake}
                             </span>
                           </div>
                         )}
@@ -1261,7 +1376,8 @@ export default function OrderDetailPage() {
                 )}
 
                 {/* 다이어트 정보 */}
-                {(healthConsultation.diet_approach || healthConsultation.preferred_stage) && (
+                {(healthConsultation.diet_approach ||
+                  healthConsultation.preferred_stage) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       다이어트 정보
@@ -1273,10 +1389,13 @@ export default function OrderDetailPage() {
                             className={copyableRowClass}
                             onClick={() => {
                               const value =
-                                ({
-                                  'sustainable': '지속 가능한 방식',
-                                  'fast': '빠른 방식'
-                                } as Record<string, string>)[healthConsultation.diet_approach ?? ''] || healthConsultation.diet_approach;
+                                (
+                                  {
+                                    sustainable: "지속 가능한 방식",
+                                    fast: "빠른 방식",
+                                  } as Record<string, string>
+                                )[healthConsultation.diet_approach ?? ""] ||
+                                healthConsultation.diet_approach;
                               copyHealthField("접근법", value);
                             }}
                             title="클릭하여 복사"
@@ -1284,9 +1403,10 @@ export default function OrderDetailPage() {
                             <span className="text-gray-500">접근법:</span>
                             <span className="ml-2 font-medium">
                               {{
-                                'sustainable': '지속 가능한 방식',
-                                'fast': '빠른 방식'
-                              }[healthConsultation.diet_approach] || healthConsultation.diet_approach}
+                                sustainable: "지속 가능한 방식",
+                                fast: "빠른 방식",
+                              }[healthConsultation.diet_approach] ||
+                                healthConsultation.diet_approach}
                             </span>
                           </div>
                         )}
@@ -1294,7 +1414,10 @@ export default function OrderDetailPage() {
                           <div
                             className={copyableRowClass}
                             onClick={() =>
-                              copyHealthField("선호 단계", healthConsultation.preferred_stage)
+                              copyHealthField(
+                                "선호 단계",
+                                healthConsultation.preferred_stage
+                              )
                             }
                             title="클릭하여 복사"
                           >
@@ -1310,7 +1433,9 @@ export default function OrderDetailPage() {
                 )}
 
                 {/* 이전 치료 이력 */}
-                {(healthConsultation.previous_western_medicine || healthConsultation.previous_herbal_medicine || healthConsultation.previous_other_medicine) && (
+                {(healthConsultation.previous_western_medicine ||
+                  healthConsultation.previous_herbal_medicine ||
+                  healthConsultation.previous_other_medicine) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-blue-600">
                       이전 치료 이력
@@ -1328,7 +1453,9 @@ export default function OrderDetailPage() {
                             }
                             title="클릭하여 복사"
                           >
-                            <span className="text-gray-500">이전 양방 치료:</span>
+                            <span className="text-gray-500">
+                              이전 양방 치료:
+                            </span>
                             <span className="ml-2 font-medium">
                               {healthConsultation.previous_western_medicine}
                             </span>
@@ -1345,7 +1472,9 @@ export default function OrderDetailPage() {
                             }
                             title="클릭하여 복사"
                           >
-                            <span className="text-gray-500">이전 한방 치료:</span>
+                            <span className="text-gray-500">
+                              이전 한방 치료:
+                            </span>
                             <span className="ml-2 font-medium">
                               {healthConsultation.previous_herbal_medicine}
                             </span>
@@ -1382,11 +1511,16 @@ export default function OrderDetailPage() {
                     <div
                       className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
                       onClick={() =>
-                        copyHealthField("병력", healthConsultation.medical_history)
+                        copyHealthField(
+                          "병력",
+                          healthConsultation.medical_history
+                        )
                       }
                       title="클릭하여 복사"
                     >
-                      <p className="text-sm">{healthConsultation.medical_history}</p>
+                      <p className="text-sm">
+                        {healthConsultation.medical_history}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1404,7 +1538,9 @@ export default function OrderDetailPage() {
                       }
                       title="클릭하여 복사"
                     >
-                      <p className="text-sm whitespace-pre-wrap">{healthConsultation.diagnosis}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {healthConsultation.diagnosis}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1489,7 +1625,8 @@ export default function OrderDetailPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">배송비</span>
-                    {order.shipping_fee !== undefined && order.shipping_fee !== null ? (
+                    {order.shipping_fee !== undefined &&
+                    order.shipping_fee !== null ? (
                       <span className="font-medium text-blue-600">
                         +{order.shipping_fee.toLocaleString()}원
                       </span>
@@ -1517,7 +1654,9 @@ export default function OrderDetailPage() {
                     <span className="text-gray-600">포인트 사용</span>
                     <span
                       className={`font-medium ${
-                        formattedUsedPoints > 0 ? "text-red-600" : "text-gray-400"
+                        formattedUsedPoints > 0
+                          ? "text-red-600"
+                          : "text-gray-400"
                       }`}
                     >
                       {formattedUsedPoints > 0
@@ -1628,7 +1767,9 @@ export default function OrderDetailPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Truck className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-500 font-medium">배송 정보</span>
+                      <span className="text-gray-500 font-medium">
+                        배송 정보
+                      </span>
                     </div>
 
                     {order.shipped_at ? (
@@ -1668,9 +1809,7 @@ export default function OrderDetailPage() {
                           <Input
                             id="shipping-company"
                             value={shippingCompany}
-                            onChange={(e) =>
-                              setShippingCompany(e.target.value)
-                            }
+                            onChange={(e) => setShippingCompany(e.target.value)}
                             placeholder="예: CJ대한통운"
                             className="mt-1"
                           />
@@ -1682,9 +1821,7 @@ export default function OrderDetailPage() {
                           <Input
                             id="tracking-number"
                             value={trackingNumber}
-                            onChange={(e) =>
-                              setTrackingNumber(e.target.value)
-                            }
+                            onChange={(e) => setTrackingNumber(e.target.value)}
                             placeholder="송장번호 입력"
                             className="mt-1"
                           />

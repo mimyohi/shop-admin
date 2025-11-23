@@ -1,95 +1,65 @@
 'use server'
 
-import { couponsRepository } from '@/repositories/coupons.repository'
 import { revalidatePath } from 'next/cache'
+import { couponsRepository } from '@/repositories/coupons.repository'
+import { CouponFilters, CreateCouponData, UpdateCouponData } from '@/types/coupons.types'
 
-export async function createCoupon(data: any, productIds?: string[]) {
-  try {
-    const result = await couponsRepository.create(data)
-
-    // 쿠폰-상품 연결 처리
-    if (productIds !== undefined) {
-      await couponsRepository.updateCouponProducts(result.id, productIds)
-    }
-
-    revalidatePath('/dashboard/coupons')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Create coupon error:', error)
-    return { success: false, error: error.message }
-  }
+export async function fetchCoupons(filters: CouponFilters = {}) {
+  return couponsRepository.findMany(filters)
 }
 
-export async function updateCoupon(id: string, data: any, productIds?: string[]) {
-  try {
-    const result = await couponsRepository.update(id, data)
+export async function fetchCoupon(id: string) {
+  return couponsRepository.findById(id)
+}
 
-    // 쿠폰-상품 연결 처리
-    if (productIds !== undefined) {
-      await couponsRepository.updateCouponProducts(id, productIds)
-    }
+export async function fetchCouponProductIds(couponId: string) {
+  return couponsRepository.findAssignedProductIds(couponId)
+}
 
-    revalidatePath('/dashboard/coupons')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Update coupon error:', error)
-    return { success: false, error: error.message }
-  }
+export async function createCoupon(data: CreateCouponData) {
+  const result = await couponsRepository.create(data)
+  revalidatePath('/dashboard/coupons')
+  return result
+}
+
+export async function updateCoupon(id: string, data: UpdateCouponData) {
+  const result = await couponsRepository.update(id, data)
+  revalidatePath('/dashboard/coupons')
+  revalidatePath(`/dashboard/coupons/${id}`)
+  return result
 }
 
 export async function deleteCoupon(id: string) {
-  try {
-    await couponsRepository.delete(id)
-    revalidatePath('/dashboard/coupons')
-    return { success: true }
-  } catch (error: any) {
-    console.error('Delete coupon error:', error)
-    return { success: false, error: error.message }
-  }
+  const result = await couponsRepository.delete(id)
+  revalidatePath('/dashboard/coupons')
+  return result
 }
 
-export async function toggleCouponStatus(id: string, isActive: boolean) {
+export async function toggleCouponActive(id: string, isActive: boolean) {
+  const result = await couponsRepository.toggleActive(id, isActive)
+  revalidatePath('/dashboard/coupons')
+  revalidatePath(`/dashboard/coupons/${id}`)
+  return result
+}
+
+export async function issueCouponToUserByEmail(email: string, couponId: string) {
   try {
-    await couponsRepository.update(id, { is_active: isActive })
+    const data = await couponsRepository.issueCouponToUserByEmail(email, couponId)
     revalidatePath('/dashboard/coupons')
-    return { success: true }
+    return { success: true, data }
   } catch (error: any) {
-    console.error('Toggle coupon status error:', error)
+    console.error('Issue coupon by email error:', error)
     return { success: false, error: error.message }
   }
 }
 
 export async function issueCouponToUser(userId: string, couponId: string) {
   try {
-    const result = await couponsRepository.issueCouponToUser(userId, couponId)
+    const data = await couponsRepository.issueCouponToUser(userId, couponId)
     revalidatePath('/dashboard/coupons')
-    revalidatePath('/dashboard/users')
-    return { success: true, data: result }
+    return { success: true, data }
   } catch (error: any) {
-    console.error('Issue coupon error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function issueCouponToAllUsers(couponId: string) {
-  try {
-    const result = await couponsRepository.issueCouponToAllUsers(couponId)
-    revalidatePath('/dashboard/coupons')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Issue coupon to all error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function issueCouponToUserByEmail(email: string, couponId: string) {
-  try {
-    const result = await couponsRepository.issueCouponToUserByEmail(email, couponId)
-    revalidatePath('/dashboard/coupons')
-    revalidatePath('/dashboard/users')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Issue coupon by email error:', error)
+    console.error('Issue coupon to user error:', error)
     return { success: false, error: error.message }
   }
 }

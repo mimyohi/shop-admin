@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { usersRepository } from '@/repositories/users.repository'
+import { fetchUser, fetchUserStats, fetchUsers } from '@/lib/actions/users'
 import { UserFilters } from '@/types/users.types'
 
 export type { UserFilters } from '@/types/users.types'
@@ -12,7 +12,7 @@ export const usersQueries = {
   list: (filters: UserFilters = {}) =>
     queryOptions({
       queryKey: [...usersQueries.lists(), filters] as const,
-      queryFn: () => usersRepository.findMany(filters),
+      queryFn: () => fetchUsers(filters),
     }),
 
   details: () => [...usersQueries.all(), 'detail'] as const,
@@ -20,14 +20,14 @@ export const usersQueries = {
   detail: (userId: string) =>
     queryOptions({
       queryKey: [...usersQueries.details(), userId] as const,
-      queryFn: () => usersRepository.findById(userId),
+      queryFn: () => fetchUser(userId),
       enabled: !!userId,
     }),
 
   stats: () =>
     queryOptions({
       queryKey: [...usersQueries.all(), 'stats'] as const,
-      queryFn: () => usersRepository.getStats(),
+      queryFn: () => fetchUserStats(),
       staleTime: 60 * 1000, // 1분
     }),
 }

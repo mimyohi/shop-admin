@@ -1,90 +1,110 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { couponsRepository } from '@/repositories/coupons.repository'
-import { CouponFilters, CreateCouponData, UpdateCouponData } from '@/types/coupons.types'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createCoupon as createCouponAction,
+  deleteCoupon as deleteCouponAction,
+  fetchCoupon,
+  fetchCoupons,
+  toggleCouponActive as toggleCouponActiveAction,
+  updateCoupon as updateCouponAction,
+} from "@/lib/actions/coupons";
+import {
+  CouponFilters,
+  CreateCouponData,
+  UpdateCouponData,
+} from "@/types/coupons.types";
 
-export type { CouponFilters, CreateCouponData, UpdateCouponData } from '@/types/coupons.types'
+export type {
+  CouponFilters,
+  CreateCouponData,
+  UpdateCouponData,
+} from "@/types/coupons.types";
 
 export const couponsQueries = {
-  all: () => ['admin-coupons'] as const,
+  all: () => ["admin-coupons"] as const,
 
-  lists: () => [...couponsQueries.all(), 'list'] as const,
+  lists: () => [...couponsQueries.all(), "list"] as const,
 
   list: (filters: CouponFilters = {}) =>
     queryOptions({
       queryKey: [...couponsQueries.lists(), filters] as const,
-      queryFn: () => couponsRepository.findMany(filters),
+      queryFn: () => fetchCoupons(filters),
     }),
 
-  details: () => [...couponsQueries.all(), 'detail'] as const,
+  details: () => [...couponsQueries.all(), "detail"] as const,
 
   detail: (id: string) =>
     queryOptions({
       queryKey: [...couponsQueries.details(), id] as const,
-      queryFn: () => couponsRepository.findById(id),
+      queryFn: () => fetchCoupon(id),
       enabled: !!id,
     }),
-}
+};
 
 /**
  * 쿠폰 생성 mutation
  */
 export function useCreateCoupon() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (couponData: CreateCouponData) => couponsRepository.create(couponData),
+    mutationFn: (couponData: CreateCouponData) =>
+      createCouponAction(couponData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() })
+      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() });
     },
-  })
+  });
 }
 
 /**
  * 쿠폰 수정 mutation
  */
 export function useUpdateCoupon() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCouponData }) =>
-      couponsRepository.update(id, data),
+      updateCouponAction(id, data),
     onSuccess: (updatedCoupon) => {
-      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() })
+      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() });
       queryClient.invalidateQueries({
         queryKey: couponsQueries.detail(updatedCoupon.id).queryKey,
-      })
+      });
     },
-  })
+  });
 }
 
 /**
  * 쿠폰 삭제 mutation
  */
 export function useDeleteCoupon() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => couponsRepository.delete(id),
+    mutationFn: (id: string) => deleteCouponAction(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() })
+      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() });
     },
-  })
+  });
 }
 
 /**
  * 쿠폰 활성화/비활성화 mutation
  */
 export function useToggleCouponActive() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      couponsRepository.toggleActive(id, isActive),
+      toggleCouponActiveAction(id, isActive),
     onSuccess: (updatedCoupon) => {
-      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() })
+      queryClient.invalidateQueries({ queryKey: couponsQueries.lists() });
       queryClient.invalidateQueries({
         queryKey: couponsQueries.detail(updatedCoupon.id).queryKey,
-      })
+      });
     },
-  })
+  });
 }

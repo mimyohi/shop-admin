@@ -1,5 +1,12 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ordersRepository } from '@/repositories/orders.repository'
+import {
+  fetchConsultationStatusCounts,
+  fetchOrder,
+  fetchOrderStats,
+  fetchOrders,
+  updateHealthConsultation,
+  updateOrderStatus,
+} from '@/lib/actions/orders'
 import { OrderFilters } from '@/types/orders.types'
 
 export type { OrderFilters } from '@/types/orders.types'
@@ -12,7 +19,7 @@ export const ordersQueries = {
   list: (filters: OrderFilters = {}) =>
     queryOptions({
       queryKey: [...ordersQueries.lists(), filters] as const,
-      queryFn: () => ordersRepository.findMany(filters),
+      queryFn: () => fetchOrders(filters),
     }),
 
   details: () => [...ordersQueries.all(), 'detail'] as const,
@@ -20,20 +27,20 @@ export const ordersQueries = {
   detail: (id: string) =>
     queryOptions({
       queryKey: [...ordersQueries.details(), id] as const,
-      queryFn: () => ordersRepository.findById(id),
+      queryFn: () => fetchOrder(id),
       enabled: !!id,
     }),
 
   stats: () =>
     queryOptions({
       queryKey: [...ordersQueries.all(), 'stats'] as const,
-      queryFn: () => ordersRepository.getStats(),
+      queryFn: () => fetchOrderStats(),
       staleTime: 60 * 1000, // 1분
     }),
   consultationStatusCounts: (statuses: string[]) =>
     queryOptions({
       queryKey: [...ordersQueries.all(), 'consultation-status-counts', statuses] as const,
-      queryFn: () => ordersRepository.countByConsultationStatus(statuses),
+      queryFn: () => fetchConsultationStatusCounts(statuses),
       staleTime: 5 * 60 * 1000,
     }),
 }
@@ -53,7 +60,7 @@ export function useUpdateOrderStatus() {
       orderId: string
       status: string
       paymentKey?: string
-    }) => ordersRepository.updateStatus(orderId, status, paymentKey),
+    }) => updateOrderStatus(orderId, status, paymentKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ordersQueries.lists() })
       queryClient.invalidateQueries({ queryKey: ordersQueries.stats().queryKey })
@@ -78,7 +85,7 @@ export function useUpdateHealthConsultation() {
         diagnosis?: string
         treatment_plan?: string
       }
-    }) => ordersRepository.updateHealthConsultation(orderId, data),
+    }) => updateHealthConsultation(orderId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ordersQueries.details(),
