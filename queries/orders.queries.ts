@@ -1,0 +1,88 @@
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ordersRepository } from '@/repositories/orders.repository'
+import { OrderFilters } from '@/types/orders.types'
+
+export type { OrderFilters } from '@/types/orders.types'
+
+export const ordersQueries = {
+  all: () => ['admin-orders'] as const,
+
+  lists: () => [...ordersQueries.all(), 'list'] as const,
+
+  list: (filters: OrderFilters = {}) =>
+    queryOptions({
+      queryKey: [...ordersQueries.lists(), filters] as const,
+      queryFn: () => ordersRepository.findMany(filters),
+    }),
+
+  details: () => [...ordersQueries.all(), 'detail'] as const,
+
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: [...ordersQueries.details(), id] as const,
+      queryFn: () => ordersRepository.findById(id),
+      enabled: !!id,
+    }),
+
+  stats: () =>
+    queryOptions({
+      queryKey: [...ordersQueries.all(), 'stats'] as const,
+      queryFn: () => ordersRepository.getStats(),
+      staleTime: 60 * 1000, // 1분
+    }),
+  consultationStatusCounts: (statuses: string[]) =>
+    queryOptions({
+      queryKey: [...ordersQueries.all(), 'consultation-status-counts', statuses] as const,
+      queryFn: () => ordersRepository.countByConsultationStatus(statuses),
+      staleTime: 5 * 60 * 1000,
+    }),
+}
+
+/**
+ * 주문 상태 업데이트 mutation
+ */
+export function useUpdateOrderStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      status,
+      paymentKey,
+    }: {
+      orderId: string
+      status: string
+      paymentKey?: string
+    }) => ordersRepository.updateStatus(orderId, status, paymentKey),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ordersQueries.lists() })
+      queryClient.invalidateQueries({ queryKey: ordersQueries.stats().queryKey })
+    },
+  })
+}
+
+/**
+ * 건강 상담 업데이트 mutation
+ */
+export function useUpdateHealthConsultation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      data,
+    }: {
+      orderId: string
+      data: {
+        consultation_notes?: string
+        diagnosis?: string
+        treatment_plan?: string
+      }
+    }) => ordersRepository.updateHealthConsultation(orderId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ordersQueries.details(),
+      })
+    },
+  })
+}

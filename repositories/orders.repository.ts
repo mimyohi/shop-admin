@@ -1,0 +1,279 @@
+import { supabase } from '@/lib/supabase'
+import { OrderHealthConsultation } from '@/models'
+import {
+  OrderFilters,
+  OrderWithDetails,
+} from '@/types/orders.types'
+
+export const ordersRepository = {
+  /**
+   * 주문 목록 조회 (관리자용)
+   */
+  async findMany(filters: OrderFilters = {}) {
+    const {
+      consultationStatus,
+      paymentStatus,
+      assignedAdminId,
+      productId,
+      search,
+      startDate,
+      endDate,
+      sortBy,
+      page = 1,
+      limit = 20,
+    } = filters
+
+    const shouldPaginate = limit !== 'all'
+    const numericLimit = typeof limit === 'number' ? limit : undefined
+    const from = shouldPaginate ? (page - 1) * (numericLimit as number) : undefined
+    const to = shouldPaginate && numericLimit ? from! + numericLimit - 1 : undefined
+
+    let query = supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        assigned_admin:admin_users!orders_assigned_admin_id_fkey(id, username, full_name),
+        handler_admin:admin_users!orders_handler_admin_id_fkey(id, username, full_name),
+        order_items(*),
+        order_health_consultations(*)
+      `,
+        {
+        count: 'exact',
+      })
+
+    if (consultationStatus) {
+      query = query.eq('consultation_status', consultationStatus)
+    }
+
+    if (paymentStatus) {
+      query = query.eq('status', paymentStatus)
+    }
+
+    if (assignedAdminId) {
+      query = query.eq('assigned_admin_id', assignedAdminId)
+    }
+
+    if (productId) {
+      query = query.eq('order_items.product_id', productId)
+    }
+
+    if (search) {
+      query = query.or(
+        `order_id.ilike.%${search}%,user_email.ilike.%${search}%,user_name.ilike.%${search}%,user_phone.ilike.%${search}%`
+      )
+    }
+
+    if (startDate) {
+      query = query.gte('created_at', startDate)
+    }
+
+    if (endDate) {
+      query = query.lte('created_at', endDate)
+    }
+
+    switch (sortBy) {
+      case 'oldest':
+        query = query.order('created_at', { ascending: true })
+        break
+      case 'amount_high':
+        query = query.order('total_amount', { ascending: false })
+        break
+      case 'amount_low':
+        query = query.order('total_amount', { ascending: true })
+        break
+      case 'latest':
+      default:
+        query = query.order('created_at', { ascending: false })
+        break
+    }
+
+    if (shouldPaginate && typeof from === 'number' && typeof to === 'number') {
+      query = query.range(from, to)
+    }
+
+    const { data, error, count } = await query
+
+    if (error) {
+      console.error('Error fetching orders:', error)
+      throw new Error('Failed to fetch orders')
+    }
+
+    const totalCount =
+      shouldPaginate && typeof count === 'number'
+        ? count
+        : count ?? data?.length ?? 0
+
+    return {
+      orders: (data || []) as OrderWithDetails[],
+      totalCount,
+      totalPages:
+        shouldPaginate && numericLimit
+          ? Math.ceil(totalCount / numericLimit)
+          : 1,
+      currentPage: shouldPaginate ? page : 1,
+    }
+  },
+
+  async countByConsultationStatus(statuses: string[]) {
+    const entries = await Promise.all(
+      statuses.map(async (status) => {
+        const { count } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('consultation_status', status)
+
+        return [status, count ?? 0] as const
+      })
+    )
+
+    return Object.fromEntries(entries)
+  },
+
+  /**
+   * 주문 상세 조회
+   */
+  async findById(id: string): Promise<OrderWithDetails | null> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        assigned_admin:admin_users!orders_assigned_admin_id_fkey(id, username, full_name),
+        handler_admin:admin_users!orders_handler_admin_id_fkey(id, username, full_name),
+        order_items(*),
+        order_health_consultations(*)
+      `
+      )
+      .eq('id', id)
+      .single()
+
+    if (error || !order) {
+      return null
+    }
+
+    return order as OrderWithDetails
+  },
+
+  /**
+   * 주문 상태 업데이트
+   */
+  async updateStatus(
+    orderId: string,
+    status: string,
+    paymentKey?: string
+  ): Promise<OrderWithDetails> {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (paymentKey) {
+      updateData.payment_key = paymentKey
+    }
+
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error || !order) {
+      console.error('Error updating order status:', error)
+      throw new Error('Failed to update order status')
+    }
+
+    const fullOrder = await this.findById(order.id)
+    if (!fullOrder) {
+      throw new Error('Failed to fetch updated order')
+    }
+
+    return fullOrder
+  },
+
+  /**
+   * 주문 건강 상담 업데이트
+   */
+  async updateHealthConsultation(
+    orderId: string,
+    consultationData: {
+      consultation_notes?: string
+      diagnosis?: string
+      treatment_plan?: string
+    }
+  ): Promise<OrderHealthConsultation> {
+    const { data, error } = await supabase
+      .from('order_health_consultations')
+      .update({
+        ...consultationData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating health consultation:', error)
+      throw new Error('Failed to update health consultation')
+    }
+
+    return data
+  },
+
+  /**
+   * 대시보드 통계
+   */
+  async getStats() {
+    const today = new Date()
+    const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString()
+
+    // 총 주문 수
+    const { count: totalOrders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+
+    // 오늘 주문 수
+    const { count: todayOrders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayStart)
+
+    // 총 매출
+    const { data: allOrders } = await supabase
+      .from('orders')
+      .select('total_amount')
+      .eq('status', 'completed')
+
+    const totalRevenue = allOrders?.reduce(
+      (sum, order) => sum + order.total_amount,
+      0
+    )
+
+    // 오늘 매출
+    const { data: todayCompletedOrders } = await supabase
+      .from('orders')
+      .select('total_amount')
+      .eq('status', 'completed')
+      .gte('created_at', todayStart)
+
+    const todayRevenue = todayCompletedOrders?.reduce(
+      (sum, order) => sum + order.total_amount,
+      0
+    )
+
+    // 대기중인 주문 수
+    const { count: pendingOrders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending')
+
+    return {
+      totalOrders: totalOrders || 0,
+      todayOrders: todayOrders || 0,
+      totalRevenue: totalRevenue || 0,
+      todayRevenue: todayRevenue || 0,
+      pendingOrders: pendingOrders || 0,
+    }
+  },
+}

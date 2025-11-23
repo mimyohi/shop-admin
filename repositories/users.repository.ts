@@ -1,0 +1,157 @@
+import { supabase } from '@/lib/supabase'
+import { UserFilters, UserWithStats } from '@/types/users.types'
+
+export const usersRepository = {
+  /**
+   * 사용자 목록 조회 (관리자용)
+   */
+  async findMany(filters: UserFilters = {}) {
+    const { search, phone_verified, page = 1, limit = 20 } = filters
+
+    const shouldPaginate = limit !== 'all'
+    const numericLimit = typeof limit === 'number' ? limit : undefined
+    const from = shouldPaginate ? (page - 1) * (numericLimit as number) : undefined
+    const to = shouldPaginate && numericLimit ? from! + numericLimit - 1 : undefined
+
+    let query = supabase.from('user_profiles').select('*', { count: 'exact' })
+
+    if (search) {
+      query = query.or(
+        `email.ilike.%${search}%,display_name.ilike.%${search}%,phone.ilike.%${search}%`
+      )
+    }
+
+    if (phone_verified !== undefined) {
+      query = query.eq('phone_verified', phone_verified)
+    }
+
+    query = query.order('created_at', { ascending: false })
+
+    if (shouldPaginate && typeof from === 'number' && typeof to === 'number') {
+      query = query.range(from, to)
+    }
+
+    const { data, error, count } = await query
+
+    if (error) {
+      console.error('Error fetching users:', error)
+      throw new Error('Failed to fetch users')
+    }
+
+    // 각 사용자의 통계 정보 가져오기
+    const usersWithStats = await Promise.all(
+      (data || []).map(async (user) => {
+        // 주문 수와 총 구매액
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('total_amount')
+          .eq('user_email', user.email)
+          .eq('status', 'completed')
+
+        const orderCount = orders?.length || 0
+        const totalSpent =
+          orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0
+
+        // 포인트
+        const { data: pointsData } = await supabase
+          .from('user_points')
+          .select('points')
+          .eq('user_id', user.user_id)
+          .single()
+
+        return {
+          ...user,
+          order_count: orderCount,
+          total_spent: totalSpent,
+          points: pointsData?.points || 0,
+        } as UserWithStats
+      })
+    )
+
+    const totalCount =
+      shouldPaginate && typeof count === 'number'
+        ? count
+        : count ?? usersWithStats.length ?? 0
+
+    return {
+      users: usersWithStats,
+      totalCount,
+      totalPages:
+        shouldPaginate && numericLimit
+          ? Math.ceil(totalCount / numericLimit)
+          : 1,
+      currentPage: shouldPaginate ? page : 1,
+    }
+  },
+
+  /**
+   * 사용자 상세 조회
+   */
+  async findById(userId: string): Promise<UserWithStats | null> {
+    const { data: user, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+
+    if (error || !user) {
+      return null
+    }
+
+    // 주문 수와 총 구매액
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('total_amount')
+      .eq('user_email', user.email)
+      .eq('status', 'completed')
+
+    const orderCount = orders?.length || 0
+    const totalSpent =
+      orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0
+
+    // 포인트
+    const { data: pointsData } = await supabase
+      .from('user_points')
+      .select('points')
+      .eq('user_id', user.user_id)
+      .single()
+
+    return {
+      ...user,
+      order_count: orderCount,
+      total_spent: totalSpent,
+      points: pointsData?.points || 0,
+    } as UserWithStats
+  },
+
+  /**
+   * 대시보드 통계
+   */
+  async getStats() {
+    // 총 사용자 수
+    const { count: totalUsers } = await supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact', head: true })
+
+    // 오늘 가입한 사용자 수
+    const today = new Date()
+    const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString()
+
+    const { count: todayUsers } = await supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayStart)
+
+    // 전화번호 인증 완료 사용자 수
+    const { count: verifiedUsers } = await supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('phone_verified', true)
+
+    return {
+      totalUsers: totalUsers || 0,
+      todayUsers: todayUsers || 0,
+      verifiedUsers: verifiedUsers || 0,
+    }
+  },
+}
