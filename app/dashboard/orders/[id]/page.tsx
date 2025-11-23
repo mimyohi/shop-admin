@@ -27,6 +27,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
+import { calculateProductAmount } from "@/lib/utils/price-calculation";
 import {
   setAdminMemo,
   setAssignedAdmin,
@@ -92,7 +93,6 @@ interface Order {
   user_email: string;
   user_phone: string;
   total_amount: number;
-  product_amount?: number;
   status: string;
   consultation_status: string;
   created_at: string;
@@ -161,8 +161,8 @@ const CONSULTATION_STATUS_FLOW: Partial<
   consultation_completed: {
     prev: "consultation_required",
     prevLabel: "상담 필요로 이동",
-    next: "shipping_completed",
-    nextLabel: "배송완료 처리",
+    next: "shipping_in_progress",
+    nextLabel: "배송중으로 이동",
     extraActions: [
       {
         target: "shipping_on_hold",
@@ -171,20 +171,27 @@ const CONSULTATION_STATUS_FLOW: Partial<
       },
     ],
   },
-  shipping_on_hold: {
+  shipping_in_progress: {
     prev: "consultation_completed",
     prevLabel: "배송필요(상담완료)로 이동",
     next: "shipping_completed",
     nextLabel: "배송완료 처리",
   },
-  shipping_completed: {
+  shipping_on_hold: {
     prev: "consultation_completed",
     prevLabel: "배송필요(상담완료)로 이동",
+    next: "shipping_in_progress",
+    nextLabel: "배송중으로 이동",
+  },
+  shipping_completed: {
+    prev: "shipping_in_progress",
+    prevLabel: "배송중으로 이동",
   },
 };
 
 const SHIPPING_PHASE_STATUSES: ConsultationStatus[] = [
   "consultation_completed",
+  "shipping_in_progress",
   "shipping_on_hold",
   "shipping_completed",
 ];
@@ -389,7 +396,7 @@ export default function OrderDetailPage() {
 
   // 문진 결과 복사
   const copyHealthInfo = () => {
-    const healthConsultation = order?.order_health_consultations?.[0];
+    const healthConsultation = order?.order_health_consultations;
     if (!healthConsultation) {
       toast({
         title: "복사 실패",
@@ -670,8 +677,11 @@ export default function OrderDetailPage() {
     );
   }
 
-  const healthConsultation = order.order_health_consultations?.[0];
-  const formattedProductAmount = order.product_amount ?? 0;
+  const healthConsultation = order.order_health_consultations;
+  // order_items에서 상품 금액을 동적으로 계산
+  const formattedProductAmount = order.order_items
+    ? calculateProductAmount(order.order_items)
+    : 0;
   const formattedShippingFee = order.shipping_fee ?? 0;
   const formattedCouponDiscount = order.coupon_discount ?? 0;
   const formattedUsedPoints = order.used_points ?? 0;
@@ -683,7 +693,12 @@ export default function OrderDetailPage() {
   const nextStatus = currentStatusConfig.next ?? null;
   const copyableRowClass =
     "cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition-colors";
-  const formatWon = (value: number) => `${value.toLocaleString()}원`;
+  const formatWon = (value?: number | null) => {
+    if (value === null || value === undefined) return "-";
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) return "-";
+    return `${numericValue.toLocaleString("ko-KR")}원`;
+  };
   const totalExplanation = `상품 금액 (${formatWon(
     formattedProductAmount
   )}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(
@@ -1615,20 +1630,18 @@ export default function OrderDetailPage() {
               <div>
                 <span className="text-gray-500 block mb-2">주문 금액 내역</span>
                 <div className="space-y-2">
-                  {order.product_amount !== undefined && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">상품 금액</span>
-                      <span className="font-medium">
-                        {order.product_amount.toLocaleString()}원
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">상품 금액</span>
+                    <span className="font-medium">
+                      {formatWon(formattedProductAmount)}
+                    </span>
+                  </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">배송비</span>
                     {order.shipping_fee !== undefined &&
                     order.shipping_fee !== null ? (
                       <span className="font-medium text-blue-600">
-                        +{order.shipping_fee.toLocaleString()}원
+                        +{formatWon(order.shipping_fee)}
                       </span>
                     ) : (
                       <span className="font-medium text-gray-400">
@@ -1668,7 +1681,7 @@ export default function OrderDetailPage() {
                   <div className="flex justify-between">
                     <span className="font-semibold">최종 결제 금액</span>
                     <span className="font-bold text-2xl text-blue-600">
-                      {order.total_amount.toLocaleString()}원
+                      {formatWon(order.total_amount)}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
@@ -1691,7 +1704,7 @@ export default function OrderDetailPage() {
                           <div className="flex justify-between text-xs text-gray-600 mb-1">
                             <span>단가</span>
                             <span className="font-medium">
-                              {item.product_price.toLocaleString()}원
+                              {formatWon(item.product_price)}
                             </span>
                           </div>
                           <div className="flex justify-between text-xs text-gray-600 mb-2">
@@ -1704,10 +1717,7 @@ export default function OrderDetailPage() {
                           <div className="flex justify-between text-sm font-semibold">
                             <span>소계</span>
                             <span className="text-blue-600">
-                              {(
-                                item.product_price * item.quantity
-                              ).toLocaleString()}
-                              원
+                              {formatWon(item.product_price * item.quantity)}
                             </span>
                           </div>
                         </div>

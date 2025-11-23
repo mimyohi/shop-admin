@@ -95,6 +95,7 @@ export function OrderDetailDialog({
       consultation_required: "상담 필요",
       on_hold: "보류",
       consultation_completed: "배송필요(상담완료)",
+      shipping_in_progress: "배송중",
       shipping_on_hold: "배송보류",
       shipping_completed: "배송처리 완료",
       cancelled: "취소건",

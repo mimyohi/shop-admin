@@ -46,7 +46,7 @@ export default function UsersPage() {
   } = useQuery(
     usersQueries.list({
       search: searchTerm || undefined,
-      limit: 'all',
+      limit: "all",
     })
   );
   const users = useMemo(() => usersResult?.users ?? [], [usersResult]);
@@ -70,22 +70,15 @@ export default function UsersPage() {
 
       {/* 필터 영역 */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="search">검색</Label>
-              <Input
-                id="search"
-                placeholder="이메일, 이름, 전화번호"
-                value={searchTerm}
-                onChange={(e) => void setSearchTerm(e.target.value || null)}
-              />
-            </div>
-            <div className="col-span-2 flex items-end">
-              <div className="text-sm text-gray-600">
-                총 <span className="font-semibold text-blue-600">{users.length}</span>명
-              </div>
-            </div>
+        <CardContent className="pt-6 flex justify-between">
+          <div className="space-y-2 w-full">
+            <Label htmlFor="search">검색</Label>
+            <Input
+              id="search"
+              placeholder="이메일, 이름, 전화번호"
+              value={searchTerm}
+              onChange={(e) => void setSearchTerm(e.target.value || null)}
+            />
           </div>
         </CardContent>
       </Card>
@@ -119,7 +112,9 @@ export default function UsersPage() {
                 {users.map((user) => (
                   <TableRow
                     key={user.id}
-                    onClick={() => router.push(`/dashboard/users/${user.user_id}`)}
+                    onClick={() =>
+                      router.push(`/dashboard/users/${user.user_id}`)
+                    }
                     className="cursor-pointer hover:bg-muted/50"
                   >
                     <TableCell>{user.display_name || "이름 없음"}</TableCell>

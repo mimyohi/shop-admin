@@ -32,5 +32,5 @@ export interface OrderWithDetails extends Order {
   assigned_admin?: AdminUser | null;
   handler_admin?: AdminUser | null;
   order_items?: OrderItem[];
-  order_health_consultations?: OrderHealthConsultation[];
+  order_health_consultations?: OrderHealthConsultation;
 }

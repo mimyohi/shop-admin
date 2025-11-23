@@ -60,6 +60,7 @@ export default function NewProductPage() {
     name: '',
     description: '',
     price: '',
+    discount_rate: '',
     stock: '',
     category: '',
     image_url: '',
@@ -91,6 +92,7 @@ export default function NewProductPage() {
         name: formData.name,
         description: formData.description,
         price: parseInt(formData.price),
+        discount_rate: formData.discount_rate ? parseInt(formData.discount_rate) : 0,
         stock: formData.stock ? parseInt(formData.stock) : null,
         category: formData.category,
         image_url: formData.image_url,
@@ -186,6 +188,23 @@ export default function NewProductPage() {
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="discount_rate">
+                  할인률 (%)
+                </Label>
+                <Input
+                  id="discount_rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.discount_rate}
+                  onChange={(e) => setFormData({ ...formData, discount_rate: e.target.value })}
+                  placeholder="0"
+                />
+                <p className="text-sm text-gray-500">
+                  할인률을 0-100 사이의 숫자로 입력하세요 (0이면 할인 없음)
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">

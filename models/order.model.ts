@@ -18,7 +18,6 @@ export interface Order {
   user_name: string;
   user_phone: string;
   total_amount: number;
-  product_amount?: number;
   shipping_fee?: number;
   coupon_discount?: number;
   used_points?: number;

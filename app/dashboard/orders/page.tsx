@@ -157,8 +157,8 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
   {
     value: "consultation_completed",
     label: "배송필요(상담완료)",
-    nextStatus: "shipping_completed",
-    nextLabel: "선택 배송완료 처리",
+    nextStatus: "shipping_in_progress",
+    nextLabel: "선택 배송중으로 이동",
     extraActions: [
       {
         targetStatus: "shipping_on_hold",
@@ -167,10 +167,22 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
-    value: "shipping_on_hold",
-    label: "배송보류",
+    value: "shipping_in_progress",
+    label: "배송중",
     nextStatus: "shipping_completed",
     nextLabel: "선택 배송완료 처리",
+    extraActions: [
+      {
+        targetStatus: "consultation_completed",
+        label: "선택 배송필요 단계로 복귀",
+      },
+    ],
+  },
+  {
+    value: "shipping_on_hold",
+    label: "배송보류",
+    nextStatus: "shipping_in_progress",
+    nextLabel: "선택 배송중으로 이동",
     extraActions: [
       {
         targetStatus: "consultation_completed",
@@ -191,6 +203,13 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
 const CONSULTATION_TAB_VALUES = CONSULTATION_TABS.map(
   (tab) => tab.value
 ) as Order["consultation_status"][];
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined) return "-";
+  const numericAmount = Number(amount);
+  if (Number.isNaN(numericAmount)) return "-";
+  return `${numericAmount.toLocaleString("ko-KR")}원`;
+};
 
 const INITIAL_SELECTION_STATE = CONSULTATION_TABS.reduce((acc, tab) => {
   acc[tab.value] = [];
@@ -528,7 +547,7 @@ export default function OrdersPage() {
                   })}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {order.total_amount.toLocaleString()}원
+                  {formatCurrency(order.total_amount)}
                 </TableCell>
                 <TableCell className="text-sm">
                   {order.user_phone || "-"}
@@ -749,7 +768,7 @@ export default function OrdersPage() {
             }
             className="w-full"
           >
-            <TabsList className="w-full grid grid-cols-7 mb-4">
+            <TabsList className="w-full grid grid-cols-8 mb-4">
               {CONSULTATION_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}
