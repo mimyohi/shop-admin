@@ -116,55 +116,100 @@ export async function toggleProductVisibility(id: string, isVisible: boolean) {
 
 // Product Options Actions
 export async function createProductOption(productId: string, data: any) {
-  const result = await productOptionsRepository.createOption(productId, data)
-  revalidatePath(`/dashboard/products/${productId}`)
-  return result
+  try {
+    const result = await productOptionsRepository.createOption(productId, data)
+    revalidatePath(`/dashboard/products/${productId}`)
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Create product option error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateProductOption(optionId: string, data: any) {
-  const result = await productOptionsRepository.updateOption(optionId, data)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    const result = await productOptionsRepository.updateOption(optionId, data)
+    revalidatePath('/dashboard/products')
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Update product option error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteProductOption(optionId: string) {
-  const result = await productOptionsRepository.deleteOption(optionId)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    await productOptionsRepository.deleteOption(optionId)
+    revalidatePath('/dashboard/products')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Delete product option error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function createOptionValue(optionId: string, data: any) {
-  const result = await productOptionsRepository.createOptionValue(optionId, data)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    const result = await productOptionsRepository.createOptionValue(optionId, data)
+    revalidatePath('/dashboard/products')
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Create option value error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateOptionValue(valueId: string, data: any) {
-  const result = await productOptionsRepository.updateOptionValue(valueId, data)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    const result = await productOptionsRepository.updateOptionValue(valueId, data)
+    revalidatePath('/dashboard/products')
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Update option value error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteOptionValue(valueId: string) {
-  const result = await productOptionsRepository.deleteOptionValue(valueId)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    await productOptionsRepository.deleteOptionValue(valueId)
+    revalidatePath('/dashboard/products')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Delete option value error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function createAddon(productId: string, data: any) {
-  const result = await productOptionsRepository.createAddon(productId, data)
-  revalidatePath(`/dashboard/products/${productId}`)
-  return result
+  try {
+    const result = await productOptionsRepository.createAddon(productId, data)
+    revalidatePath(`/dashboard/products/${productId}`)
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Create addon error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateAddon(addonId: string, data: any) {
-  const result = await productOptionsRepository.updateAddon(addonId, data)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    const result = await productOptionsRepository.updateAddon(addonId, data)
+    revalidatePath('/dashboard/products')
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Update addon error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteAddon(addonId: string) {
-  const result = await productOptionsRepository.deleteAddon(addonId)
-  revalidatePath('/dashboard/products')
-  return result
+  try {
+    await productOptionsRepository.deleteAddon(addonId)
+    revalidatePath('/dashboard/products')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Delete addon error:', error)
+    return { success: false, error: error.message }
+  }
 }

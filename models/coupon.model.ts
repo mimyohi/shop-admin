@@ -5,14 +5,14 @@ export interface Coupon {
   id: string
   code: string
   name: string
-  description?: string
+  description: string | null
   discount_type: 'percentage' | 'fixed'
   discount_value: number
   min_purchase: number
-  max_discount?: number
+  max_discount: number | null
   valid_from: string
-  valid_until?: string
-  usage_limit?: number
+  valid_until: string | null
+  usage_limit: number | null
   used_count: number
   is_active: boolean
   created_at: string

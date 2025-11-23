@@ -25,26 +25,12 @@ import {
   useToggleCouponActive,
 } from "@/queries/coupons.queries";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
+import type { Coupon as CouponModel } from "@/models";
 
-interface Coupon {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  discount_type: "percentage" | "fixed";
-  discount_value: number;
-  min_purchase: number;
-  max_discount: number | null;
-  valid_from: string;
-  valid_until: string | null;
-  usage_limit: number | null;
-  used_count: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+type Coupon = CouponModel & {
   product_count?: number;
   product_names?: string[];
-}
+};
 
 export default function CouponsPage() {
   const [searchTerm, setSearchTerm] = useQueryState(

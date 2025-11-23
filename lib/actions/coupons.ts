@@ -42,6 +42,18 @@ export async function toggleCouponActive(id: string, isActive: boolean) {
   return result
 }
 
+export async function updateCouponProducts(couponId: string, productIds: string[]) {
+  try {
+    await couponsRepository.updateCouponProducts(couponId, productIds)
+    revalidatePath('/dashboard/coupons')
+    revalidatePath(`/dashboard/coupons/${couponId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Update coupon products error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 export async function issueCouponToUserByEmail(email: string, couponId: string) {
   try {
     const data = await couponsRepository.issueCouponToUserByEmail(email, couponId)

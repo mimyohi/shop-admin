@@ -25,7 +25,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { productsQueries } from "@/queries/products.queries";
 import { couponProductsQueries } from "@/queries/coupon-products.queries";
-import { createCoupon, updateCoupon } from "@/lib/actions/coupons";
+import {
+  createCoupon,
+  updateCoupon,
+  updateCouponProducts,
+} from "@/lib/actions/coupons";
 
 interface Coupon {
   id: string;
@@ -84,13 +88,13 @@ export function CouponDialog({
   });
 
   const { data: productsResult } = useQuery({
-    ...productsQueries.list({ limit: 'all' }),
+    ...productsQueries.list({ limit: "all" }),
     enabled: open,
   });
   const products = productsResult?.products ?? [];
 
   const { data: assignedProductIds } = useQuery({
-    ...couponProductsQueries.byCouponId(coupon?.id || ''),
+    ...couponProductsQueries.byCouponId(coupon?.id || ""),
     enabled: open && !!coupon?.id,
   });
 
@@ -163,22 +167,28 @@ export function CouponDialog({
       // 쿠폰-상품 연결 데이터 (빈 배열 = 모든 상품에 적용)
       const productIds = applyToAllProducts ? [] : selectedProducts;
 
-      let result;
+      let savedCoupon: Coupon;
       if (coupon) {
         // 수정
-        result = await updateCoupon(coupon.id, submitData, productIds);
+        savedCoupon = await updateCoupon(coupon.id, submitData);
       } else {
         // 생성
-        result = await createCoupon(submitData, productIds);
+        savedCoupon = await createCoupon(submitData);
       }
 
-      if (!result.success) {
-        throw new Error(result.error);
+      const productUpdate = await updateCouponProducts(
+        savedCoupon.id,
+        productIds
+      );
+      if (!productUpdate.success) {
+        throw new Error(productUpdate.error);
       }
 
       toast({
         title: "성공",
-        description: coupon ? "쿠폰이 수정되었습니다." : "쿠폰이 생성되었습니다.",
+        description: coupon
+          ? "쿠폰이 수정되었습니다."
+          : "쿠폰이 생성되었습니다.",
       });
 
       onSuccess();
@@ -221,7 +231,10 @@ export function CouponDialog({
                 id="code"
                 value={formData.code}
                 onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                  setFormData({
+                    ...formData,
+                    code: e.target.value.toUpperCase(),
+                  })
                 }
                 placeholder="WELCOME2024"
                 required
@@ -236,7 +249,9 @@ export function CouponDialog({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="신규 회원 환영 쿠폰"
                 required
               />
@@ -294,7 +309,9 @@ export function CouponDialog({
                     discount_value: parseInt(e.target.value) || 0,
                   })
                 }
-                placeholder={formData.discount_type === "percentage" ? "10" : "5000"}
+                placeholder={
+                  formData.discount_type === "percentage" ? "10" : "5000"
+                }
                 required
               />
             </div>
@@ -329,14 +346,15 @@ export function CouponDialog({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      max_discount: e.target.value ? parseInt(e.target.value) : null,
+                      max_discount: e.target.value
+                        ? parseInt(e.target.value)
+                        : null,
                     })
                   }
                   placeholder="제한없음"
                 />
               </div>
             )}
-
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -396,7 +414,10 @@ export function CouponDialog({
                     }
                   }}
                 />
-                <Label htmlFor="apply_all" className="font-normal cursor-pointer">
+                <Label
+                  htmlFor="apply_all"
+                  className="font-normal cursor-pointer"
+                >
                   모든 상품에 적용
                 </Label>
               </div>
@@ -417,7 +438,9 @@ export function CouponDialog({
                       <Checkbox
                         id={`product-${product.id}`}
                         checked={selectedProducts.includes(product.id)}
-                        onCheckedChange={() => toggleProductSelection(product.id)}
+                        onCheckedChange={() =>
+                          toggleProductSelection(product.id)
+                        }
                       />
                       <Label
                         htmlFor={`product-${product.id}`}
@@ -431,7 +454,9 @@ export function CouponDialog({
                           />
                         )}
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{product.name}</div>
+                          <div className="text-sm font-medium">
+                            {product.name}
+                          </div>
                           <div className="text-xs text-gray-500">
                             {product.price.toLocaleString()}원
                           </div>
