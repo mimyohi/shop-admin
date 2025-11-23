@@ -11,6 +11,7 @@ export const ordersRepository = {
       consultationStatus,
       paymentStatus,
       assignedAdminId,
+      handlerAdminId,
       productId,
       search,
       startDate,
@@ -51,6 +52,10 @@ export const ordersRepository = {
 
     if (assignedAdminId) {
       query = query.eq("assigned_admin_id", assignedAdminId);
+    }
+
+    if (handlerAdminId) {
+      query = query.eq("handler_admin_id", handlerAdminId);
     }
 
     if (productId) {

@@ -16,6 +16,7 @@ export interface OrderFilters {
   consultationStatus?: string;
   paymentStatus?: string;
   assignedAdminId?: string;
+  handlerAdminId?: string;
   productId?: string;
   search?: string;
   startDate?: string;

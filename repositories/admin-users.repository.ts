@@ -37,32 +37,4 @@ export const adminUsersRepository = {
       throw new Error('Failed to delete admin user')
     }
   },
-
-  /**
-   * 관리자 비밀번호 재설정
-   */
-  async resetPassword(
-    masterAdminId: string,
-    targetAdminId: string,
-    newPassword: string
-  ): Promise<void> {
-    const response = await fetch('/api/admins/reset-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        masterAdminId,
-        targetAdminId,
-        newPassword,
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to reset password')
-    }
-
-    return
-  },
 }

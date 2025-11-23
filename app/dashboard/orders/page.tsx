@@ -126,6 +126,7 @@ const DEFAULT_FILTERS = {
   startDate: "",
   endDate: "",
   assignedAdmin: "all",
+  handlerAdmin: "all",
   product: "all",
 } as const;
 
@@ -263,6 +264,10 @@ export default function OrdersPage() {
     "assigned",
     parseAsString.withDefault(DEFAULT_FILTERS.assignedAdmin)
   );
+  const [handlerAdminFilter, setHandlerAdminFilter] = useQueryState(
+    "handler",
+    parseAsString.withDefault(DEFAULT_FILTERS.handlerAdmin)
+  );
   const [productFilter, setProductFilter] = useQueryState(
     "product",
     parseAsString.withDefault(DEFAULT_FILTERS.product)
@@ -282,6 +287,10 @@ export default function OrdersPage() {
         assignedAdminFilter !== DEFAULT_FILTERS.assignedAdmin
           ? assignedAdminFilter
           : undefined,
+      handlerAdminId:
+        handlerAdminFilter !== DEFAULT_FILTERS.handlerAdmin
+          ? handlerAdminFilter
+          : undefined,
       productId:
         productFilter !== DEFAULT_FILTERS.product ? productFilter : undefined,
       sortBy: sortBy,
@@ -296,6 +305,7 @@ export default function OrdersPage() {
     startDate,
     endDate,
     assignedAdminFilter,
+    handlerAdminFilter,
     productFilter,
     sortBy,
   ]);
@@ -349,6 +359,7 @@ export default function OrdersPage() {
     void setStartDate(DEFAULT_FILTERS.startDate);
     void setEndDate(DEFAULT_FILTERS.endDate);
     void setAssignedAdminFilter(DEFAULT_FILTERS.assignedAdmin);
+    void setHandlerAdminFilter(DEFAULT_FILTERS.handlerAdmin);
     void setProductFilter(DEFAULT_FILTERS.product);
   };
 
@@ -688,6 +699,28 @@ export default function OrdersPage() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="handler-filter" className="text-sm font-medium">
+                상담 담당자
+              </Label>
+              <Select
+                value={handlerAdminFilter}
+                onValueChange={(value) => setHandlerAdminFilter(value)}
+              >
+                <SelectTrigger id="handler-filter">
+                  <SelectValue placeholder="전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  {admins.map((admin) => (
+                    <SelectItem key={admin.id} value={admin.id}>
+                      {admin.full_name || admin.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* 정렬 */}
             <div className="space-y-2">
               <Label htmlFor="sort-by" className="text-sm font-medium">
@@ -745,6 +778,7 @@ export default function OrdersPage() {
             {(searchTerm ||
               paymentStatus !== "all" ||
               assignedAdminFilter !== "all" ||
+              handlerAdminFilter !== "all" ||
               productFilter !== "all" ||
               startDate ||
               endDate) && (

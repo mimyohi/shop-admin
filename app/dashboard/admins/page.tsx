@@ -15,12 +15,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAdminStore } from "@/store/admin-store"
-import { createAdminUser } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Trash2, KeyRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { adminUsersQueries, useDeleteAdminUser, useResetAdminPassword } from "@/queries/admin-users.queries"
 import { ResetPasswordDialog } from "@/components/reset-password-dialog"
+import { createAdminUser } from "@/lib/actions/auth"
 
 interface AdminUser {
   id: string

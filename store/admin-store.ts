@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { AdminUser } from '@/lib/auth'
+import { AdminUser } from '@/models/admin.model'
 
 interface AdminState {
   adminUser: AdminUser | null

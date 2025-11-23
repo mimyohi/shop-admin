@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAdminStore } from "@/store/admin-store"
-import { loginAdmin } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
+import { useAdminStore } from "@/store/admin-store"
+import { loginAdmin } from "@/lib/actions/auth"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")

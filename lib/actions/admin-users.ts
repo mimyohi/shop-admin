@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { adminUsersRepository } from '@/repositories/admin-users.repository'
+import { resetAdminPassword as resetAdminPasswordAction } from '@/lib/actions/auth'
 
 export async function fetchAdminUsers(filters: { is_active?: boolean } = {}) {
   return adminUsersRepository.findMany(filters)
@@ -18,7 +19,7 @@ export async function resetAdminPassword(params: {
   targetAdminId: string
   newPassword: string
 }) {
-  const result = await adminUsersRepository.resetPassword(
+  const result = await resetAdminPasswordAction(
     params.masterAdminId,
     params.targetAdminId,
     params.newPassword

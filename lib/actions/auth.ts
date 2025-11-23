@@ -1,55 +1,42 @@
-import bcrypt from "bcryptjs";
-import { supabaseServer as supabase } from "./supabase-server";
+'use server'
 
-export interface AdminUser {
-  id: string;
-  username: string;
-  email: string;
-  full_name: string | null;
-  role: "master" | "admin";
-  is_active: boolean;
-  created_at: string;
-  last_login_at: string | null;
-}
+import bcrypt from 'bcryptjs'
+import { supabaseServer as supabase } from '@/lib/supabase-server'
+import { AdminUser } from '@/models/admin.model'
 
 export async function loginAdmin(
   username: string,
   password: string
 ): Promise<AdminUser | null> {
   try {
-    // Fetch admin user by username
     const { data: adminUser, error } = await supabase
-      .from("admin_users")
-      .select("*")
-      .eq("username", username)
-      .eq("is_active", true)
-      .single();
+      .from('admin_users')
+      .select('*')
+      .eq('username', username)
+      .eq('is_active', true)
+      .single()
 
     if (error || !adminUser) {
-      return null;
+      return null
     }
 
-    console.log("password", adminUser.password_hash);
-    // Verify password
     const passwordMatch = await bcrypt.compare(
       password,
       adminUser.password_hash
-    );
+    )
 
     if (!passwordMatch) {
-      return null;
+      return null
     }
 
-    // Update last login time
     await supabase
-      .from("admin_users")
+      .from('admin_users')
       .update({ last_login_at: new Date().toISOString() })
-      .eq("id", adminUser.id);
+      .eq('id', adminUser.id)
 
-    // Log activity
-    await logAdminActivity(adminUser.id, "login", null, null, {
+    await logAdminActivity(adminUser.id, 'login', null, null, {
       success: true,
-    });
+    })
 
     return {
       id: adminUser.id,
@@ -60,10 +47,10 @@ export async function loginAdmin(
       is_active: adminUser.is_active,
       created_at: adminUser.created_at,
       last_login_at: adminUser.last_login_at,
-    };
+    }
   } catch (error) {
-    console.error("Login error:", error);
-    return null;
+    console.error('Login error:', error)
+    return null
   }
 }
 
@@ -73,45 +60,56 @@ export async function createAdminUser(
   email: string,
   password: string,
   fullName: string,
-  role: "admin" | "master" = "admin"
+  role: 'admin' | 'master' = 'admin'
 ) {
   try {
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const { data: creator, error: creatorError } = await supabase
+      .from('admin_users')
+      .select('id, role')
+      .eq('id', creatorId)
+      .single()
 
-    // Create admin user
+    if (creatorError || !creator) {
+      throw new Error('등록 권한이 없습니다. 다시 로그인 후 시도해주세요.')
+    }
+
+    if (creator.role !== 'master') {
+      throw new Error('관리자 생성 권한이 없습니다.')
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
     const { data, error } = await supabase
-      .from("admin_users")
+      .from('admin_users')
       .insert({
         username,
         email,
         password_hash: passwordHash,
         full_name: fullName,
         role,
-        created_by: creatorId,
+        created_by: creator.id,
       })
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
+    if (error) throw error
 
-    // Log activity
     await logAdminActivity(
       creatorId,
-      "create_admin_user",
-      "admin_user",
+      'create_admin_user',
+      'admin_user',
       data.id,
       {
         username,
         email,
         role,
       }
-    );
+    )
 
-    return data;
+    return data
   } catch (error) {
-    console.error("Create admin user error:", error);
-    throw error;
+    console.error('Create admin user error:', error)
+    throw error
   }
 }
 
@@ -121,32 +119,29 @@ export async function resetAdminPassword(
   newPassword: string
 ) {
   try {
-    // Hash new password
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, 10)
 
-    // Update admin password
     const { error } = await supabase
-      .from("admin_users")
+      .from('admin_users')
       .update({ password_hash: passwordHash })
-      .eq("id", targetAdminId);
+      .eq('id', targetAdminId)
 
-    if (error) throw error;
+    if (error) throw error
 
-    // Log activity
     await logAdminActivity(
       masterAdminId,
-      "reset_password",
-      "admin_user",
+      'reset_password',
+      'admin_user',
       targetAdminId,
       {
         target_admin_id: targetAdminId,
       }
-    );
+    )
 
-    return true;
+    return true
   } catch (error) {
-    console.error("Reset admin password error:", error);
-    throw error;
+    console.error('Reset admin password error:', error)
+    throw error
   }
 }
 
@@ -155,17 +150,17 @@ export async function logAdminActivity(
   action: string,
   resourceType: string | null,
   resourceId: string | null,
-  details: any
+  details: Record<string, unknown>
 ) {
   try {
-    await supabase.from("admin_activity_logs").insert({
+    await supabase.from('admin_activity_logs').insert({
       admin_user_id: adminUserId,
       action,
       resource_type: resourceType,
       resource_id: resourceId,
       details,
-    });
+    })
   } catch (error) {
-    console.error("Log activity error:", error);
+    console.error('Log activity error:', error)
   }
 }
