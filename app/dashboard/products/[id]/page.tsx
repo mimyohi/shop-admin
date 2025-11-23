@@ -103,7 +103,6 @@ export default function ProductEditPage({
     if (
       !formData.name ||
       !formData.price ||
-      !formData.stock ||
       !formData.category
     ) {
       toast({
@@ -121,7 +120,7 @@ export default function ProductEditPage({
         name: formData.name,
         description: formData.description,
         price: parseInt(formData.price),
-        stock: parseInt(formData.stock),
+        stock: formData.stock ? parseInt(formData.stock) : null,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -235,7 +234,7 @@ export default function ProductEditPage({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">
-                  재고 <span className="text-red-500">*</span>
+                  재고 (선택)
                 </Label>
                 <Input
                   id="stock"
@@ -244,8 +243,11 @@ export default function ProductEditPage({
                   onChange={(e) =>
                     setFormData({ ...formData, stock: e.target.value })
                   }
-                  required
+                  placeholder="입력하지 않으면 무한대"
                 />
+                <p className="text-sm text-gray-500">
+                  재고를 입력하지 않으면 재고 제한 없이 판매됩니다
+                </p>
               </div>
             </div>
 

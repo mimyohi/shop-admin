@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { issueCouponToUserByEmail } from "@/lib/actions/coupons";
 
 interface Coupon {
   id: string;
@@ -53,49 +53,11 @@ export function IssueCouponDialog({
     setIsLoading(true);
 
     try {
-      // 이메일로 사용자 찾기
-      const { data: users, error: userError } = await supabase
-        .from("user_profiles")
-        .select("user_id")
-        .eq("email", email)
-        .single();
+      const result = await issueCouponToUserByEmail(email, coupon.id);
 
-      if (userError || !users) {
-        toast({
-          title: "오류",
-          description: "해당 이메일의 사용자를 찾을 수 없습니다.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (!result.success) {
+        throw new Error(result.error);
       }
-
-      // 이미 발급된 쿠폰인지 확인
-      const { data: existingCoupon } = await supabase
-        .from("user_coupons")
-        .select("id")
-        .eq("user_id", users.user_id)
-        .eq("coupon_id", coupon.id)
-        .single();
-
-      if (existingCoupon) {
-        toast({
-          title: "알림",
-          description: "이미 해당 사용자에게 발급된 쿠폰입니다.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // 쿠폰 발급
-      const { error: issueError } = await supabase.from("user_coupons").insert({
-        user_id: users.user_id,
-        coupon_id: coupon.id,
-        is_used: false,
-      });
-
-      if (issueError) throw issueError;
 
       toast({
         title: "성공",

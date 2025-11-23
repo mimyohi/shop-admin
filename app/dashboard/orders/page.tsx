@@ -29,7 +29,7 @@ import { Search, Filter, X } from "lucide-react";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer as supabase } from "@/lib/supabase-server";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 
 interface AdminUser {

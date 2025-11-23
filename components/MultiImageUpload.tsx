@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { uploadImage } from '@/lib/actions/upload'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { X, Upload, Info } from 'lucide-react'
@@ -72,31 +72,24 @@ export default function MultiImageUpload({
         return
       }
 
-      // Step 3: Upload processed files to Supabase
+      // Step 3: Upload processed files using server action
       for (let i = 0; i < processedFiles.length; i++) {
-        const file = processedFiles[i]
+        const processedFile = processedFiles[i]
         setUploadProgress(`이미지 업로드 중... (${i + 1}/${processedFiles.length})`)
 
-        // Upload to Supabase
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `products/details/${fileName}`
+        // Upload using server action
+        const formData = new FormData()
+        formData.append('file', processedFile)
+        const result = await uploadImage(formData)
 
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, file)
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError)
+        if (result.error) {
+          console.error('Upload error:', result.error)
           continue
         }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath)
-
-        uploadedUrls.push(publicUrl)
+        if (result.url) {
+          uploadedUrls.push(result.url)
+        }
       }
 
       // Step 4: Update state

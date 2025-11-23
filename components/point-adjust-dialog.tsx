@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { adjustUserPoints } from "@/lib/actions/points";
 
 interface UserPoint {
   user_id: string;
@@ -71,45 +71,26 @@ export function PointAdjustDialog({
     setIsLoading(true);
 
     try {
-      if (type === "add") {
-        // 포인트 지급
-        const { error } = await supabase.rpc("add_points", {
-          p_user_id: userPoint.user_id,
-          p_points: pointValue,
-          p_reason: reason || "관리자 지급",
-        });
+      const adjustType = type === "add" ? "earn" : "use";
+      const adjustReason = reason || (type === "add" ? "관리자 지급" : "관리자 차감");
 
-        if (error) throw error;
+      const result = await adjustUserPoints(
+        userPoint.user_id,
+        pointValue,
+        adjustReason,
+        adjustType
+      );
 
-        toast({
-          title: "성공",
-          description: `${pointValue.toLocaleString()}P가 지급되었습니다.`,
-        });
-      } else {
-        // 포인트 차감
-        const { data, error } = await supabase.rpc("use_points", {
-          p_user_id: userPoint.user_id,
-          p_points: pointValue,
-          p_reason: reason || "관리자 차감",
-        });
-
-        if (error) throw error;
-
-        if (!data) {
-          toast({
-            title: "오류",
-            description: "포인트 부족 또는 차감에 실패했습니다.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        toast({
-          title: "성공",
-          description: `${pointValue.toLocaleString()}P가 차감되었습니다.`,
-        });
+      if (!result.success) {
+        throw new Error(result.error);
       }
+
+      toast({
+        title: "성공",
+        description: type === "add"
+          ? `${pointValue.toLocaleString()}P가 지급되었습니다.`
+          : `${pointValue.toLocaleString()}P가 차감되었습니다.`,
+      });
 
       setPoints("");
       setReason("");

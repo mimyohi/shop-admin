@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { couponsQueries } from "@/queries/coupons.queries";
-import { supabase } from "@/lib/supabase";
+import { issueCouponToUser } from "@/lib/actions/coupons";
 
 interface User {
   user_id: string;
@@ -73,32 +73,11 @@ export function IssueCouponToUserDialog({
     setIsLoading(true);
 
     try {
-      // 이미 발급된 쿠폰인지 확인
-      const { data: existingCoupon } = await supabase
-        .from("user_coupons")
-        .select("id")
-        .eq("user_id", user.user_id)
-        .eq("coupon_id", selectedCouponId)
-        .single();
+      const result = await issueCouponToUser(user.user_id, selectedCouponId);
 
-      if (existingCoupon) {
-        toast({
-          title: "알림",
-          description: "이미 발급된 쿠폰입니다.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (!result.success) {
+        throw new Error(result.error);
       }
-
-      // 쿠폰 발급
-      const { error: issueError } = await supabase.from("user_coupons").insert({
-        user_id: user.user_id,
-        coupon_id: selectedCouponId,
-        is_used: false,
-      });
-
-      if (issueError) throw issueError;
 
       toast({
         title: "성공",

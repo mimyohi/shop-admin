@@ -14,12 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft } from 'lucide-react'
 import ImageUpload from '@/components/ImageUpload'
 import MultiImageUpload from '@/components/MultiImageUpload'
 import ProductOptionsManager from '@/components/ProductOptionsManager'
+import { createProductWithOptions } from '@/lib/actions/products'
 
 interface ProductOption {
   id: string
@@ -75,7 +75,7 @@ export default function NewProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.price || !formData.stock || !formData.category) {
+    if (!formData.name || !formData.price || !formData.category) {
       toast({
         title: '오류',
         description: '필수 항목을 모두 입력해주세요.',
@@ -87,12 +87,11 @@ export default function NewProductPage() {
     setIsSaving(true)
 
     try {
-      // 1. 상품 저장
       const productData = {
         name: formData.name,
         description: formData.description,
         price: parseInt(formData.price),
-        stock: parseInt(formData.stock),
+        stock: formData.stock ? parseInt(formData.stock) : null,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -101,65 +100,14 @@ export default function NewProductPage() {
         is_visible_on_main: formData.is_visible_on_main,
       }
 
-      const { data: newProduct, error: productError } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
-        .single()
+      const result = await createProductWithOptions({
+        product: productData,
+        options: options,
+        addons: addons,
+      })
 
-      if (productError) throw productError
-
-      // 2. 옵션 저장
-      for (const option of options) {
-        const { data: newOption, error: optionError } = await supabase
-          .from('product_options')
-          .insert([{
-            product_id: newProduct.id,
-            name: option.name,
-            is_required: option.is_required,
-            display_order: option.display_order,
-          }])
-          .select()
-          .single()
-
-        if (optionError) throw optionError
-
-        // 3. 옵션 값 저장
-        if (option.values && option.values.length > 0) {
-          const optionValues = option.values.map(value => ({
-            option_id: newOption.id,
-            value: value.value,
-            price_adjustment: value.price_adjustment,
-            stock: value.stock,
-            is_available: value.is_available,
-            display_order: value.display_order,
-          }))
-
-          const { error: valuesError } = await supabase
-            .from('product_option_values')
-            .insert(optionValues)
-
-          if (valuesError) throw valuesError
-        }
-      }
-
-      // 4. 추가상품 저장
-      if (addons.length > 0) {
-        const addonData = addons.map(addon => ({
-          product_id: newProduct.id,
-          name: addon.name,
-          description: addon.description,
-          price: addon.price,
-          stock: addon.stock,
-          is_available: addon.is_available,
-          display_order: addon.display_order,
-        }))
-
-        const { error: addonsError } = await supabase
-          .from('product_addons')
-          .insert(addonData)
-
-        if (addonsError) throw addonsError
+      if (!result.success) {
+        throw new Error(result.error)
       }
 
       toast({
@@ -167,13 +115,12 @@ export default function NewProductPage() {
         description: '상품이 등록되었습니다.',
       })
 
-      // 목록으로 이동
       router.push('/dashboard/products')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error)
       toast({
         title: '오류',
-        description: '상품 저장에 실패했습니다.',
+        description: error.message || '상품 저장에 실패했습니다.',
         variant: 'destructive',
       })
     } finally {
@@ -242,15 +189,18 @@ export default function NewProductPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">
-                  재고 <span className="text-red-500">*</span>
+                  재고 (선택)
                 </Label>
                 <Input
                   id="stock"
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  required
+                  placeholder="입력하지 않으면 무한대"
                 />
+                <p className="text-sm text-gray-500">
+                  재고를 입력하지 않으면 재고 제한 없이 판매됩니다
+                </p>
               </div>
             </div>
 

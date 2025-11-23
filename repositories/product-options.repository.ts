@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseServer as supabase } from '@/lib/supabase-server'
 import type { ProductAddon, ProductOption, ProductOptionValue } from '@/models'
 
 export interface ProductConfiguration {

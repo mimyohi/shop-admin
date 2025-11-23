@@ -60,6 +60,26 @@ NEXT_PUBLIC_SUPABASE_URL=https://mkbeonizkvrzjqihhcmg.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+`.env.dev` 같은 다른 파일을 동시에 보관하고 싶다면 그대로 두고 필요할 때만 사용하세요.
+대부분의 Next.js 실행은 기본적으로 `.env.local`을 읽지만,
+`scripts/insert-mock-data.ts`와 같은 스크립트는 `ENV_FILE` 환경 변수를 통해 다른 파일을 가리킬 수 있습니다:
+
+```bash
+npx tsx scripts/insert-mock-data.ts          # .env.local 사용
+ENV_FILE=.env.dev npx tsx scripts/insert-mock-data.ts  # .env.dev 사용
+```
+
+스크립트는 `ENV_FILE`에 지정한 상대/절대 경로를 그대로 읽습니다.
+
+`yarn dev:test` 명령은 `.env.test`(또는 `ENV_FILE`으로 지정한 파일)를 먼저 로드한 다음 Next 개발 서버를 띄웁니다:
+
+```bash
+yarn dev:test               # .env.test 사용
+ENV_FILE=.env.dev yarn dev:test  # 다른 파일 사용
+```
+
+필요한 `.env.test` 파일은 `.env.local`을 기준으로 복사한 뒤 테스트용 값만 바꿔두면 됩니다.
+
 ### 3. Supabase 데이터베이스 스키마 적용
 
 Supabase 대시보드에서 SQL Editor를 열고 `supabase/admin_schema.sql` 파일의 내용을 실행하세요.

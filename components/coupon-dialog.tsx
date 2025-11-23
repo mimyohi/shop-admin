@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { productsQueries } from "@/queries/products.queries";
 import { couponProductsQueries } from "@/queries/coupon-products.queries";
-import { supabase } from "@/lib/supabase";
+import { createCoupon, updateCoupon } from "@/lib/actions/coupons";
 
 interface Coupon {
   id: string;
@@ -158,64 +158,28 @@ export function CouponDialog({
           : null,
         usage_limit: null,
         is_active: formData.is_active,
-        updated_at: new Date().toISOString(),
       };
 
-      let couponId: string;
+      // 쿠폰-상품 연결 데이터 (빈 배열 = 모든 상품에 적용)
+      const productIds = applyToAllProducts ? [] : selectedProducts;
 
+      let result;
       if (coupon) {
         // 수정
-        const { error } = await supabase
-          .from("coupons")
-          .update(submitData)
-          .eq("id", coupon.id);
-
-        if (error) throw error;
-        couponId = coupon.id;
-
-        toast({
-          title: "성공",
-          description: "쿠폰이 수정되었습니다.",
-        });
+        result = await updateCoupon(coupon.id, submitData, productIds);
       } else {
         // 생성
-        const { data, error } = await supabase
-          .from("coupons")
-          .insert(submitData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        couponId = data.id;
-
-        toast({
-          title: "성공",
-          description: "쿠폰이 생성되었습니다.",
-        });
+        result = await createCoupon(submitData, productIds);
       }
 
-      // 쿠폰-상품 연결 저장
-      if (!applyToAllProducts) {
-        // 기존 연결 삭제
-        await supabase.from("coupon_products").delete().eq("coupon_id", couponId);
-
-        // 새 연결 추가
-        if (selectedProducts.length > 0) {
-          const couponProducts = selectedProducts.map((productId) => ({
-            coupon_id: couponId,
-            product_id: productId,
-          }));
-
-          const { error: cpError } = await supabase
-            .from("coupon_products")
-            .insert(couponProducts);
-
-          if (cpError) throw cpError;
-        }
-      } else {
-        // 모든 상품에 적용이면 기존 연결 삭제
-        await supabase.from("coupon_products").delete().eq("coupon_id", couponId);
+      if (!result.success) {
+        throw new Error(result.error);
       }
+
+      toast({
+        title: "성공",
+        description: coupon ? "쿠폰이 수정되었습니다." : "쿠폰이 생성되었습니다.",
+      });
 
       onSuccess();
       onOpenChange(false);

@@ -36,6 +36,18 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+`.env.test`을 만들어 테스트 환경에서 Next 개발 서버를 띄워야 할 경우:
+
+```bash
+yarn dev:test               # .env.test 사용
+ENV_FILE=.env.dev yarn dev:test  # 다른 env 파일을 지정할 수도 있음
+```
+
+`.env.test`은 `.env.local`을 복사한 뒤 테스트용 자격증명으로 수정하시면 됩니다.
+
+필요하다면 `.env.dev`처럼 별도의 파일을 만들어두고 `ENV_FILE`로 지정해 스크립트를 실행할 수도 있습니다.
+예: `ENV_FILE=.env.dev npx tsx scripts/insert-mock-data.ts`
+
 ## 4. 개발 서버 실행
 
 ```bash

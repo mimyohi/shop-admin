@@ -7,9 +7,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { productOptionsQueries } from '@/queries/product-options.queries'
+import {
+  createProductOption,
+  deleteProductOption,
+  createOptionValue,
+  deleteOptionValue,
+  createAddon,
+  deleteAddon,
+  updateAddon,
+} from '@/lib/actions/products'
 
 interface ProductOption {
   id: string
@@ -113,26 +121,21 @@ export default function ProductOptionsManager({
         onOptionsChange?.(updatedOptions)
         setNewOption({ name: '', is_required: false })
       } else {
-        // Edit mode: save to database
-        const { data, error } = await supabase
-          .from('product_options')
-          .insert([{
-            product_id: productId,
-            name: newOption.name,
-            is_required: newOption.is_required,
-            display_order: options.length,
-          }])
-          .select()
-          .single()
+        // Edit mode: save to database using server action
+        const result = await createProductOption(productId!, {
+          name: newOption.name,
+          is_required: newOption.is_required,
+          display_order: options.length,
+        })
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
 
-        setOptions([...options, { ...data, values: [] }])
+        setOptions([...options, { ...result.data, values: [] }])
         setNewOption({ name: '', is_required: false })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding option:', error)
-      alert('옵션 추가에 실패했습니다.')
+      alert(error.message || '옵션 추가에 실패했습니다.')
     }
   }
 
@@ -145,17 +148,14 @@ export default function ProductOptionsManager({
         setOptions(updatedOptions)
         onOptionsChange?.(updatedOptions)
       } else {
-        const { error } = await supabase
-          .from('product_options')
-          .delete()
-          .eq('id', optionId)
+        const result = await deleteProductOption(optionId)
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
         setOptions(options.filter(o => o.id !== optionId))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting option:', error)
-      alert('옵션 삭제에 실패했습니다.')
+      alert(error.message || '옵션 삭제에 실패했습니다.')
     }
   }
 
@@ -184,28 +184,23 @@ export default function ProductOptionsManager({
         setOptions(updatedOptions)
         onOptionsChange?.(updatedOptions)
       } else {
-        const { data, error } = await supabase
-          .from('product_option_values')
-          .insert([{
-            option_id: optionId,
-            value,
-            price_adjustment: priceAdjustment,
-            display_order: option?.values?.length || 0,
-          }])
-          .select()
-          .single()
+        const result = await createOptionValue(optionId, {
+          value,
+          price_adjustment: priceAdjustment,
+          display_order: option?.values?.length || 0,
+        })
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
 
         setOptions(options.map(o =>
           o.id === optionId
-            ? { ...o, values: [...(o.values || []), data] }
+            ? { ...o, values: [...(o.values || []), result.data] }
             : o
         ))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding option value:', error)
-      alert('옵션 값 추가에 실패했습니다.')
+      alert(error.message || '옵션 값 추가에 실패했습니다.')
     }
   }
 
@@ -220,12 +215,9 @@ export default function ProductOptionsManager({
         setOptions(updatedOptions)
         onOptionsChange?.(updatedOptions)
       } else {
-        const { error } = await supabase
-          .from('product_option_values')
-          .delete()
-          .eq('id', valueId)
+        const result = await deleteOptionValue(valueId)
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
 
         setOptions(options.map(o =>
           o.id === optionId
@@ -233,9 +225,9 @@ export default function ProductOptionsManager({
             : o
         ))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting option value:', error)
-      alert('옵션 값 삭제에 실패했습니다.')
+      alert(error.message || '옵션 값 삭제에 실패했습니다.')
     }
   }
 
@@ -266,23 +258,18 @@ export default function ProductOptionsManager({
           is_available: true,
         })
       } else {
-        const { data, error } = await supabase
-          .from('product_addons')
-          .insert([{
-            product_id: productId,
-            name: newAddon.name,
-            description: newAddon.description || null,
-            price: parseFloat(newAddon.price),
-            stock: newAddon.stock ? parseInt(newAddon.stock) : null,
-            is_available: newAddon.is_available,
-            display_order: addons.length,
-          }])
-          .select()
-          .single()
+        const result = await createAddon(productId!, {
+          name: newAddon.name,
+          description: newAddon.description || null,
+          price: parseFloat(newAddon.price),
+          stock: newAddon.stock ? parseInt(newAddon.stock) : null,
+          is_available: newAddon.is_available,
+          display_order: addons.length,
+        })
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
 
-        setAddons([...addons, data])
+        setAddons([...addons, result.data])
         setNewAddon({
           name: '',
           description: '',
@@ -291,13 +278,13 @@ export default function ProductOptionsManager({
           is_available: true,
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding addon:', error)
-      alert('추가상품 등록에 실패했습니다.')
+      alert(error.message || '추가상품 등록에 실패했습니다.')
     }
   }
 
-  const deleteAddon = async (addonId: string) => {
+  const deleteAddonItem = async (addonId: string) => {
     if (!confirm('이 추가상품을 삭제하시겠습니까?')) return
 
     try {
@@ -306,17 +293,14 @@ export default function ProductOptionsManager({
         setAddons(updatedAddons)
         onAddonsChange?.(updatedAddons)
       } else {
-        const { error } = await supabase
-          .from('product_addons')
-          .delete()
-          .eq('id', addonId)
+        const result = await deleteAddon(addonId)
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
         setAddons(addons.filter(a => a.id !== addonId))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting addon:', error)
-      alert('추가상품 삭제에 실패했습니다.')
+      alert(error.message || '추가상품 삭제에 실패했습니다.')
     }
   }
 
@@ -329,19 +313,17 @@ export default function ProductOptionsManager({
         setAddons(updatedAddons)
         onAddonsChange?.(updatedAddons)
       } else {
-        const { error } = await supabase
-          .from('product_addons')
-          .update({ is_available: isAvailable })
-          .eq('id', addonId)
+        const result = await updateAddon(addonId, { is_available: isAvailable })
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
 
         setAddons(addons.map(a =>
           a.id === addonId ? { ...a, is_available: isAvailable } : a
         ))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating addon:', error)
+      alert(error.message || '추가상품 업데이트에 실패했습니다.')
     }
   }
 

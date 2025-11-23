@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseServer as supabase } from '@/lib/supabase-server'
 import { Coupon } from '@/models'
 import { CouponFilters, CreateCouponData, UpdateCouponData } from '@/types/coupons.types'
 
@@ -180,5 +180,172 @@ export const couponsRepository = {
     }
 
     return data?.map((item) => item.product_id) || []
+  },
+
+  /**
+   * 쿠폰-상품 연결 업데이트
+   */
+  async updateCouponProducts(couponId: string, productIds: string[]): Promise<void> {
+    // 기존 연결 삭제
+    const { error: deleteError } = await supabase
+      .from('coupon_products')
+      .delete()
+      .eq('coupon_id', couponId)
+
+    if (deleteError) {
+      console.error('Error deleting coupon products:', deleteError)
+      throw new Error('Failed to delete coupon products')
+    }
+
+    // 새 연결 추가 (productIds가 비어있으면 모든 상품에 적용)
+    if (productIds.length > 0) {
+      const couponProducts = productIds.map((productId) => ({
+        coupon_id: couponId,
+        product_id: productId,
+      }))
+
+      const { error: insertError } = await supabase
+        .from('coupon_products')
+        .insert(couponProducts)
+
+      if (insertError) {
+        console.error('Error inserting coupon products:', insertError)
+        throw new Error('Failed to insert coupon products')
+      }
+    }
+  },
+
+  /**
+   * 이메일로 사용자에게 쿠폰 발급
+   */
+  async issueCouponToUserByEmail(email: string, couponId: string): Promise<any> {
+    // 이메일로 사용자 찾기
+    const { data: user, error: userError } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+      .eq('email', email)
+      .single()
+
+    if (userError || !user) {
+      throw new Error('해당 이메일의 사용자를 찾을 수 없습니다.')
+    }
+
+    // 이미 발급된 쿠폰인지 확인
+    const { data: existingCoupon } = await supabase
+      .from('user_coupons')
+      .select('id')
+      .eq('user_id', user.user_id)
+      .eq('coupon_id', couponId)
+      .single()
+
+    if (existingCoupon) {
+      throw new Error('이미 해당 사용자에게 발급된 쿠폰입니다.')
+    }
+
+    // 쿠폰 발급
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .insert({
+        user_id: user.user_id,
+        coupon_id: couponId,
+        is_used: false,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error issuing coupon:', error)
+      throw new Error('쿠폰 발급에 실패했습니다.')
+    }
+
+    return data
+  },
+
+  /**
+   * 사용자에게 쿠폰 발급
+   */
+  async issueCouponToUser(userId: string, couponId: string): Promise<any> {
+    // 이미 발급된 쿠폰인지 확인
+    const { data: existingCoupon } = await supabase
+      .from('user_coupons')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('coupon_id', couponId)
+      .single()
+
+    if (existingCoupon) {
+      throw new Error('이미 발급된 쿠폰입니다.')
+    }
+
+    // 쿠폰 발급
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .insert({
+        user_id: userId,
+        coupon_id: couponId,
+        is_used: false,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error issuing coupon:', error)
+      throw new Error('쿠폰 발급에 실패했습니다.')
+    }
+
+    return data
+  },
+
+  /**
+   * 모든 사용자에게 쿠폰 발급
+   */
+  async issueCouponToAllUsers(couponId: string): Promise<{ count: number }> {
+    // 모든 활성 사용자 조회
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError)
+      throw new Error('사용자 목록 조회에 실패했습니다.')
+    }
+
+    if (!users || users.length === 0) {
+      throw new Error('발급할 사용자가 없습니다.')
+    }
+
+    // 이미 발급받은 사용자 조회
+    const { data: existingCoupons } = await supabase
+      .from('user_coupons')
+      .select('user_id')
+      .eq('coupon_id', couponId)
+
+    const existingUserIds = new Set(
+      existingCoupons?.map((c) => c.user_id) || []
+    )
+
+    // 발급받지 않은 사용자에게만 발급
+    const newUserCoupons = users
+      .filter((user) => !existingUserIds.has(user.user_id))
+      .map((user) => ({
+        user_id: user.user_id,
+        coupon_id: couponId,
+        is_used: false,
+      }))
+
+    if (newUserCoupons.length === 0) {
+      throw new Error('모든 사용자가 이미 쿠폰을 발급받았습니다.')
+    }
+
+    const { error: insertError } = await supabase
+      .from('user_coupons')
+      .insert(newUserCoupons)
+
+    if (insertError) {
+      console.error('Error issuing coupons:', insertError)
+      throw new Error('쿠폰 일괄 발급에 실패했습니다.')
+    }
+
+    return { count: newUserCoupons.length }
   },
 }

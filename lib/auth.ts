@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { supabase } from "./supabase";
+import { supabaseServer as supabase } from "./supabase-server";
 
 export interface AdminUser {
   id: string;

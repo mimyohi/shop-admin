@@ -1,20 +1,28 @@
 /**
  * Mock 데이터 삽입 스크립트
  *
- * 실행 방법:
- * npx tsx scripts/insert-mock-data.ts
+ * 실행 방법 (기본: .env.local):
+ *   npx tsx scripts/insert-mock-data.ts
+ *
+ * 다른 env 파일을 사용하려면 ENV_FILE을 지정하세요:
+ *   ENV_FILE=.env.dev npx tsx scripts/insert-mock-data.ts
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "../env";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// .env.local 파일에서 환경 변수 로드
-config({ path: join(__dirname, "..", ".env.local") });
+const envFileName = process.env.ENV_FILE ?? ".env.local";
+const envFilePath = isAbsolute(envFileName)
+  ? envFileName
+  : join(__dirname, "..", envFileName);
+
+config({ path: envFilePath });
+console.log(`Using environment file: ${envFilePath}`);
 
 const safeGet = <T>(fn: () => T): T | undefined => {
   try {

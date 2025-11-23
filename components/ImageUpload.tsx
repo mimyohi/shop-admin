@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { uploadImage } from '@/lib/actions/upload'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 
@@ -42,27 +42,21 @@ export default function ImageUpload({ onUploadComplete, currentImageUrl }: Image
     }
     reader.readAsDataURL(file)
 
-    // Upload to Supabase
+    // Upload to Supabase using server action
     setUploading(true)
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `products/${fileName}`
+      const formData = new FormData()
+      formData.append('file', file)
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file)
+      const result = await uploadImage(formData)
 
-      if (uploadError) {
-        throw uploadError
+      if (result.error) {
+        throw new Error(result.error)
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath)
-
-      onUploadComplete(publicUrl)
+      if (result.url) {
+        onUploadComplete(result.url)
+      }
     } catch (error) {
       console.error('Upload error:', error)
       alert('이미지 업로드에 실패했습니다.')
