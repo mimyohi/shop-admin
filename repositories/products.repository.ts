@@ -11,7 +11,14 @@ export const productsRepository = {
    * 상품 목록 조회 (관리자용)
    */
   async findMany(filters: ProductFilters = {}) {
-    const { search, category, page = 1, limit = 20 } = filters
+    const {
+      search,
+      category,
+      page = 1,
+      limit = 20,
+      isVisibleOnMain,
+      stockStatus,
+    } = filters
 
     const shouldPaginate = limit !== 'all'
     const numericLimit = typeof limit === 'number' ? limit : undefined
@@ -26,6 +33,16 @@ export const productsRepository = {
 
     if (category) {
       query = query.eq('category', category)
+    }
+    
+    if (typeof isVisibleOnMain === 'boolean') {
+      query = query.eq('is_visible_on_main', isVisibleOnMain)
+    }
+
+    if (stockStatus === 'in_stock') {
+      query = query.gt('stock', 0)
+    } else if (stockStatus === 'out_of_stock') {
+      query = query.eq('stock', 0)
     }
 
     query = query.order('created_at', { ascending: false })
@@ -46,13 +63,15 @@ export const productsRepository = {
         ? count
         : count ?? data?.length ?? 0
 
+    const calculatedPages =
+      shouldPaginate && numericLimit
+        ? Math.ceil(totalCount / numericLimit)
+        : 1
+
     return {
       products: data || [],
       totalCount,
-      totalPages:
-        shouldPaginate && numericLimit
-          ? Math.ceil(totalCount / numericLimit)
-          : 1,
+      totalPages: Math.max(1, calculatedPages),
       currentPage: shouldPaginate ? page : 1,
     }
   },

@@ -5,6 +5,8 @@ export interface ProductFilters {
   category?: string
   page?: number
   limit?: number | 'all'
+  isVisibleOnMain?: boolean
+  stockStatus?: 'in_stock' | 'out_of_stock'
 }
 
 export interface CreateProductData {

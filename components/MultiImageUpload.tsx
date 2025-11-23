@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
-import { X, Upload } from 'lucide-react'
+import { X, Upload, Info } from 'lucide-react'
+import { processMultipleImages } from '@/lib/image-splitter'
 
 interface MultiImageUploadProps {
   onImagesChange: (urls: string[]) => void
@@ -15,10 +16,12 @@ interface MultiImageUploadProps {
 export default function MultiImageUpload({
   onImagesChange,
   currentImages = [],
-  maxImages = 10
+  maxImages = 999
 }: MultiImageUploadProps) {
   const [images, setImages] = useState<string[]>(currentImages)
   const [uploading, setUploading] = useState(false)
+  const [splitMessages, setSplitMessages] = useState<string[]>([])
+  const [uploadProgress, setUploadProgress] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -29,16 +32,16 @@ export default function MultiImageUpload({
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    // Check max images limit
-    if (images.length + files.length > maxImages) {
-      alert(`최대 ${maxImages}개까지 업로드 가능합니다.`)
-      return
-    }
-
     setUploading(true)
+    setSplitMessages([])
+    setUploadProgress('이미지 분석 중...')
     const uploadedUrls: string[] = []
+    const messages: string[] = []
 
     try {
+      // Step 1: Validate and process images (split if needed)
+      const filesToProcess: File[] = []
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
 
@@ -48,11 +51,31 @@ export default function MultiImageUpload({
           continue
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          alert(`${file.name}의 크기가 5MB를 초과합니다.`)
+        // Validate file size (max 13MB)
+        if (file.size > 13 * 1024 * 1024) {
+          alert(`${file.name}의 크기가 13MB를 초과합니다.`)
           continue
         }
+
+        filesToProcess.push(file)
+      }
+
+      // Step 2: Process images (split tall images into squares)
+      const { files: processedFiles, messages: splitMsgs } = await processMultipleImages(filesToProcess)
+      messages.push(...splitMsgs)
+
+      // Check max images limit after processing (only if a specific limit is set)
+      if (maxImages < 999 && images.length + processedFiles.length > maxImages) {
+        alert(`분할 처리 후 총 ${processedFiles.length}개의 이미지가 생성되었습니다. 최대 ${maxImages}개까지만 업로드 가능합니다. (현재: ${images.length}개)`)
+        setUploading(false)
+        setUploadProgress('')
+        return
+      }
+
+      // Step 3: Upload processed files to Supabase
+      for (let i = 0; i < processedFiles.length; i++) {
+        const file = processedFiles[i]
+        setUploadProgress(`이미지 업로드 중... (${i + 1}/${processedFiles.length})`)
 
         // Upload to Supabase
         const fileExt = file.name.split('.').pop()
@@ -76,16 +99,22 @@ export default function MultiImageUpload({
         uploadedUrls.push(publicUrl)
       }
 
+      // Step 4: Update state
       const newImages = [...images, ...uploadedUrls]
       setImages(newImages)
       onImagesChange(newImages)
+      setSplitMessages(messages)
 
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+
+      setUploadProgress('업로드 완료!')
+      setTimeout(() => setUploadProgress(''), 2000)
     } catch (error) {
       console.error('Upload error:', error)
       alert('이미지 업로드에 실패했습니다.')
+      setUploadProgress('')
     } finally {
       setUploading(false)
     }
@@ -119,15 +148,38 @@ export default function MultiImageUpload({
         <Button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || images.length >= maxImages}
+          disabled={uploading}
         >
           <Upload className="mr-2 h-4 w-4" />
-          {uploading ? '업로드 중...' : '이미지 추가'}
+          {uploading ? '처리 중...' : '이미지 추가'}
         </Button>
         <span className="text-sm text-gray-500">
-          {images.length} / {maxImages}개
+          {images.length}개
         </span>
       </div>
+
+      {/* Upload progress */}
+      {uploadProgress && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+          <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-700">{uploadProgress}</p>
+        </div>
+      )}
+
+      {/* Split messages */}
+      {splitMessages.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1">
+          <div className="flex items-start gap-2">
+            <Info className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800 mb-1">이미지 자동 분할 완료</p>
+              {splitMessages.map((message, idx) => (
+                <p key={idx} className="text-sm text-green-700">• {message}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {images.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -187,7 +239,11 @@ export default function MultiImageUpload({
       )}
 
       <p className="text-sm text-gray-500">
-        JPG, PNG, GIF 형식, 최대 5MB, 최대 {maxImages}개
+        JPG, PNG, GIF 형식, 최대 13MB
+        <br />
+        <span className="text-xs text-gray-400">
+          ※ 높이가 너비의 2배 이상인 이미지는 자동으로 정사각형 조각으로 분할됩니다.
+        </span>
       </p>
     </div>
   )
