@@ -30,7 +30,7 @@ import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
-import { bulkUpdateConsultationStatus } from "@/lib/actions/orders";
+import { bulkUpdateConsultationStatus, setAssignedAdmin, setHandlerAdmin } from "@/lib/actions/orders";
 
 interface AdminUser {
   id: string;
@@ -168,10 +168,10 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
-    value: "shipping_in_progress",
-    label: "배송중",
-    nextStatus: "shipping_completed",
-    nextLabel: "선택 배송완료 처리",
+    value: "shipping_on_hold",
+    label: "배송보류",
+    nextStatus: "shipping_in_progress",
+    nextLabel: "선택 배송중으로 이동",
     extraActions: [
       {
         targetStatus: "consultation_completed",
@@ -180,10 +180,10 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
-    value: "shipping_on_hold",
-    label: "배송보류",
-    nextStatus: "shipping_in_progress",
-    nextLabel: "선택 배송중으로 이동",
+    value: "shipping_in_progress",
+    label: "배송중",
+    nextStatus: "shipping_completed",
+    nextLabel: "선택 배송완료 처리",
     extraActions: [
       {
         targetStatus: "consultation_completed",
@@ -405,6 +405,52 @@ export default function OrdersPage() {
     }
   };
 
+  const handleAssignedAdminChange = async (orderId: string, adminId: string) => {
+    try {
+      const result = await setAssignedAdmin(orderId, adminId === "none" ? null : adminId);
+      if (!result.success) {
+        throw new Error(result.error || "차팅 담당자 변경에 실패했습니다.");
+      }
+
+      toast({
+        title: "성공",
+        description: "차팅 담당자가 변경되었습니다.",
+      });
+
+      await refetchOrders();
+    } catch (error) {
+      console.error("Error updating assigned admin:", error);
+      toast({
+        title: "오류",
+        description: "차팅 담당자 변경에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleHandlerAdminChange = async (orderId: string, adminId: string) => {
+    try {
+      const result = await setHandlerAdmin(orderId, adminId === "none" ? null : adminId);
+      if (!result.success) {
+        throw new Error(result.error || "상담 담당자 변경에 실패했습니다.");
+      }
+
+      toast({
+        title: "성공",
+        description: "상담 담당자가 변경되었습니다.",
+      });
+
+      await refetchOrders();
+    } catch (error) {
+      console.error("Error updating handler admin:", error);
+      toast({
+        title: "오류",
+        description: "상담 담당자 변경에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderOrderTable = () => {
     const orders = orderList;
 
@@ -542,10 +588,23 @@ export default function OrdersPage() {
                 <TableCell className="font-mono text-xs">
                   {order.order_id.substring(0, 8)}...
                 </TableCell>
-                <TableCell>
-                  {order.assigned_admin?.full_name ||
-                    order.assigned_admin?.username ||
-                    "-"}
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={order.assigned_admin_id || "none"}
+                    onValueChange={(value) => handleAssignedAdminChange(order.id, value)}
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">미배정</SelectItem>
+                      {admins.map((admin) => (
+                        <SelectItem key={admin.id} value={admin.id}>
+                          {admin.full_name || admin.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell className="font-medium">{order.user_name}</TableCell>
                 <TableCell className="text-sm">
@@ -563,10 +622,23 @@ export default function OrdersPage() {
                 <TableCell className="text-sm">
                   {order.user_phone || "-"}
                 </TableCell>
-                <TableCell>
-                  {order.handler_admin?.full_name ||
-                    order.handler_admin?.username ||
-                    "-"}
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={order.handler_admin_id || "none"}
+                    onValueChange={(value) => handleHandlerAdminChange(order.id, value)}
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">미배정</SelectItem>
+                      {admins.map((admin) => (
+                        <SelectItem key={admin.id} value={admin.id}>
+                          {admin.full_name || admin.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell className="text-sm">
                   {order.handled_at

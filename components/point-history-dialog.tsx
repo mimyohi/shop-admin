@@ -73,7 +73,7 @@ export function PointHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             포인트 내역 - {userPoint.user_profiles.display_name || userPoint.user_profiles.email}
@@ -83,7 +83,8 @@ export function PointHistoryDialog({
           </div>
         </DialogHeader>
 
-        {isLoading ? (
+        <div className="overflow-y-auto flex-1 -mx-6 px-6">
+          {isLoading ? (
           <div className="text-center py-8">로딩중...</div>
         ) : history.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -124,6 +125,7 @@ export function PointHistoryDialog({
             </TableBody>
           </Table>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );

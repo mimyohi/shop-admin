@@ -149,12 +149,13 @@ export function OrderDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">주문 상세 정보</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="overflow-y-auto flex-1 -mx-6 px-6">
+          <div className="grid grid-cols-3 gap-6">
           {/* 좌측: 유저정보 및 주문 상태 */}
           <div className="space-y-4">
             <div>
@@ -628,6 +629,7 @@ export function OrderDetailDialog({
               </div>
             </div>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>

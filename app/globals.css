@@ -50,10 +50,13 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  html {
+    @apply h-full overflow-hidden;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply h-full overflow-hidden bg-background text-foreground;
+  }
+  * {
+    @apply border-border;
   }
 }

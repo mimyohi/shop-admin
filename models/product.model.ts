@@ -22,6 +22,22 @@ export interface Product {
 }
 
 /**
+ * 조건부 옵션 표시 설정
+ */
+export interface VisibilityCondition {
+  parent_values: string[]; // Parent option value IDs
+  action: "show" | "hide"; // Show or hide when parent values are selected
+}
+
+/**
+ * 자식 옵션 영향 설정
+ */
+export interface ChildOptionConfig {
+  target_option_id: string; // Which child option to affect
+  show_value_ids: string[]; // Which values to show for that option
+}
+
+/**
  * ProductOption 테이블 모델 (상품 옵션)
  */
 export interface ProductOption {
@@ -32,6 +48,8 @@ export interface ProductOption {
   display_order: number;
   created_at: string;
   updated_at: string;
+  parent_option_id?: string | null; // Parent option for conditional display
+  visibility_conditions?: VisibilityCondition | null; // Conditions for visibility
   values?: ProductOptionValue[]; // Joined data
 }
 
@@ -48,6 +66,7 @@ export interface ProductOptionValue {
   display_order: number;
   created_at: string;
   updated_at: string;
+  affects_child_options?: ChildOptionConfig[] | null; // Child option configurations
 }
 
 /**

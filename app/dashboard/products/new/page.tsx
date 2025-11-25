@@ -21,12 +21,24 @@ import MultiImageUpload from '@/components/MultiImageUpload'
 import ProductOptionsManager from '@/components/ProductOptionsManager'
 import { createProductWithOptions } from '@/lib/actions/products'
 
+interface VisibilityCondition {
+  parent_values: string[]
+  action: 'show' | 'hide'
+}
+
+interface ChildOptionConfig {
+  target_option_id: string
+  show_value_ids: string[]
+}
+
 interface ProductOption {
   id: string
   product_id: string
   name: string
   is_required: boolean
   display_order: number
+  parent_option_id?: string | null
+  visibility_conditions?: VisibilityCondition | null
   values?: ProductOptionValue[]
 }
 
@@ -38,6 +50,7 @@ interface ProductOptionValue {
   stock: number | null
   is_available: boolean
   display_order: number
+  affects_child_options?: ChildOptionConfig[] | null
 }
 
 interface ProductAddon {
