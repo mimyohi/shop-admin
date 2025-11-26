@@ -15,6 +15,7 @@ import {
   UserPlus,
   Ticket,
   Coins,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,11 @@ const navItems = [
     title: "주문 관리",
     href: "/dashboard/orders",
     icon: ShoppingCart,
+  },
+  {
+    title: "매출 리포트",
+    href: "/dashboard/reports/product-sales",
+    icon: BarChart3,
   },
   {
     title: "유저 관리",
@@ -75,13 +81,15 @@ export function DashboardNav() {
             }
 
             const Icon = item.icon;
+            const isActive = pathname === item.href ||
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  pathname === item.href
+                  isActive
                     ? "bg-gray-800 text-white"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 )}

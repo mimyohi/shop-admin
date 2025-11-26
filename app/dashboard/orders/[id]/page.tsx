@@ -704,7 +704,7 @@ export default function OrderDetailPage() {
   )}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(
     formattedCouponDiscount
   )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
-
+  console.log("healthConsultation:", healthConsultation);
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
