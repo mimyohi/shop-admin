@@ -29,8 +29,17 @@ import { Search, Filter, X } from "lucide-react";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
-import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
-import { bulkUpdateConsultationStatus, setAssignedAdmin, setHandlerAdmin } from "@/lib/actions/orders";
+import {
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
+  useQueryState,
+} from "nuqs";
+import {
+  bulkUpdateConsultationStatus,
+  setAssignedAdmin,
+  setHandlerAdmin,
+} from "@/lib/actions/orders";
 
 interface AdminUser {
   id: string;
@@ -116,6 +125,7 @@ type PaymentStatusFilter = "all" | "paid" | "pending" | "cancelled";
 type SortOption = "latest" | "oldest" | "amount_high" | "amount_low";
 
 const DEFAULT_TAB: Order["consultation_status"] = "chatting_required";
+const PAGE_SIZE = 20;
 const DEFAULT_FILTERS = {
   search: "",
   paymentStatus: "all" as PaymentStatusFilter,
@@ -125,6 +135,7 @@ const DEFAULT_FILTERS = {
   assignedAdmin: "all",
   handlerAdmin: "all",
   product: "all",
+  page: 1,
 } as const;
 
 const CONSULTATION_TABS: ConsultationTabConfig[] = [
@@ -269,6 +280,10 @@ export default function OrdersPage() {
     "product",
     parseAsString.withDefault(DEFAULT_FILTERS.product)
   );
+  const [page, setPage] = useQueryState(
+    "page",
+    parseAsInteger.withDefault(DEFAULT_FILTERS.page)
+  );
 
   const orderFilters = useMemo(() => {
     const filters = {
@@ -291,7 +306,8 @@ export default function OrdersPage() {
       productId:
         productFilter !== DEFAULT_FILTERS.product ? productFilter : undefined,
       sortBy: sortBy,
-      limit: "all" as const,
+      page,
+      limit: PAGE_SIZE,
     };
 
     return filters;
@@ -305,6 +321,7 @@ export default function OrdersPage() {
     handlerAdminFilter,
     productFilter,
     sortBy,
+    page,
   ]);
 
   const {
@@ -313,6 +330,12 @@ export default function OrdersPage() {
     refetch: refetchOrders,
   } = useQuery(ordersQueries.list(orderFilters));
   const orderList = useMemo(() => ordersResult?.orders ?? [], [ordersResult]);
+  const totalPages = ordersResult?.totalPages ?? 1;
+  const currentPage = ordersResult?.currentPage ?? 1;
+  const totalCount = ordersResult?.totalCount ?? orderList.length;
+  const displayedRangeStart =
+    totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const displayedRangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
 
   const { data: adminList } = useQuery(
     adminUsersQueries.list({ is_active: true })
@@ -358,6 +381,13 @@ export default function OrdersPage() {
     void setAssignedAdminFilter(DEFAULT_FILTERS.assignedAdmin);
     void setHandlerAdminFilter(DEFAULT_FILTERS.handlerAdmin);
     void setProductFilter(DEFAULT_FILTERS.product);
+    void setPage(DEFAULT_FILTERS.page);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped === page) return;
+    void setPage(clamped);
   };
 
   const handleRowClick = (orderId: string) => {
@@ -402,9 +432,15 @@ export default function OrdersPage() {
     }
   };
 
-  const handleAssignedAdminChange = async (orderId: string, adminId: string) => {
+  const handleAssignedAdminChange = async (
+    orderId: string,
+    adminId: string
+  ) => {
     try {
-      const result = await setAssignedAdmin(orderId, adminId === "none" ? null : adminId);
+      const result = await setAssignedAdmin(
+        orderId,
+        adminId === "none" ? null : adminId
+      );
       if (!result.success) {
         throw new Error(result.error || "차팅 담당자 변경에 실패했습니다.");
       }
@@ -427,7 +463,10 @@ export default function OrdersPage() {
 
   const handleHandlerAdminChange = async (orderId: string, adminId: string) => {
     try {
-      const result = await setHandlerAdmin(orderId, adminId === "none" ? null : adminId);
+      const result = await setHandlerAdmin(
+        orderId,
+        adminId === "none" ? null : adminId
+      );
       if (!result.success) {
         throw new Error(result.error || "상담 담당자 변경에 실패했습니다.");
       }
@@ -588,7 +627,9 @@ export default function OrdersPage() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={order.assigned_admin_id || "none"}
-                    onValueChange={(value) => handleAssignedAdminChange(order.id, value)}
+                    onValueChange={(value) =>
+                      handleAssignedAdminChange(order.id, value)
+                    }
                   >
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                       <SelectValue />
@@ -622,7 +663,9 @@ export default function OrdersPage() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={order.handler_admin_id || "none"}
-                    onValueChange={(value) => handleHandlerAdminChange(order.id, value)}
+                    onValueChange={(value) =>
+                      handleHandlerAdminChange(order.id, value)
+                    }
                   >
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                       <SelectValue />
@@ -650,6 +693,40 @@ export default function OrdersPage() {
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="text-sm text-gray-600">
+            {totalCount === 0
+              ? "표시할 주문이 없습니다."
+              : `${displayedRangeStart}-${displayedRangeEnd} / ${totalCount}건`}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={ordersLoading || currentPage <= 1}
+              onClick={(event) => {
+                event.stopPropagation();
+                handlePageChange(currentPage - 1);
+              }}
+            >
+              이전
+            </Button>
+            <span className="text-sm font-medium">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={ordersLoading || currentPage >= totalPages}
+              onClick={(event) => {
+                event.stopPropagation();
+                handlePageChange(currentPage + 1);
+              }}
+            >
+              다음
+            </Button>
+          </div>
+        </div>
       </>
     );
   };
@@ -693,7 +770,9 @@ export default function OrdersPage() {
                   id="search"
                   placeholder="주문번호, 이름, 이메일, 전화번호"
                   value={searchTerm}
-                  onChange={(e) => void setSearchTerm(e.target.value || null)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value || null);
+                  }}
                   className="pl-9"
                 />
               </div>
@@ -706,9 +785,9 @@ export default function OrdersPage() {
               </Label>
               <Select
                 value={paymentStatus}
-                onValueChange={(value) =>
-                  setPaymentStatus(value as PaymentStatusFilter)
-                }
+                onValueChange={(value) => {
+                  setPaymentStatus(value as PaymentStatusFilter);
+                }}
               >
                 <SelectTrigger id="payment-status">
                   <SelectValue placeholder="전체" />
@@ -729,7 +808,9 @@ export default function OrdersPage() {
               </Label>
               <Select
                 value={productFilter}
-                onValueChange={(value) => setProductFilter(value)}
+                onValueChange={(value) => {
+                  setProductFilter(value);
+                }}
               >
                 <SelectTrigger id="product-filter">
                   <SelectValue placeholder="전체" />
@@ -752,7 +833,9 @@ export default function OrdersPage() {
               </Label>
               <Select
                 value={assignedAdminFilter}
-                onValueChange={(value) => setAssignedAdminFilter(value)}
+                onValueChange={(value) => {
+                  setAssignedAdminFilter(value);
+                }}
               >
                 <SelectTrigger id="admin-filter">
                   <SelectValue placeholder="전체" />
@@ -774,7 +857,10 @@ export default function OrdersPage() {
               </Label>
               <Select
                 value={handlerAdminFilter}
-                onValueChange={(value) => setHandlerAdminFilter(value)}
+                onValueChange={(value) => {
+                  void setHandlerAdminFilter(value);
+                  void setPage(1);
+                }}
               >
                 <SelectTrigger id="handler-filter">
                   <SelectValue placeholder="전체" />
@@ -797,7 +883,10 @@ export default function OrdersPage() {
               </Label>
               <Select
                 value={sortBy}
-                onValueChange={(value) => setSortBy(value as SortOption)}
+                onValueChange={(value) => {
+                  setSortBy(value as SortOption);
+                  void setPage(1);
+                }}
               >
                 <SelectTrigger id="sort-by">
                   <SelectValue placeholder="최신순" />
@@ -820,7 +909,10 @@ export default function OrdersPage() {
                 id="start-date"
                 type="date"
                 value={startDate}
-                onChange={(e) => void setStartDate(e.target.value || null)}
+                onChange={(e) => {
+                  void setStartDate(e.target.value || null);
+                  void setPage(1);
+                }}
               />
             </div>
 
@@ -833,7 +925,10 @@ export default function OrdersPage() {
                 id="end-date"
                 type="date"
                 value={endDate}
-                onChange={(e) => void setEndDate(e.target.value || null)}
+                onChange={(e) => {
+                  void setEndDate(e.target.value || null);
+                  void setPage(1);
+                }}
               />
             </div>
           </div>
@@ -842,7 +937,7 @@ export default function OrdersPage() {
           <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
             <span className="font-medium">검색 결과:</span>
             <span className="font-semibold text-blue-600">
-              {orderList.length}건
+              {totalCount}건
             </span>
             {(searchTerm ||
               paymentStatus !== "all" ||
@@ -852,7 +947,7 @@ export default function OrdersPage() {
               startDate ||
               endDate) && (
               <span className="text-gray-500">
-                (필터 적용 중: 전체 {orderList.length}건)
+                (필터 적용 중: 전체 {totalCount}건)
               </span>
             )}
           </div>
@@ -866,9 +961,10 @@ export default function OrdersPage() {
         <CardContent>
           <Tabs
             value={activeTab}
-            onValueChange={(value) =>
-              setActiveTab(value as Order["consultation_status"])
-            }
+            onValueChange={(value) => {
+              void setActiveTab(value as Order["consultation_status"]);
+              void setPage(1);
+            }}
             className="w-full"
           >
             <TabsList className="w-full grid grid-cols-8 mb-4">
