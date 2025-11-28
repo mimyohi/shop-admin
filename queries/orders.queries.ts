@@ -4,7 +4,6 @@ import {
   fetchOrder,
   fetchOrderStats,
   fetchOrders,
-  updateHealthConsultation,
   updateOrderStatus,
 } from '@/lib/actions/orders'
 import { OrderFilters } from '@/types/orders.types'
@@ -64,32 +63,6 @@ export function useUpdateOrderStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ordersQueries.lists() })
       queryClient.invalidateQueries({ queryKey: ordersQueries.stats().queryKey })
-    },
-  })
-}
-
-/**
- * 건강 상담 업데이트 mutation
- */
-export function useUpdateHealthConsultation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      orderId,
-      data,
-    }: {
-      orderId: string
-      data: {
-        consultation_notes?: string
-        diagnosis?: string
-        treatment_plan?: string
-      }
-    }) => updateHealthConsultation(orderId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ordersQueries.details(),
-      })
     },
   })
 }

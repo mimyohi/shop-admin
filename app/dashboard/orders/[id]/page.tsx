@@ -63,11 +63,7 @@ interface HealthConsultation {
   water_intake?: string | null;
   diet_approach?: string | null;
   preferred_stage?: string | null;
-  medical_history?: string | null;
-  referral_source?: string | null;
-  consultation_notes?: string | null;
-  diagnosis?: string | null;
-  treatment_plan?: string | null;
+  medical_history: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -96,7 +92,7 @@ interface Order {
   status: string;
   consultation_status: string;
   created_at: string;
-  order_health_consultations?: HealthConsultation[];
+  order_health_consultations: HealthConsultation;
   assigned_admin?: AdminUser;
   handler_admin?: AdminUser;
   handled_at?: string;
@@ -280,8 +276,9 @@ export default function OrderDetailPage() {
 
     // 기본 정보
     if (hc.name) result += `[이름]: ${hc.name}\n`;
+    if (hc.resident_number) result += `[주민등록번호]: ${hc.resident_number}\n`;
     if (hc.phone) result += `[연락처]: ${hc.phone}\n`;
-    if (hc.name || hc.phone) result += "\n";
+    if (hc.name || hc.resident_number || hc.phone) result += "\n";
 
     // 신체 정보
     if (hc.current_height) result += `[현재 키]: ${hc.current_height}cm\n`;
@@ -372,24 +369,7 @@ export default function OrderDetailPage() {
     if (hc.diet_approach || hc.preferred_stage) result += "\n";
 
     // 의료 정보
-    if (hc.medical_history) result += `[병력]: ${hc.medical_history}\n`;
-    if (hc.referral_source) result += `[유입 경로]: ${hc.referral_source}\n`;
-    if (hc.medical_history || hc.referral_source) result += "\n";
-
-    // 상담 메모
-    if (hc.consultation_notes) {
-      result += `[상담 메모]:\n${hc.consultation_notes}\n\n`;
-    }
-
-    // 진단
-    if (hc.diagnosis) {
-      result += `[진단]:\n${hc.diagnosis}\n\n`;
-    }
-
-    // 치료 계획
-    if (hc.treatment_plan) {
-      result += `[치료 계획]:\n${hc.treatment_plan}\n\n`;
-    }
+    if (hc.medical_history) result += `[병력]: ${hc.medical_history}\n\n`;
 
     return result.trim();
   };
@@ -704,7 +684,7 @@ export default function OrderDetailPage() {
   )}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(
     formattedCouponDiscount
   )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
-  console.log("healthConsultation:", healthConsultation);
+
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -955,662 +935,499 @@ export default function OrderDetailPage() {
             )}
           </CardHeader>
           <CardContent>
-            {healthConsultation ? (
-              <div className="space-y-4">
-                {/* User ID 정보 */}
-                {healthConsultation.user_id && (
-                  <div
-                    className={`bg-blue-50 p-3 rounded-lg border border-blue-200 ${copyableRowClass}`}
-                    onClick={() =>
-                      copyHealthField("User ID", healthConsultation.user_id)
-                    }
-                    title="클릭하여 복사"
-                  >
-                    <div className="text-sm">
-                      <span className="text-gray-600">User ID:</span>
-                      <span className="ml-2 font-mono text-xs text-blue-700">
-                        {healthConsultation.user_id}
+            <div className="space-y-4">
+              {/* User ID 정보 */}
+              {healthConsultation.user_id && (
+                <div
+                  className={`bg-blue-50 p-3 rounded-lg border border-blue-200 ${copyableRowClass}`}
+                  onClick={() =>
+                    copyHealthField("User ID", healthConsultation.user_id)
+                  }
+                  title="클릭하여 복사"
+                >
+                  <div className="text-sm">
+                    <span className="text-gray-600">User ID:</span>
+                    <span className="ml-2 font-mono text-xs text-blue-700">
+                      {healthConsultation.user_id}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 1. 기본 정보 (개인정보) */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  기본 정보 (개인정보)
+                </h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm space-y-1">
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField("이름", healthConsultation.name)
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">이름:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.name}
+                      </span>
+                    </div>
+
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "주민등록번호",
+                          healthConsultation.resident_number
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">주민등록번호:</span>
+                      <span className="ml-2 font-medium font-mono">
+                        {healthConsultation.resident_number}
+                      </span>
+                    </div>
+
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField("연락처", healthConsultation.phone)
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">연락처:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.phone}
                       </span>
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
 
-                {/* 기본 정보 */}
-                {(healthConsultation.name ||
-                  healthConsultation.phone ||
-                  healthConsultation.referral_source) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      기본 정보
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {healthConsultation.name && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField("이름", healthConsultation.name)
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">이름:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.name}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.phone && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "연락처",
-                                healthConsultation.phone
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">연락처:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.phone}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.referral_source && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "유입 경로",
-                                healthConsultation.referral_source
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">유입 경로:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.referral_source}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 신체 정보 */}
-                {(healthConsultation.current_height ||
-                  healthConsultation.current_weight) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      신체 정보
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {(healthConsultation.current_height ||
-                          healthConsultation.current_weight) && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "키/체중",
-                                `${
+              {/* 2. 기본 신체 정보 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  2) 기본 신체 정보
+                </h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm space-y-1">
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "키/체중",
+                          `${
+                            healthConsultation.current_height
+                              ? `${Number(
                                   healthConsultation.current_height
-                                    ? `${Number(
-                                        healthConsultation.current_height
-                                      ).toFixed(1)}cm`
-                                    : "-"
-                                } / ${
+                                ).toFixed(1)}cm`
+                              : "-"
+                          } / ${
+                            healthConsultation.current_weight
+                              ? `${Number(
                                   healthConsultation.current_weight
-                                    ? `${Number(
-                                        healthConsultation.current_weight
-                                      ).toFixed(1)}kg`
-                                    : "-"
-                                }`
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">키/체중:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.current_height
-                                ? `${Number(
-                                    healthConsultation.current_height
-                                  ).toFixed(1)}cm`
-                                : "-"}{" "}
-                              /{" "}
-                              {healthConsultation.current_weight
-                                ? `${Number(
-                                    healthConsultation.current_weight
-                                  ).toFixed(1)}kg`
-                                : "-"}
-                            </span>
-                          </div>
-                        )}
-                        {(healthConsultation.min_weight_since_20s ||
-                          healthConsultation.max_weight_since_20s) && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "20대 이후 체중 범위",
-                                `${
-                                  healthConsultation.min_weight_since_20s
-                                    ? `${Number(
-                                        healthConsultation.min_weight_since_20s
-                                      ).toFixed(1)}kg`
-                                    : "-"
-                                } ~ ${
-                                  healthConsultation.max_weight_since_20s
-                                    ? `${Number(
-                                        healthConsultation.max_weight_since_20s
-                                      ).toFixed(1)}kg`
-                                    : "-"
-                                }`
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">
-                              20대 이후 체중 범위:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.min_weight_since_20s
-                                ? `${Number(
-                                    healthConsultation.min_weight_since_20s
-                                  ).toFixed(1)}kg`
-                                : "-"}{" "}
-                              ~{" "}
-                              {healthConsultation.max_weight_since_20s
-                                ? `${Number(
-                                    healthConsultation.max_weight_since_20s
-                                  ).toFixed(1)}kg`
-                                : "-"}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.target_weight && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "목표 체중",
-                                `${Number(
-                                  healthConsultation.target_weight
                                 ).toFixed(1)}kg`
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">목표 체중:</span>
-                            <span className="ml-2 font-medium">
-                              {Number(healthConsultation.target_weight).toFixed(
-                                1
-                              )}
-                              kg
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.target_weight_loss_period && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "목표 감량 기간",
-                                healthConsultation.target_weight_loss_period
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">
-                              목표 감량 기간:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.target_weight_loss_period}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 생활 패턴 */}
-                {(healthConsultation.occupation ||
-                  healthConsultation.work_hours ||
-                  healthConsultation.wake_up_time ||
-                  healthConsultation.bedtime) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      생활 패턴
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {healthConsultation.occupation && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "직업",
-                                healthConsultation.occupation
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">직업:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.occupation}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.work_hours && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "근무 시간",
-                                healthConsultation.work_hours
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">근무 시간:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.work_hours}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.has_shift_work !== null &&
-                          healthConsultation.has_shift_work !== undefined && (
-                            <div
-                              className={copyableRowClass}
-                              onClick={() =>
-                                copyHealthField(
-                                  "교대 근무",
-                                  healthConsultation.has_shift_work
-                                    ? "예"
-                                    : "아니오"
-                                )
-                              }
-                              title="클릭하여 복사"
-                            >
-                              <span className="text-gray-500">교대 근무:</span>
-                              <span className="ml-2 font-medium">
-                                {healthConsultation.has_shift_work
-                                  ? "예"
-                                  : "아니오"}
-                              </span>
-                            </div>
-                          )}
-                        {(healthConsultation.wake_up_time ||
-                          healthConsultation.bedtime) && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "수면 시간",
-                                `${healthConsultation.wake_up_time || "-"} ~ ${
-                                  healthConsultation.bedtime || "-"
-                                }`
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">수면 시간:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.wake_up_time || "-"} ~{" "}
-                              {healthConsultation.bedtime || "-"}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.has_daytime_sleepiness !== null &&
-                          healthConsultation.has_daytime_sleepiness !==
-                            undefined && (
-                            <div
-                              className={copyableRowClass}
-                              onClick={() =>
-                                copyHealthField(
-                                  "주간 졸림",
-                                  healthConsultation.has_daytime_sleepiness
-                                    ? "있음"
-                                    : "없음"
-                                )
-                              }
-                              title="클릭하여 복사"
-                            >
-                              <span className="text-gray-500">주간 졸림:</span>
-                              <span className="ml-2 font-medium">
-                                {healthConsultation.has_daytime_sleepiness
-                                  ? "있음"
-                                  : "없음"}
-                              </span>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 식습관 */}
-                {(healthConsultation.meal_pattern ||
-                  healthConsultation.alcohol_frequency ||
-                  healthConsultation.water_intake) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      식습관
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {healthConsultation.meal_pattern && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() => {
-                              const value =
-                                (
-                                  {
-                                    "1meals": "1끼",
-                                    "2meals": "2끼",
-                                    "3meals": "3끼",
-                                    irregular: "불규칙",
-                                  } as Record<string, string>
-                                )[healthConsultation.meal_pattern ?? ""] ||
-                                healthConsultation.meal_pattern;
-                              copyHealthField("하루 식사", value);
-                            }}
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">하루 식사:</span>
-                            <span className="ml-2 font-medium">
-                              {{
-                                "1meals": "1끼",
-                                "2meals": "2끼",
-                                "3meals": "3끼",
-                                irregular: "불규칙",
-                              }[healthConsultation.meal_pattern] ||
-                                healthConsultation.meal_pattern}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.alcohol_frequency && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() => {
-                              const value =
-                                (
-                                  {
-                                    weekly_1_or_less: "주 1회 이하",
-                                    weekly_2_or_more: "주 2회 이상",
-                                  } as Record<string, string>
-                                )[healthConsultation.alcohol_frequency ?? ""] ||
-                                healthConsultation.alcohol_frequency;
-                              copyHealthField("음주 빈도", value);
-                            }}
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">음주 빈도:</span>
-                            <span className="ml-2 font-medium">
-                              {{
-                                weekly_1_or_less: "주 1회 이하",
-                                weekly_2_or_more: "주 2회 이상",
-                              }[healthConsultation.alcohol_frequency] ||
-                                healthConsultation.alcohol_frequency}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.water_intake && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() => {
-                              const value =
-                                (
-                                  {
-                                    "1L_or_less": "1L 이하",
-                                    over_1L: "1L 이상",
-                                  } as Record<string, string>
-                                )[healthConsultation.water_intake ?? ""] ||
-                                healthConsultation.water_intake;
-                              copyHealthField("하루 수분 섭취", value);
-                            }}
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">
-                              하루 수분 섭취:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {{
-                                "1L_or_less": "1L 이하",
-                                over_1L: "1L 이상",
-                              }[healthConsultation.water_intake] ||
-                                healthConsultation.water_intake}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 다이어트 정보 */}
-                {(healthConsultation.diet_approach ||
-                  healthConsultation.preferred_stage) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      다이어트 정보
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {healthConsultation.diet_approach && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() => {
-                              const value =
-                                (
-                                  {
-                                    sustainable: "지속 가능한 방식",
-                                    fast: "빠른 방식",
-                                  } as Record<string, string>
-                                )[healthConsultation.diet_approach ?? ""] ||
-                                healthConsultation.diet_approach;
-                              copyHealthField("접근법", value);
-                            }}
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">접근법:</span>
-                            <span className="ml-2 font-medium">
-                              {{
-                                sustainable: "지속 가능한 방식",
-                                fast: "빠른 방식",
-                              }[healthConsultation.diet_approach] ||
-                                healthConsultation.diet_approach}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.preferred_stage && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "선호 단계",
-                                healthConsultation.preferred_stage
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">선호 단계:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.preferred_stage}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 이전 치료 이력 */}
-                {(healthConsultation.previous_western_medicine ||
-                  healthConsultation.previous_herbal_medicine ||
-                  healthConsultation.previous_other_medicine) && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      이전 치료 이력
-                    </h4>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        {healthConsultation.previous_western_medicine && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "이전 양방 치료",
-                                healthConsultation.previous_western_medicine
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">
-                              이전 양방 치료:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.previous_western_medicine}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.previous_herbal_medicine && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "이전 한방 치료",
-                                healthConsultation.previous_herbal_medicine
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">
-                              이전 한방 치료:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.previous_herbal_medicine}
-                            </span>
-                          </div>
-                        )}
-                        {healthConsultation.previous_other_medicine && (
-                          <div
-                            className={copyableRowClass}
-                            onClick={() =>
-                              copyHealthField(
-                                "기타 치료",
-                                healthConsultation.previous_other_medicine
-                              )
-                            }
-                            title="클릭하여 복사"
-                          >
-                            <span className="text-gray-500">기타 치료:</span>
-                            <span className="ml-2 font-medium">
-                              {healthConsultation.previous_other_medicine}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 병력 */}
-                {healthConsultation.medical_history && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      병력
-                    </h4>
-                    <div
-                      className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
-                      onClick={() =>
-                        copyHealthField(
-                          "병력",
-                          healthConsultation.medical_history
+                              : "-"
+                          }`
                         )
                       }
                       title="클릭하여 복사"
                     >
-                      <p className="text-sm">
-                        {healthConsultation.medical_history}
-                      </p>
+                      <span className="text-gray-500">키/체중:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.current_height
+                          ? `${Number(
+                              healthConsultation.current_height
+                            ).toFixed(1)}cm`
+                          : "-"}{" "}
+                        /{" "}
+                        {healthConsultation.current_weight
+                          ? `${Number(
+                              healthConsultation.current_weight
+                            ).toFixed(1)}kg`
+                          : "-"}
+                      </span>
                     </div>
-                  </div>
-                )}
-
-                {/* 진단 */}
-                {healthConsultation.diagnosis && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      진단
-                    </h4>
                     <div
-                      className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
-                      onClick={() =>
-                        copyHealthField("진단", healthConsultation.diagnosis)
-                      }
-                      title="클릭하여 복사"
-                    >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {healthConsultation.diagnosis}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 한의사 상담 메모 */}
-                {healthConsultation.consultation_notes && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      상담 메모
-                    </h4>
-                    <div
-                      className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
+                      className={copyableRowClass}
                       onClick={() =>
                         copyHealthField(
-                          "상담 메모",
-                          healthConsultation.consultation_notes
+                          "20대 이후 체중 범위",
+                          `${
+                            healthConsultation.min_weight_since_20s
+                              ? `${Number(
+                                  healthConsultation.min_weight_since_20s
+                                ).toFixed(1)}kg`
+                              : "-"
+                          } ~ ${
+                            healthConsultation.max_weight_since_20s
+                              ? `${Number(
+                                  healthConsultation.max_weight_since_20s
+                                ).toFixed(1)}kg`
+                              : "-"
+                          }`
                         )
                       }
                       title="클릭하여 복사"
                     >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {healthConsultation.consultation_notes}
-                      </p>
+                      <span className="text-gray-500">
+                        20대 이후 체중 범위:
+                      </span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.min_weight_since_20s
+                          ? `${Number(
+                              healthConsultation.min_weight_since_20s
+                            ).toFixed(1)}kg`
+                          : "-"}{" "}
+                        ~{" "}
+                        {healthConsultation.max_weight_since_20s
+                          ? `${Number(
+                              healthConsultation.max_weight_since_20s
+                            ).toFixed(1)}kg`
+                          : "-"}
+                      </span>
                     </div>
-                  </div>
-                )}
-
-                {/* 치료 계획 */}
-                {healthConsultation.treatment_plan && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                      치료 계획
-                    </h4>
                     <div
-                      className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
+                      className={copyableRowClass}
                       onClick={() =>
                         copyHealthField(
-                          "치료 계획",
-                          healthConsultation.treatment_plan
+                          "목표 체중",
+                          `${Number(
+                            healthConsultation.target_weight
+                          ).toFixed(1)}kg`
                         )
                       }
                       title="클릭하여 복사"
                     >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {healthConsultation.treatment_plan}
-                      </p>
+                      <span className="text-gray-500">목표 체중:</span>
+                      <span className="ml-2 font-medium">
+                        {Number(healthConsultation.target_weight).toFixed(
+                          1
+                        )}
+                        kg
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "목표 감량 기간",
+                          healthConsultation.target_weight_loss_period
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">목표 감량 기간:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.target_weight_loss_period}
+                      </span>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500 text-sm">
-                문진 정보가 등록되지 않았습니다.
+
+              {/* 3. 다이어트 경험 (moved from 이전 치료 이력) */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  3) 다이어트 경험
+                </h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm space-y-1">
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "양약",
+                          healthConsultation.previous_western_medicine
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">양약:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.previous_western_medicine}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "한약",
+                          healthConsultation.previous_herbal_medicine
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">한약:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.previous_herbal_medicine}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "기타",
+                          healthConsultation.previous_other_medicine
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">기타:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.previous_other_medicine}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* 4. 생활 패턴 (merged with 식습관) */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  4) 생활 패턴
+                </h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm space-y-1">
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "직업",
+                          healthConsultation.occupation
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">직업:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.occupation}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "근무 시간",
+                          healthConsultation.work_hours
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">근무 시간:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.work_hours}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "교대 근무",
+                          healthConsultation.has_shift_work
+                            ? "예"
+                            : "아니오"
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">교대 근무:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.has_shift_work
+                          ? "예"
+                          : "아니오"}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "수면 시간",
+                          `${healthConsultation.wake_up_time || "-"} ~ ${
+                            healthConsultation.bedtime || "-"
+                          }`
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">수면 시간:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.wake_up_time || "-"} ~{" "}
+                        {healthConsultation.bedtime || "-"}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "주간 졸림",
+                          healthConsultation.has_daytime_sleepiness
+                            ? "있음"
+                            : "없음"
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">주간 졸림:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.has_daytime_sleepiness
+                          ? "있음"
+                          : "없음"}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() => {
+                        const value =
+                          (
+                            {
+                              "1meals": "1끼",
+                              "2meals": "2끼",
+                              "3meals": "3끼",
+                              irregular: "불규칙",
+                            } as Record<string, string>
+                          )[healthConsultation.meal_pattern ?? ""] ||
+                          healthConsultation.meal_pattern;
+                        copyHealthField("하루 식사", value);
+                      }}
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">하루 식사:</span>
+                      <span className="ml-2 font-medium">
+                        {{
+                          "1meals": "1끼",
+                          "2meals": "2끼",
+                          "3meals": "3끼",
+                          irregular: "불규칙",
+                        }[healthConsultation.meal_pattern] ||
+                          healthConsultation.meal_pattern}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() => {
+                        const value =
+                          (
+                            {
+                              weekly_1_or_less: "주 1회 이하",
+                              weekly_2_or_more: "주 2회 이상",
+                            } as Record<string, string>
+                          )[healthConsultation.alcohol_frequency ?? ""] ||
+                          healthConsultation.alcohol_frequency;
+                        copyHealthField("음주 빈도", value);
+                      }}
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">음주 빈도:</span>
+                      <span className="ml-2 font-medium">
+                        {{
+                          weekly_1_or_less: "주 1회 이하",
+                          weekly_2_or_more: "주 2회 이상",
+                        }[healthConsultation.alcohol_frequency] ||
+                          healthConsultation.alcohol_frequency}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() => {
+                        const value =
+                          (
+                            {
+                              "1L_or_less": "1L 이하",
+                              over_1L: "1L 이상",
+                            } as Record<string, string>
+                          )[healthConsultation.water_intake ?? ""] ||
+                          healthConsultation.water_intake;
+                        copyHealthField("하루 수분 섭취", value);
+                      }}
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">하루 수분 섭취:</span>
+                      <span className="ml-2 font-medium">
+                        {{
+                          "1L_or_less": "1L 이하",
+                          over_1L: "1L 이상",
+                        }[healthConsultation.water_intake] ||
+                          healthConsultation.water_intake}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. 원하는 다이어트 방향 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  5) 원하는 다이어트 방향
+                </h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm space-y-1">
+                    <div
+                      className={copyableRowClass}
+                      onClick={() => {
+                        const value =
+                          (
+                            {
+                              sustainable: "지속 가능한 방식",
+                              fast: "빠른 방식",
+                            } as Record<string, string>
+                          )[healthConsultation.diet_approach ?? ""] ||
+                          healthConsultation.diet_approach;
+                        copyHealthField("접근법", value);
+                      }}
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">접근법:</span>
+                      <span className="ml-2 font-medium">
+                        {{
+                          sustainable: "지속 가능한 방식",
+                          fast: "빠른 방식",
+                        }[healthConsultation.diet_approach] ||
+                          healthConsultation.diet_approach}
+                      </span>
+                    </div>
+                    <div
+                      className={copyableRowClass}
+                      onClick={() =>
+                        copyHealthField(
+                          "선호 단계",
+                          healthConsultation.preferred_stage
+                        )
+                      }
+                      title="클릭하여 복사"
+                    >
+                      <span className="text-gray-500">선호 단계:</span>
+                      <span className="ml-2 font-medium">
+                        {healthConsultation.preferred_stage}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. 과거 병력 및 복용 약 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                  6) 과거 병력 및 복용 약
+                </h4>
+                <div
+                  className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
+                  onClick={() =>
+                    copyHealthField(
+                      "병력",
+                      healthConsultation.medical_history
+                    )
+                  }
+                  title="클릭하여 복사"
+                >
+                  <p className="text-sm">
+                    {healthConsultation.medical_history}
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

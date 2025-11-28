@@ -1,5 +1,4 @@
 import { supabaseServer as supabase } from "@/lib/supabase-server";
-import { OrderHealthConsultation } from "@/models";
 import { OrderFilters, OrderWithDetails } from "@/types/orders.types";
 
 export const ordersRepository = {
@@ -108,8 +107,22 @@ export const ordersRepository = {
         ? count
         : count ?? data?.length ?? 0;
 
+    // Transform order_health_consultations from array to single object
+    const transformedData = (data || []).map((order: any) => {
+      const consultations = order.order_health_consultations;
+      const consultation =
+        Array.isArray(consultations) && consultations.length > 0
+          ? consultations[0]
+          : consultations;
+
+      return {
+        ...order,
+        order_health_consultations: consultation,
+      };
+    });
+
     return {
-      orders: (data || []) as OrderWithDetails[],
+      orders: transformedData as OrderWithDetails[],
       totalCount,
       totalPages:
         shouldPaginate && numericLimit
@@ -156,7 +169,16 @@ export const ordersRepository = {
       return null;
     }
 
-    return order as OrderWithDetails;
+    const consultation = (order as any).order_health_consultations;
+
+    if (!consultation) {
+      console.warn(`Order ${id} has no health consultation data`);
+    }
+
+    return {
+      ...order,
+      order_health_consultations: consultation,
+    } as OrderWithDetails;
   },
 
   /**
@@ -318,35 +340,6 @@ export const ordersRepository = {
     }
 
     return fullOrder;
-  },
-
-  /**
-   * 주문 건강 상담 업데이트
-   */
-  async updateHealthConsultation(
-    orderId: string,
-    consultationData: {
-      consultation_notes?: string;
-      diagnosis?: string;
-      treatment_plan?: string;
-    }
-  ): Promise<OrderHealthConsultation> {
-    const { data, error } = await supabase
-      .from("order_health_consultations")
-      .update({
-        ...consultationData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("order_id", orderId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating health consultation:", error);
-      throw new Error("Failed to update health consultation");
-    }
-
-    return data;
   },
 
   /**

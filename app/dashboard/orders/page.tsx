@@ -51,9 +51,6 @@ interface HealthConsultation {
   symptom_duration?: string;
   symptom_severity?: string;
   symptom_checklist?: any;
-  consultation_notes?: string;
-  diagnosis?: string;
-  treatment_plan?: string;
   basic_info?: {
     birth_date?: string;
     height?: number;
@@ -98,7 +95,7 @@ interface Order {
   handler_admin_id: string | null;
   handled_at: string | null;
   created_at: string;
-  order_health_consultations?: HealthConsultation[];
+  order_health_consultations: HealthConsultation;
   assigned_admin?: AdminUser;
   handler_admin?: AdminUser;
   order_items?: OrderItem[];

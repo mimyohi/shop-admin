@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { supabaseServer } from '@/lib/supabase-server'
 import { ordersRepository } from '@/repositories/orders.repository'
 import { OrderFilters } from '@/types/orders.types'
-import { OrderHealthConsultation } from '@/models'
 
 export async function fetchOrders(filters: OrderFilters = {}) {
   return ordersRepository.findMany(filters)
@@ -55,19 +54,6 @@ export async function updateAdminMemo(orderId: string, memo: string) {
   revalidatePath('/dashboard/orders')
   revalidatePath(`/dashboard/orders/${orderId}`)
   return result
-}
-
-export async function updateHealthConsultation(
-  orderId: string,
-  consultationData: {
-    consultation_notes?: string
-    diagnosis?: string
-    treatment_plan?: string
-  }
-) {
-  const result = await ordersRepository.updateHealthConsultation(orderId, consultationData)
-  revalidatePath(`/dashboard/orders/${orderId}`)
-  return result as OrderHealthConsultation
 }
 
 export async function bulkUpdateConsultationStatus(orderIds: string[], targetStatus: string) {
