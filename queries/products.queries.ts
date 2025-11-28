@@ -7,6 +7,8 @@ import {
   fetchProducts,
   updateProduct as updateProductAction,
   toggleProductOutOfStock as toggleProductOutOfStockAction,
+  toggleProductNewBadge as toggleProductNewBadgeAction,
+  toggleProductSaleBadge as toggleProductSaleBadgeAction,
 } from '@/lib/actions/products'
 import { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
 
@@ -95,6 +97,42 @@ export function useToggleProductOutOfStock() {
   return useMutation({
     mutationFn: ({ id, isOutOfStock }: { id: string; isOutOfStock: boolean }) =>
       toggleProductOutOfStockAction(id, isOutOfStock),
+    onSuccess: (updatedProduct) => {
+      queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
+      queryClient.invalidateQueries({
+        queryKey: productsQueries.detail(updatedProduct.id).queryKey,
+      })
+    },
+  })
+}
+
+/**
+ * NEW 뱃지 토글 mutation
+ */
+export function useToggleProductNewBadge() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, isNewBadge }: { id: string; isNewBadge: boolean }) =>
+      toggleProductNewBadgeAction(id, isNewBadge),
+    onSuccess: (updatedProduct) => {
+      queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
+      queryClient.invalidateQueries({
+        queryKey: productsQueries.detail(updatedProduct.id).queryKey,
+      })
+    },
+  })
+}
+
+/**
+ * SALE 뱃지 토글 mutation
+ */
+export function useToggleProductSaleBadge() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, isSaleBadge }: { id: string; isSaleBadge: boolean }) =>
+      toggleProductSaleBadgeAction(id, isSaleBadge),
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
       queryClient.invalidateQueries({

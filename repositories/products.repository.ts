@@ -181,4 +181,48 @@ export const productsRepository = {
 
     return data
   },
+
+  /**
+   * NEW 뱃지 토글
+   */
+  async toggleNewBadge(id: string, isNewBadge: boolean): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        is_new_badge: isNewBadge,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling product new badge:', error)
+      throw new Error('Failed to toggle product new badge')
+    }
+
+    return data
+  },
+
+  /**
+   * SALE 뱃지 토글
+   */
+  async toggleSaleBadge(id: string, isSaleBadge: boolean): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        is_sale_badge: isSaleBadge,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling product sale badge:', error)
+      throw new Error('Failed to toggle product sale badge')
+    }
+
+    return data
+  },
 }

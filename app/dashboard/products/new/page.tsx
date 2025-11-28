@@ -78,6 +78,8 @@ export default function NewProductPage() {
     sale_start_at: '',
     sale_end_at: '',
     is_visible_on_main: true,
+    is_new_badge: false,
+    is_sale_badge: false,
   })
 
   const [options, setOptions] = useState<ProductOption[]>([])
@@ -109,6 +111,8 @@ export default function NewProductPage() {
         sale_start_at: formData.sale_start_at || null,
         sale_end_at: formData.sale_end_at || null,
         is_visible_on_main: formData.is_visible_on_main,
+        is_new_badge: formData.is_new_badge,
+        is_sale_badge: formData.is_sale_badge,
       }
 
       const result = await createProductWithOptions({
@@ -226,17 +230,43 @@ export default function NewProductPage() {
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_visible_on_main"
-                checked={formData.is_visible_on_main}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_visible_on_main: checked as boolean })
-                }
-              />
-              <Label htmlFor="is_visible_on_main" className="cursor-pointer">
-                메인 페이지에 노출
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_visible_on_main"
+                  checked={formData.is_visible_on_main}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_visible_on_main: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_visible_on_main" className="cursor-pointer">
+                  메인 페이지에 노출
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_new_badge"
+                  checked={formData.is_new_badge}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_new_badge: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_new_badge" className="cursor-pointer">
+                  NEW 뱃지 표시
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_sale_badge"
+                  checked={formData.is_sale_badge}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_sale_badge: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_sale_badge" className="cursor-pointer">
+                  SALE 뱃지 표시
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">

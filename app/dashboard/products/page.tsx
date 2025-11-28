@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,52 +11,69 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Plus, Pencil, Trash2, PackageX, Package } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { productsQueries, useDeleteProduct, useToggleProductOutOfStock } from "@/queries/products.queries"
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  PackageX,
+  Package,
+  Sparkles,
+  Tag,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  productsQueries,
+  useDeleteProduct,
+  useToggleProductOutOfStock,
+  useToggleProductNewBadge,
+  useToggleProductSaleBadge,
+} from "@/queries/products.queries";
 
 interface Product {
-  id: string
-  slug: string
-  name: string
-  description: string
-  price: number
-  category: string
-  image_url: string
-  is_visible_on_main: boolean
-  is_out_of_stock?: boolean
-  sale_start_at: string | null
-  sale_end_at: string | null
-  created_at: string
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url: string;
+  is_visible_on_main: boolean;
+  is_out_of_stock?: boolean;
+  is_new_badge?: boolean;
+  is_sale_badge?: boolean;
+  sale_start_at: string | null;
+  sale_end_at: string | null;
+  created_at: string;
 }
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 10;
 
-type VisibilityFilterOption = "all" | "visible" | "hidden"
+type VisibilityFilterOption = "all" | "visible" | "hidden";
 
 export default function ProductsPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const deleteProductMutation = useDeleteProduct()
-  const toggleOutOfStockMutation = useToggleProductOutOfStock()
+  const router = useRouter();
+  const { toast } = useToast();
+  const deleteProductMutation = useDeleteProduct();
+  const toggleOutOfStockMutation = useToggleProductOutOfStock();
+  const toggleNewBadgeMutation = useToggleProductNewBadge();
+  const toggleSaleBadgeMutation = useToggleProductSaleBadge();
 
-  const [searchFilter, setSearchFilter] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all")
-  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilterOption>(
-    "all"
-  )
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchFilter, setSearchFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all");
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<VisibilityFilterOption>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filters = useMemo(
     () => ({
@@ -68,21 +85,21 @@ export default function ProductsPage() {
         visibilityFilter === "visible"
           ? true
           : visibilityFilter === "hidden"
-            ? false
-            : undefined,
+          ? false
+          : undefined,
     }),
     [searchFilter, categoryFilter, visibilityFilter, currentPage]
-  )
+  );
 
   const {
     data: productList,
     isLoading,
     isError,
-  } = useQuery(productsQueries.list(filters))
+  } = useQuery(productsQueries.list(filters));
 
-  const { data: categoryOptions = [] } = useQuery(productsQueries.categories())
+  const { data: categoryOptions = [] } = useQuery(productsQueries.categories());
 
-  const products = useMemo(() => productList?.products ?? [], [productList])
+  const products = useMemo(() => productList?.products ?? [], [productList]);
 
   useEffect(() => {
     if (isError) {
@@ -90,77 +107,125 @@ export default function ProductsPage() {
         title: "오류",
         description: "상품 목록을 불러오는데 실패했습니다.",
         variant: "destructive",
-      })
+      });
     }
-  }, [isError, toast])
+  }, [isError, toast]);
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchFilter, categoryFilter, visibilityFilter])
+    setCurrentPage(1);
+  }, [searchFilter, categoryFilter, visibilityFilter]);
 
   useEffect(() => {
-    const pages = productList?.totalPages ?? 1
+    const pages = productList?.totalPages ?? 1;
 
     if (currentPage > pages) {
-      setCurrentPage(pages)
+      setCurrentPage(pages);
     }
-  }, [currentPage, productList?.totalPages])
+  }, [currentPage, productList?.totalPages]);
 
-  const displayedPage = productList?.currentPage ?? currentPage
-  const totalPages = productList?.totalPages ?? 1
-  const totalCount = productList?.totalCount ?? 0
+  const displayedPage = productList?.currentPage ?? currentPage;
+  const totalPages = productList?.totalPages ?? 1;
+  const totalCount = productList?.totalCount ?? 0;
 
-  const isFirstPage = displayedPage <= 1
-  const isLastPage = displayedPage >= totalPages
+  const isFirstPage = displayedPage <= 1;
+  const isLastPage = displayedPage >= totalPages;
 
   const handleDelete = async (id: string) => {
-    if (!confirm("정말 삭제하시겠습니까?")) return
+    if (!confirm("정말 삭제하시겠습니까?")) return;
 
     try {
-      await deleteProductMutation.mutateAsync(id)
+      await deleteProductMutation.mutateAsync(id);
 
       toast({
         title: "성공",
         description: "상품이 삭제되었습니다.",
-      })
+      });
     } catch (error) {
-      console.error("Error deleting product:", error)
+      console.error("Error deleting product:", error);
       toast({
         title: "오류",
         description: "상품 삭제에 실패했습니다.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleToggleOutOfStock = async (id: string, currentStatus: boolean) => {
     try {
       await toggleOutOfStockMutation.mutateAsync({
         id,
         isOutOfStock: !currentStatus,
-      })
+      });
 
       toast({
         title: "성공",
-        description: !currentStatus ? "상품이 품절 처리되었습니다." : "상품이 판매중으로 변경되었습니다.",
-      })
+        description: !currentStatus
+          ? "상품이 품절 처리되었습니다."
+          : "상품이 판매중으로 변경되었습니다.",
+      });
     } catch (error) {
-      console.error("Error toggling out of stock:", error)
+      console.error("Error toggling out of stock:", error);
       toast({
         title: "오류",
         description: "품절 상태 변경에 실패했습니다.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
+
+  const handleToggleNewBadge = async (id: string, currentStatus: boolean) => {
+    try {
+      await toggleNewBadgeMutation.mutateAsync({
+        id,
+        isNewBadge: !currentStatus,
+      });
+
+      toast({
+        title: "성공",
+        description: !currentStatus
+          ? "NEW 뱃지가 활성화되었습니다."
+          : "NEW 뱃지가 비활성화되었습니다.",
+      });
+    } catch (error) {
+      console.error("Error toggling new badge:", error);
+      toast({
+        title: "오류",
+        description: "NEW 뱃지 변경에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleSaleBadge = async (id: string, currentStatus: boolean) => {
+    try {
+      await toggleSaleBadgeMutation.mutateAsync({
+        id,
+        isSaleBadge: !currentStatus,
+      });
+
+      toast({
+        title: "성공",
+        description: !currentStatus
+          ? "SALE 뱃지가 활성화되었습니다."
+          : "SALE 뱃지가 비활성화되었습니다.",
+      });
+    } catch (error) {
+      console.error("Error toggling sale badge:", error);
+      toast({
+        title: "오류",
+        description: "SALE 뱃지 변경에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1))
-  }
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-  }
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
 
   return (
     <div className="p-8">
@@ -239,6 +304,7 @@ export default function ProductsPage() {
                   <TableHead>카테고리</TableHead>
                   <TableHead>가격</TableHead>
                   <TableHead>메인노출</TableHead>
+                  <TableHead>뱃지</TableHead>
                   <TableHead>품절상태</TableHead>
                   <TableHead>판매기간</TableHead>
                   <TableHead>링크</TableHead>
@@ -248,7 +314,9 @@ export default function ProductsPage() {
               <TableBody>
                 {products.map((product) => (
                   <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{product.price.toLocaleString()}원</TableCell>
                     <TableCell>
@@ -261,6 +329,23 @@ export default function ProductsPage() {
                           숨김
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {product.is_new_badge && (
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            NEW
+                          </span>
+                        )}
+                        {product.is_sale_badge && (
+                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                            SALE
+                          </span>
+                        )}
+                        {!product.is_new_badge && !product.is_sale_badge && (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {product.is_out_of_stock ? (
@@ -277,10 +362,13 @@ export default function ProductsPage() {
                       {product.sale_start_at && product.sale_end_at ? (
                         <>
                           <div>
-                            {new Date(product.sale_start_at).toLocaleDateString()}
+                            {new Date(
+                              product.sale_start_at
+                            ).toLocaleDateString()}
                           </div>
                           <div>
-                            ~ {new Date(product.sale_end_at).toLocaleDateString()}
+                            ~{" "}
+                            {new Date(product.sale_end_at).toLocaleDateString()}
                           </div>
                         </>
                       ) : (
@@ -294,20 +382,65 @@ export default function ProductsPage() {
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
-                          variant={product.is_out_of_stock ? "default" : "outline"}
-                          onClick={() => handleToggleOutOfStock(product.id, product.is_out_of_stock || false)}
-                          title={product.is_out_of_stock ? "판매중으로 변경" : "품절 처리"}
+                          variant={product.is_new_badge ? "default" : "outline"}
+                          onClick={() =>
+                            handleToggleNewBadge(
+                              product.id,
+                              product.is_new_badge || false
+                            )
+                          }
+                          title={
+                            product.is_new_badge
+                              ? "NEW 뱃지 끄기"
+                              : "NEW 뱃지 켜기"
+                          }
                         >
-                          {product.is_out_of_stock ? (
-                            <Package className="h-4 w-4" />
-                          ) : (
-                            <PackageX className="h-4 w-4" />
-                          )}
+                          NEW
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={
+                            product.is_sale_badge ? "default" : "outline"
+                          }
+                          onClick={() =>
+                            handleToggleSaleBadge(
+                              product.id,
+                              product.is_sale_badge || false
+                            )
+                          }
+                          title={
+                            product.is_sale_badge
+                              ? "SALE 뱃지 끄기"
+                              : "SALE 뱃지 켜기"
+                          }
+                        >
+                          SALE
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={
+                            product.is_out_of_stock ? "default" : "outline"
+                          }
+                          onClick={() =>
+                            handleToggleOutOfStock(
+                              product.id,
+                              product.is_out_of_stock || false
+                            )
+                          }
+                          title={
+                            product.is_out_of_stock
+                              ? "판매중으로 변경"
+                              : "품절 처리"
+                          }
+                        >
+                          {product.is_out_of_stock ? "품절" : "판매중"}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                          onClick={() =>
+                            router.push(`/dashboard/products/${product.id}`)
+                          }
                           title="상품 수정"
                         >
                           <Pencil className="h-4 w-4" />
@@ -330,13 +463,24 @@ export default function ProductsPage() {
           {!isLoading && (
             <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
               <p>
-                총 {totalCount.toLocaleString()}개 · {displayedPage}/{totalPages}페이지
+                총 {totalCount.toLocaleString()}개 · {displayedPage}/
+                {totalPages}페이지
               </p>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={handlePreviousPage} disabled={isFirstPage}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePreviousPage}
+                  disabled={isFirstPage}
+                >
                   이전
                 </Button>
-                <Button size="sm" variant="outline" onClick={handleNextPage} disabled={isLastPage}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleNextPage}
+                  disabled={isLastPage}
+                >
                   다음
                 </Button>
               </div>
@@ -345,5 +489,5 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

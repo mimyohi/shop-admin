@@ -35,6 +35,9 @@ interface Product {
   sale_end_at: string | null;
   is_visible_on_main: boolean;
   is_out_of_stock?: boolean;
+  is_new_badge?: boolean;
+  is_sale_badge?: boolean;
+  discount_rate?: number;
   created_at: string;
 }
 
@@ -60,6 +63,8 @@ export default function ProductEditPage({
     sale_end_at: "",
     is_visible_on_main: true,
     is_out_of_stock: false,
+    is_new_badge: false,
+    is_sale_badge: false,
   });
 
   const updateProductMutation = useUpdateProduct();
@@ -85,6 +90,8 @@ export default function ProductEditPage({
         sale_end_at: product.sale_end_at ? product.sale_end_at.slice(0, 16) : "",
         is_visible_on_main: product.is_visible_on_main ?? true,
         is_out_of_stock: product.is_out_of_stock ?? false,
+        is_new_badge: product.is_new_badge ?? false,
+        is_sale_badge: product.is_sale_badge ?? false,
       });
     }
   }, [product]);
@@ -130,6 +137,8 @@ export default function ProductEditPage({
         sale_end_at: formData.sale_end_at || null,
         is_visible_on_main: formData.is_visible_on_main,
         is_out_of_stock: formData.is_out_of_stock,
+        is_new_badge: formData.is_new_badge,
+        is_sale_badge: formData.is_sale_badge,
       };
 
       await updateProductMutation.mutateAsync({
@@ -290,6 +299,30 @@ export default function ProductEditPage({
                 />
                 <Label htmlFor="is_out_of_stock" className="cursor-pointer">
                   품절 상태로 설정
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_new_badge"
+                  checked={formData.is_new_badge}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_new_badge: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_new_badge" className="cursor-pointer">
+                  NEW 뱃지 표시
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_sale_badge"
+                  checked={formData.is_sale_badge}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_sale_badge: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_sale_badge" className="cursor-pointer">
+                  SALE 뱃지 표시
                 </Label>
               </div>
             </div>

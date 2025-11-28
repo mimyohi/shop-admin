@@ -121,6 +121,20 @@ export async function toggleProductOutOfStock(id: string, isOutOfStock: boolean)
   return result
 }
 
+export async function toggleProductNewBadge(id: string, isNewBadge: boolean) {
+  const result = await productsRepository.toggleNewBadge(id, isNewBadge)
+  revalidatePath('/dashboard/products')
+  revalidatePath(`/dashboard/products/${id}`)
+  return result
+}
+
+export async function toggleProductSaleBadge(id: string, isSaleBadge: boolean) {
+  const result = await productsRepository.toggleSaleBadge(id, isSaleBadge)
+  revalidatePath('/dashboard/products')
+  revalidatePath(`/dashboard/products/${id}`)
+  return result
+}
+
 // Product Options Actions
 export async function createProductOption(productId: string, data: any) {
   try {

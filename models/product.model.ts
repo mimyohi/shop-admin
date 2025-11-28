@@ -12,6 +12,8 @@ export interface Product {
   category: string;
   is_visible_on_main?: boolean;
   is_out_of_stock?: boolean;
+  is_new_badge?: boolean;
+  is_sale_badge?: boolean;
   sale_start_at?: string | null;
   sale_end_at?: string | null;
   average_rating?: number;
