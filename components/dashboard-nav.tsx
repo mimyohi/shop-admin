@@ -25,11 +25,13 @@ const navItems = [
     title: "대시보드",
     href: "/dashboard",
     icon: LayoutDashboard,
+    masterOnly: true,
   },
   {
     title: "상품 관리",
     href: "/dashboard/products",
     icon: Package,
+    masterOnly: true,
   },
   {
     title: "주문 관리",
@@ -40,16 +42,19 @@ const navItems = [
     title: "매출 리포트",
     href: "/dashboard/reports/product-sales",
     icon: BarChart3,
+    masterOnly: true,
   },
   {
     title: "유저 관리",
     href: "/dashboard/users",
     icon: Users,
+    masterOnly: true,
   },
   {
     title: "쿠폰 관리",
     href: "/dashboard/coupons",
     icon: Ticket,
+    masterOnly: true,
   },
   {
     title: "어드민 관리",
@@ -64,7 +69,10 @@ type DashboardNavProps = {
   onToggle?: () => void;
 };
 
-export function DashboardNav({ collapsed = false, onToggle }: DashboardNavProps) {
+export function DashboardNav({
+  collapsed = false,
+  onToggle,
+}: DashboardNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { adminUser, logout } = useAdminStore();
@@ -82,7 +90,9 @@ export function DashboardNav({ collapsed = false, onToggle }: DashboardNavProps)
       )}
     >
       <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4">
-        <h1 className={cn("text-xl font-bold", collapsed && "sr-only")}>Shop Admin</h1>
+        <h1 className={cn("text-xl font-bold", collapsed && "sr-only")}>
+          Shop Admin
+        </h1>
         {onToggle && (
           <Button
             size="icon"
@@ -110,7 +120,8 @@ export function DashboardNav({ collapsed = false, onToggle }: DashboardNavProps)
             }
 
             const Icon = item.icon;
-            const isActive = pathname === item.href ||
+            const isActive =
+              pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
@@ -120,8 +131,7 @@ export function DashboardNav({ collapsed = false, onToggle }: DashboardNavProps)
                   "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-gray-800 text-white"
-                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                  ,
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
                   collapsed ? "justify-center" : "gap-3"
                 )}
               >
