@@ -104,7 +104,7 @@ interface Order {
   handler_admin_id: string | null;
   handled_at: string | null;
   created_at: string;
-  order_health_consultations: HealthConsultation;
+  order_health_consultation: HealthConsultation;
   assigned_admin?: AdminUser;
   handler_admin?: AdminUser;
   order_items?: OrderItem[];

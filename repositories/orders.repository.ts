@@ -34,7 +34,7 @@ export const ordersRepository = {
         assigned_admin:admin_users!orders_assigned_admin_id_fkey(id, username, full_name),
         handler_admin:admin_users!orders_handler_admin_id_fkey(id, username, full_name),
         order_items(*),
-        order_health_consultations(*)
+        order_health_consultation(*)
       `,
       {
         count: "exact",
@@ -107,9 +107,9 @@ export const ordersRepository = {
         ? count
         : count ?? data?.length ?? 0;
 
-    // Transform order_health_consultations from array to single object
+    // Transform order_health_consultation from array to single object
     const transformedData = (data || []).map((order: any) => {
-      const consultations = order.order_health_consultations;
+      const consultations = order.order_health_consultation;
       const consultation =
         Array.isArray(consultations) && consultations.length > 0
           ? consultations[0]
@@ -117,7 +117,7 @@ export const ordersRepository = {
 
       return {
         ...order,
-        order_health_consultations: consultation,
+        order_health_consultation: consultation,
       };
     });
 
@@ -159,7 +159,7 @@ export const ordersRepository = {
         assigned_admin:admin_users!orders_assigned_admin_id_fkey(id, username, full_name),
         handler_admin:admin_users!orders_handler_admin_id_fkey(id, username, full_name),
         order_items(*),
-        order_health_consultations(*)
+        order_health_consultation(*)
       `
       )
       .eq("id", id)
@@ -169,7 +169,7 @@ export const ordersRepository = {
       return null;
     }
 
-    const consultation = (order as any).order_health_consultations;
+    const consultation = (order as any).order_health_consultation;
 
     if (!consultation) {
       console.warn(`Order ${id} has no health consultation data`);
@@ -177,7 +177,7 @@ export const ordersRepository = {
 
     return {
       ...order,
-      order_health_consultations: consultation,
+      order_health_consultation: consultation,
     } as OrderWithDetails;
   },
 

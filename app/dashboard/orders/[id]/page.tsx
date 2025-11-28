@@ -92,7 +92,7 @@ interface Order {
   status: string;
   consultation_status: string;
   created_at: string;
-  order_health_consultations: HealthConsultation;
+  order_health_consultation: HealthConsultation;
   assigned_admin?: AdminUser;
   handler_admin?: AdminUser;
   handled_at?: string;
@@ -376,7 +376,7 @@ export default function OrderDetailPage() {
 
   // 문진 결과 복사
   const copyHealthInfo = () => {
-    const healthConsultation = order?.order_health_consultations;
+    const healthConsultation = order?.order_health_consultation;
     if (!healthConsultation) {
       toast({
         title: "복사 실패",
@@ -657,7 +657,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const healthConsultation = order.order_health_consultations;
+  const healthConsultation = order.order_health_consultation;
   // order_items에서 상품 금액을 동적으로 계산
   const formattedProductAmount = order.order_items
     ? calculateProductAmount(order.order_items)
