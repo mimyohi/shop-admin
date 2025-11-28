@@ -6,7 +6,6 @@ export interface ProductFilters {
   page?: number
   limit?: number | 'all'
   isVisibleOnMain?: boolean
-  stockStatus?: 'in_stock' | 'out_of_stock'
 }
 
 export interface CreateProductData {
@@ -16,7 +15,6 @@ export interface CreateProductData {
   price: number
   image_url: string
   detail_images?: string[]
-  stock: number
   category: string
   is_visible_on_main?: boolean
   sale_start_at?: string | null
@@ -30,7 +28,6 @@ export interface UpdateProductData {
   price?: number
   image_url?: string
   detail_images?: string[]
-  stock?: number
   category?: string
   is_visible_on_main?: boolean
   sale_start_at?: string | null

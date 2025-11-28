@@ -28,7 +28,6 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number | null;
   category: string;
   image_url: string;
   detail_images?: string[];
@@ -53,7 +52,6 @@ export default function ProductEditPage({
     description: "",
     price: "",
     discount_rate: "",
-    stock: "",
     category: "",
     image_url: "",
     detail_images: [] as string[],
@@ -76,7 +74,6 @@ export default function ProductEditPage({
         description: product.description || "",
         price: product.price.toString(),
         discount_rate: product.discount_rate !== null && product.discount_rate !== undefined ? product.discount_rate.toString() : "0",
-        stock: product.stock !== null ? product.stock.toString() : "",
         category: product.category,
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],
@@ -123,7 +120,6 @@ export default function ProductEditPage({
         description: formData.description,
         price: parseInt(formData.price),
         discount_rate: formData.discount_rate ? parseInt(formData.discount_rate) : 0,
-        stock: formData.stock ? parseInt(formData.stock) : undefined,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -252,23 +248,6 @@ export default function ProductEditPage({
                 />
                 <p className="text-sm text-gray-500">
                   할인률을 0-100 사이의 숫자로 입력하세요 (0이면 할인 없음)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">
-                  재고 (선택)
-                </Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock: e.target.value })
-                  }
-                  placeholder="입력하지 않으면 무한대"
-                />
-                <p className="text-sm text-gray-500">
-                  재고를 입력하지 않으면 재고 제한 없이 판매됩니다
                 </p>
               </div>
             </div>

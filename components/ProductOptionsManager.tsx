@@ -59,7 +59,6 @@ interface ProductOptionValue {
   option_id: string;
   value: string;
   price_adjustment: number;
-  stock: number | null;
   is_available: boolean;
   display_order: number;
   affects_child_options?: ChildOptionConfig[] | null;
@@ -71,7 +70,6 @@ interface ProductAddon {
   name: string;
   description: string | null;
   price: number;
-  stock: number | null;
   is_available: boolean;
   display_order: number;
 }
@@ -108,7 +106,6 @@ export default function ProductOptionsManager({
     name: "",
     description: "",
     price: "",
-    stock: "",
     is_available: true,
   });
 
@@ -206,7 +203,6 @@ export default function ProductOptionsManager({
           option_id: optionId,
           value,
           price_adjustment: priceAdjustment,
-          stock: null,
           is_available: true,
           display_order: option?.values?.length || 0,
         };
@@ -317,7 +313,6 @@ export default function ProductOptionsManager({
           name: newAddon.name,
           description: newAddon.description || null,
           price: parseFloat(newAddon.price),
-          stock: newAddon.stock ? parseInt(newAddon.stock) : null,
           is_available: newAddon.is_available,
           display_order: addons.length,
         };
@@ -328,7 +323,6 @@ export default function ProductOptionsManager({
           name: "",
           description: "",
           price: "",
-          stock: "",
           is_available: true,
         });
       } else {
@@ -336,7 +330,6 @@ export default function ProductOptionsManager({
           name: newAddon.name,
           description: newAddon.description || null,
           price: parseFloat(newAddon.price),
-          stock: newAddon.stock ? parseInt(newAddon.stock) : null,
           is_available: newAddon.is_available,
           display_order: addons.length,
         });
@@ -348,7 +341,6 @@ export default function ProductOptionsManager({
           name: "",
           description: "",
           price: "",
-          stock: "",
           is_available: true,
         });
       }
@@ -485,7 +477,6 @@ export default function ProductOptionsManager({
                 <div className="text-sm text-gray-500">{addon.description}</div>
                 <div className="text-sm">
                   가격: {addon.price.toLocaleString()}원
-                  {addon.stock && ` | 재고: ${addon.stock}개`}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -536,20 +527,10 @@ export default function ProductOptionsManager({
                   setNewAddon({ ...newAddon, description: e.target.value })
                 }
               />
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="재고 (비워두면 무제한)"
-                  value={newAddon.stock}
-                  onChange={(e) =>
-                    setNewAddon({ ...newAddon, stock: e.target.value })
-                  }
-                />
-                <Button type="button" onClick={addAddonItem}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  추가
-                </Button>
-              </div>
+              <Button type="button" onClick={addAddonItem} className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                추가
+              </Button>
             </div>
           </div>
         </CardContent>

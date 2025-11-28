@@ -9,7 +9,6 @@ export interface Product {
   price: number;
   image_url: string;
   detail_images?: string[];
-  stock: number;
   category: string;
   is_visible_on_main?: boolean;
   sale_start_at?: string | null;
@@ -61,7 +60,6 @@ export interface ProductOptionValue {
   option_id: string;
   value: string; // e.g., "Small", "Medium", "Large"
   price_adjustment: number; // Additional price (can be negative)
-  stock: number | null; // null = unlimited
   is_available: boolean;
   display_order: number;
   created_at: string;
@@ -78,7 +76,6 @@ export interface ProductAddon {
   name: string;
   description: string | null;
   price: number;
-  stock: number | null; // null = unlimited
   is_available: boolean;
   display_order: number;
   created_at: string;

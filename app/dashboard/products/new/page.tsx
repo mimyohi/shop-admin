@@ -47,7 +47,6 @@ interface ProductOptionValue {
   option_id: string
   value: string
   price_adjustment: number
-  stock: number | null
   is_available: boolean
   display_order: number
   affects_child_options?: ChildOptionConfig[] | null
@@ -59,7 +58,6 @@ interface ProductAddon {
   name: string
   description: string | null
   price: number
-  stock: number | null
   is_available: boolean
   display_order: number
 }
@@ -74,7 +72,6 @@ export default function NewProductPage() {
     description: '',
     price: '',
     discount_rate: '',
-    stock: '',
     category: '',
     image_url: '',
     detail_images: [] as string[],
@@ -106,7 +103,6 @@ export default function NewProductPage() {
         description: formData.description,
         price: parseInt(formData.price),
         discount_rate: formData.discount_rate ? parseInt(formData.discount_rate) : 0,
-        stock: formData.stock ? parseInt(formData.stock) : null,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -217,21 +213,6 @@ export default function NewProductPage() {
                 />
                 <p className="text-sm text-gray-500">
                   할인률을 0-100 사이의 숫자로 입력하세요 (0이면 할인 없음)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">
-                  재고 (선택)
-                </Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  placeholder="입력하지 않으면 무한대"
-                />
-                <p className="text-sm text-gray-500">
-                  재고를 입력하지 않으면 재고 제한 없이 판매됩니다
                 </p>
               </div>
             </div>

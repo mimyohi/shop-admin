@@ -32,7 +32,6 @@ interface Product {
   name: string
   description: string
   price: number
-  stock: number
   category: string
   image_url: string
   is_visible_on_main: boolean
@@ -44,7 +43,6 @@ interface Product {
 const ITEMS_PER_PAGE = 10
 
 type VisibilityFilterOption = "all" | "visible" | "hidden"
-type StockFilterOption = "all" | "in_stock" | "out_of_stock"
 
 export default function ProductsPage() {
   const router = useRouter()
@@ -56,7 +54,6 @@ export default function ProductsPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilterOption>(
     "all"
   )
-  const [stockFilter, setStockFilter] = useState<StockFilterOption>("all")
   const [currentPage, setCurrentPage] = useState(1)
 
   const filters = useMemo(
@@ -71,9 +68,8 @@ export default function ProductsPage() {
           : visibilityFilter === "hidden"
             ? false
             : undefined,
-      stockStatus: stockFilter === "all" ? undefined : stockFilter,
     }),
-    [searchFilter, categoryFilter, visibilityFilter, stockFilter, currentPage]
+    [searchFilter, categoryFilter, visibilityFilter, currentPage]
   )
 
   const {
@@ -98,7 +94,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchFilter, categoryFilter, visibilityFilter, stockFilter])
+  }, [searchFilter, categoryFilter, visibilityFilter])
 
   useEffect(() => {
     const pages = productList?.totalPages ?? 1
@@ -161,7 +157,7 @@ export default function ProductsPage() {
           <CardTitle>상품 목록</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
               <Label className="text-sm font-semibold">검색</Label>
               <Input
@@ -204,24 +200,6 @@ export default function ProductsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-semibold">재고 상태</Label>
-              <Select
-                value={stockFilter}
-                onValueChange={(value) =>
-                  setStockFilter(value as StockFilterOption)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="재고 상태" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="in_stock">재고 있음</SelectItem>
-                  <SelectItem value="out_of_stock">재고 없음</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {isLoading ? (
@@ -237,7 +215,6 @@ export default function ProductsPage() {
                   <TableHead>상품명</TableHead>
                   <TableHead>카테고리</TableHead>
                   <TableHead>가격</TableHead>
-                  <TableHead>재고</TableHead>
                   <TableHead>메인노출</TableHead>
                   <TableHead>판매기간</TableHead>
                   <TableHead>링크</TableHead>
@@ -250,7 +227,6 @@ export default function ProductsPage() {
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{product.price.toLocaleString()}원</TableCell>
-                    <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       {product.is_visible_on_main ? (
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
