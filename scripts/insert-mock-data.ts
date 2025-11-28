@@ -143,7 +143,7 @@ async function insertMockData() {
     const now = new Date();
     const mockOrders: MockOrder[] = [];
 
-    // 차팅 필요 (5건)
+    // 접수 필요 (5건)
     mockOrders.push(
       {
         user_email: "test1@example.com",
@@ -514,7 +514,7 @@ async function insertMockData() {
     }, {});
 
     const statusLabels: Record<string, string> = {
-      chatting_required: "차팅 필요",
+      chatting_required: "접수 필요",
       consultation_required: "상담 필요",
       on_hold: "보류",
       consultation_completed: "상담완료",

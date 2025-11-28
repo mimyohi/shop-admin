@@ -135,7 +135,7 @@ const CONSULTATION_STATUS_FLOW: Partial<
   },
   consultation_required: {
     prev: "chatting_required",
-    prevLabel: "차팅 필요로 이동",
+    prevLabel: "접수 필요로 이동",
     next: "consultation_completed",
     nextLabel: "배송필요(상담완료)로 이동",
     extraActions: [
@@ -630,7 +630,7 @@ export default function OrderDetailPage() {
     const statusMap: Record<string, string> = {
       payment_pending: "결제 대기",
       expired: "만료",
-      chatting_required: "차팅 필요",
+      chatting_required: "접수 필요",
       consultation_required: "상담 필요",
       on_hold: "보류",
       consultation_completed: "배송필요(상담완료)",
@@ -839,7 +839,7 @@ export default function OrderDetailPage() {
                     htmlFor="assigned-admin"
                     className="text-xs text-gray-500"
                   >
-                    차팅 담당자
+                    접수 담당자
                   </Label>
                   <Select
                     value={selectedAssignedAdmin}
@@ -1094,18 +1094,16 @@ export default function OrderDetailPage() {
                       onClick={() =>
                         copyHealthField(
                           "목표 체중",
-                          `${Number(
-                            healthConsultation.target_weight
-                          ).toFixed(1)}kg`
+                          `${Number(healthConsultation.target_weight).toFixed(
+                            1
+                          )}kg`
                         )
                       }
                       title="클릭하여 복사"
                     >
                       <span className="text-gray-500">목표 체중:</span>
                       <span className="ml-2 font-medium">
-                        {Number(healthConsultation.target_weight).toFixed(
-                          1
-                        )}
+                        {Number(healthConsultation.target_weight).toFixed(1)}
                         kg
                       </span>
                     </div>
@@ -1194,10 +1192,7 @@ export default function OrderDetailPage() {
                     <div
                       className={copyableRowClass}
                       onClick={() =>
-                        copyHealthField(
-                          "직업",
-                          healthConsultation.occupation
-                        )
+                        copyHealthField("직업", healthConsultation.occupation)
                       }
                       title="클릭하여 복사"
                     >
@@ -1226,18 +1221,14 @@ export default function OrderDetailPage() {
                       onClick={() =>
                         copyHealthField(
                           "교대 근무",
-                          healthConsultation.has_shift_work
-                            ? "예"
-                            : "아니오"
+                          healthConsultation.has_shift_work ? "예" : "아니오"
                         )
                       }
                       title="클릭하여 복사"
                     >
                       <span className="text-gray-500">교대 근무:</span>
                       <span className="ml-2 font-medium">
-                        {healthConsultation.has_shift_work
-                          ? "예"
-                          : "아니오"}
+                        {healthConsultation.has_shift_work ? "예" : "아니오"}
                       </span>
                     </div>
                     <div
@@ -1415,10 +1406,7 @@ export default function OrderDetailPage() {
                 <div
                   className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
                   onClick={() =>
-                    copyHealthField(
-                      "병력",
-                      healthConsultation.medical_history
-                    )
+                    copyHealthField("병력", healthConsultation.medical_history)
                   }
                   title="클릭하여 복사"
                 >

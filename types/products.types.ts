@@ -17,6 +17,7 @@ export interface CreateProductData {
   detail_images?: string[]
   category: string
   is_visible_on_main?: boolean
+  is_out_of_stock?: boolean
   sale_start_at?: string | null
   sale_end_at?: string | null
 }
@@ -30,6 +31,7 @@ export interface UpdateProductData {
   detail_images?: string[]
   category?: string
   is_visible_on_main?: boolean
+  is_out_of_stock?: boolean
   sale_start_at?: string | null
   sale_end_at?: string | null
 }

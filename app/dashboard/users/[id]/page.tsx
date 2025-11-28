@@ -29,7 +29,10 @@ import {
 import { PointAdjustDialog } from "@/components/point-adjust-dialog";
 import { PointHistoryDialog } from "@/components/point-history-dialog";
 import { IssueCouponToUserDialog } from "@/components/issue-coupon-to-user-dialog";
-import { fetchUserOrderHistory, fetchUserProfileWithPoints } from "@/lib/actions/users";
+import {
+  fetchUserOrderHistory,
+  fetchUserProfileWithPoints,
+} from "@/lib/actions/users";
 
 interface UserDetail {
   id: string;
@@ -72,7 +75,7 @@ const paymentStatusLabels: Record<string, string> = {
 };
 
 const consultationStatusLabels: Record<string, string> = {
-  chatting_required: "차팅 필요",
+  chatting_required: "접수 필요",
   consultation_required: "상담 필요",
   on_hold: "보류",
   consultation_completed: "배송필요(상담완료)",
@@ -184,14 +187,11 @@ export default function UserDetailPage() {
       0
     );
     const lastOrderDate = orders[0]?.created_at || null;
-    const consultationCounts = orders.reduce(
-      (acc, order) => {
-        const key = order.consultation_status || "unknown";
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const consultationCounts = orders.reduce((acc, order) => {
+      const key = order.consultation_status || "unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     return { totalOrders, totalSpent, lastOrderDate, consultationCounts };
   }, [orders]);
@@ -271,11 +271,7 @@ export default function UserDetailPage() {
           <p className="text-gray-600">{user.email}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={loadUserDetail}
-          >
+          <Button variant="outline" className="gap-2" onClick={loadUserDetail}>
             <RefreshCw className="h-4 w-4" />
             새로고침
           </Button>
@@ -410,9 +406,7 @@ export default function UserDetailPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">
-              총 주문 수
-            </CardTitle>
+            <CardTitle className="text-sm text-gray-500">총 주문 수</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-3">
             <Package className="h-10 w-10 text-blue-500" />
@@ -440,9 +434,7 @@ export default function UserDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">
-              최근 주문
-            </CardTitle>
+            <CardTitle className="text-sm text-gray-500">최근 주문</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-3">
             <Calendar className="h-10 w-10 text-emerald-500" />
@@ -452,9 +444,7 @@ export default function UserDetailPage() {
                   ? new Date(orderStats.lastOrderDate).toLocaleString("ko-KR")
                   : "주문 내역 없음"}
               </p>
-              <p className="text-sm text-gray-500">
-                최신 주문 일시 기준
-              </p>
+              <p className="text-sm text-gray-500">최신 주문 일시 기준</p>
             </div>
           </CardContent>
         </Card>
@@ -524,12 +514,14 @@ export default function UserDetailPage() {
                         <Badge
                           variant="outline"
                           className={
-                            consultationBadgeClasses[order.consultation_status] ||
-                            ""
+                            consultationBadgeClasses[
+                              order.consultation_status
+                            ] || ""
                           }
                         >
-                          {consultationStatusLabels[order.consultation_status] ||
-                            order.consultation_status}
+                          {consultationStatusLabels[
+                            order.consultation_status
+                          ] || order.consultation_status}
                         </Badge>
                       </TableCell>
                       <TableCell>

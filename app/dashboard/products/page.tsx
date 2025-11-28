@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, PackageX, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { productsQueries, useDeleteProduct } from "@/queries/products.queries"
+import { productsQueries, useDeleteProduct, useToggleProductOutOfStock } from "@/queries/products.queries"
 
 interface Product {
   id: string
@@ -35,6 +35,7 @@ interface Product {
   category: string
   image_url: string
   is_visible_on_main: boolean
+  is_out_of_stock?: boolean
   sale_start_at: string | null
   sale_end_at: string | null
   created_at: string
@@ -48,6 +49,7 @@ export default function ProductsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const deleteProductMutation = useDeleteProduct()
+  const toggleOutOfStockMutation = useToggleProductOutOfStock()
 
   const [searchFilter, setSearchFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all")
@@ -126,6 +128,27 @@ export default function ProductsPage() {
       toast({
         title: "오류",
         description: "상품 삭제에 실패했습니다.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleToggleOutOfStock = async (id: string, currentStatus: boolean) => {
+    try {
+      await toggleOutOfStockMutation.mutateAsync({
+        id,
+        isOutOfStock: !currentStatus,
+      })
+
+      toast({
+        title: "성공",
+        description: !currentStatus ? "상품이 품절 처리되었습니다." : "상품이 판매중으로 변경되었습니다.",
+      })
+    } catch (error) {
+      console.error("Error toggling out of stock:", error)
+      toast({
+        title: "오류",
+        description: "품절 상태 변경에 실패했습니다.",
         variant: "destructive",
       })
     }
@@ -216,6 +239,7 @@ export default function ProductsPage() {
                   <TableHead>카테고리</TableHead>
                   <TableHead>가격</TableHead>
                   <TableHead>메인노출</TableHead>
+                  <TableHead>품절상태</TableHead>
                   <TableHead>판매기간</TableHead>
                   <TableHead>링크</TableHead>
                   <TableHead className="text-right">관리</TableHead>
@@ -238,6 +262,17 @@ export default function ProductsPage() {
                         </span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {product.is_out_of_stock ? (
+                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                          품절
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          판매중
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs">
                       {product.sale_start_at && product.sale_end_at ? (
                         <>
@@ -257,6 +292,18 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant={product.is_out_of_stock ? "default" : "outline"}
+                          onClick={() => handleToggleOutOfStock(product.id, product.is_out_of_stock || false)}
+                          title={product.is_out_of_stock ? "판매중으로 변경" : "품절 처리"}
+                        >
+                          {product.is_out_of_stock ? (
+                            <Package className="h-4 w-4" />
+                          ) : (
+                            <PackageX className="h-4 w-4" />
+                          )}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

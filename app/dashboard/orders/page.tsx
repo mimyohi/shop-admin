@@ -141,7 +141,7 @@ const DEFAULT_FILTERS = {
 const CONSULTATION_TABS: ConsultationTabConfig[] = [
   {
     value: "chatting_required",
-    label: "차팅 필요",
+    label: "접수 필요",
     nextStatus: "consultation_required",
     nextLabel: "선택 상담 필요로 이동",
   },
@@ -442,12 +442,12 @@ export default function OrdersPage() {
         adminId === "none" ? null : adminId
       );
       if (!result.success) {
-        throw new Error(result.error || "차팅 담당자 변경에 실패했습니다.");
+        throw new Error(result.error || "접수 담당자 변경에 실패했습니다.");
       }
 
       toast({
         title: "성공",
-        description: "차팅 담당자가 변경되었습니다.",
+        description: "접수 담당자가 변경되었습니다.",
       });
 
       await refetchOrders();
@@ -455,7 +455,7 @@ export default function OrdersPage() {
       console.error("Error updating assigned admin:", error);
       toast({
         title: "오류",
-        description: "차팅 담당자 변경에 실패했습니다.",
+        description: "접수 담당자 변경에 실패했습니다.",
         variant: "destructive",
       });
     }
@@ -595,7 +595,7 @@ export default function OrdersPage() {
                 />
               </TableHead>
               <TableHead>주문번호</TableHead>
-              <TableHead>차팅 담당자</TableHead>
+              <TableHead>접수 담당자</TableHead>
               <TableHead>주문자</TableHead>
               <TableHead>주문일시</TableHead>
               <TableHead>금액</TableHead>
@@ -829,7 +829,7 @@ export default function OrdersPage() {
             {/* 담당자 필터 */}
             <div className="space-y-2">
               <Label htmlFor="admin-filter" className="text-sm font-medium">
-                차팅 담당자
+                접수 담당자
               </Label>
               <Select
                 value={assignedAdminFilter}
@@ -936,9 +936,7 @@ export default function OrdersPage() {
           {/* 활성 필터 표시 */}
           <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
             <span className="font-medium">검색 결과:</span>
-            <span className="font-semibold text-blue-600">
-              {totalCount}건
-            </span>
+            <span className="font-semibold text-blue-600">{totalCount}건</span>
             {(searchTerm ||
               paymentStatus !== "all" ||
               assignedAdminFilter !== "all" ||

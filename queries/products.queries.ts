@@ -6,6 +6,7 @@ import {
   fetchProductCategories,
   fetchProducts,
   updateProduct as updateProductAction,
+  toggleProductOutOfStock as toggleProductOutOfStockAction,
 } from '@/lib/actions/products'
 import { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
 
@@ -81,6 +82,24 @@ export function useDeleteProduct() {
     mutationFn: (id: string) => deleteProductAction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
+    },
+  })
+}
+
+/**
+ * 상품 품절 상태 토글 mutation
+ */
+export function useToggleProductOutOfStock() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, isOutOfStock }: { id: string; isOutOfStock: boolean }) =>
+      toggleProductOutOfStockAction(id, isOutOfStock),
+    onSuccess: (updatedProduct) => {
+      queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
+      queryClient.invalidateQueries({
+        queryKey: productsQueries.detail(updatedProduct.id).queryKey,
+      })
     },
   })
 }

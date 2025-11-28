@@ -34,6 +34,7 @@ interface Product {
   sale_start_at: string | null;
   sale_end_at: string | null;
   is_visible_on_main: boolean;
+  is_out_of_stock?: boolean;
   created_at: string;
 }
 
@@ -58,6 +59,7 @@ export default function ProductEditPage({
     sale_start_at: "",
     sale_end_at: "",
     is_visible_on_main: true,
+    is_out_of_stock: false,
   });
 
   const updateProductMutation = useUpdateProduct();
@@ -82,6 +84,7 @@ export default function ProductEditPage({
           : "",
         sale_end_at: product.sale_end_at ? product.sale_end_at.slice(0, 16) : "",
         is_visible_on_main: product.is_visible_on_main ?? true,
+        is_out_of_stock: product.is_out_of_stock ?? false,
       });
     }
   }, [product]);
@@ -126,6 +129,7 @@ export default function ProductEditPage({
         sale_start_at: formData.sale_start_at || null,
         sale_end_at: formData.sale_end_at || null,
         is_visible_on_main: formData.is_visible_on_main,
+        is_out_of_stock: formData.is_out_of_stock,
       };
 
       await updateProductMutation.mutateAsync({
@@ -263,17 +267,31 @@ export default function ProductEditPage({
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_visible_on_main"
-                checked={formData.is_visible_on_main}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_visible_on_main: checked as boolean })
-                }
-              />
-              <Label htmlFor="is_visible_on_main" className="cursor-pointer">
-                메인 페이지에 노출
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_visible_on_main"
+                  checked={formData.is_visible_on_main}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_visible_on_main: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_visible_on_main" className="cursor-pointer">
+                  메인 페이지에 노출
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_out_of_stock"
+                  checked={formData.is_out_of_stock}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_out_of_stock: checked as boolean })
+                  }
+                />
+                <Label htmlFor="is_out_of_stock" className="cursor-pointer">
+                  품절 상태로 설정
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">

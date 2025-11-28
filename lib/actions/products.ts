@@ -114,6 +114,13 @@ export async function toggleProductVisibility(id: string, isVisible: boolean) {
   return result
 }
 
+export async function toggleProductOutOfStock(id: string, isOutOfStock: boolean) {
+  const result = await productsRepository.toggleOutOfStock(id, isOutOfStock)
+  revalidatePath('/dashboard/products')
+  revalidatePath(`/dashboard/products/${id}`)
+  return result
+}
+
 // Product Options Actions
 export async function createProductOption(productId: string, data: any) {
   try {

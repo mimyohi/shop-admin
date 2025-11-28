@@ -159,4 +159,26 @@ export const productsRepository = {
 
     return uniqueCategories
   },
+
+  /**
+   * 상품 품절 상태 토글
+   */
+  async toggleOutOfStock(id: string, isOutOfStock: boolean): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        is_out_of_stock: isOutOfStock,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling product out of stock:', error)
+      throw new Error('Failed to toggle product out of stock')
+    }
+
+    return data
+  },
 }
