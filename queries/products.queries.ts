@@ -9,6 +9,7 @@ import {
   toggleProductOutOfStock as toggleProductOutOfStockAction,
   toggleProductNewBadge as toggleProductNewBadgeAction,
   toggleProductSaleBadge as toggleProductSaleBadgeAction,
+  duplicateProduct as duplicateProductAction,
 } from '@/lib/actions/products'
 import { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
 
@@ -138,6 +139,20 @@ export function useToggleProductSaleBadge() {
       queryClient.invalidateQueries({
         queryKey: productsQueries.detail(updatedProduct.id).queryKey,
       })
+    },
+  })
+}
+
+/**
+ * 상품 복제 mutation
+ */
+export function useDuplicateProduct() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => duplicateProductAction(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
     },
   })
 }

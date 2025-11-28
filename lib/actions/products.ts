@@ -135,6 +135,12 @@ export async function toggleProductSaleBadge(id: string, isSaleBadge: boolean) {
   return result
 }
 
+export async function duplicateProduct(id: string) {
+  const result = await productsRepository.duplicate(id)
+  revalidatePath('/dashboard/products')
+  return result
+}
+
 // Product Options Actions
 export async function createProductOption(productId: string, data: any) {
   try {

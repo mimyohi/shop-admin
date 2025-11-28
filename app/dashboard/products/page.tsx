@@ -30,6 +30,7 @@ import {
   Package,
   Sparkles,
   Tag,
+  Copy,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -38,6 +39,7 @@ import {
   useToggleProductOutOfStock,
   useToggleProductNewBadge,
   useToggleProductSaleBadge,
+  useDuplicateProduct,
 } from "@/queries/products.queries";
 
 interface Product {
@@ -68,6 +70,7 @@ export default function ProductsPage() {
   const toggleOutOfStockMutation = useToggleProductOutOfStock();
   const toggleNewBadgeMutation = useToggleProductNewBadge();
   const toggleSaleBadgeMutation = useToggleProductSaleBadge();
+  const duplicateProductMutation = useDuplicateProduct();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all");
@@ -219,6 +222,26 @@ export default function ProductsPage() {
     }
   };
 
+  const handleDuplicate = async (id: string, name: string) => {
+    if (!confirm(`"${name}" 상품을 복제하시겠습니까?`)) return;
+
+    try {
+      await duplicateProductMutation.mutateAsync(id);
+
+      toast({
+        title: "성공",
+        description: "상품이 복제되었습니다.",
+      });
+    } catch (error) {
+      console.error("Error duplicating product:", error);
+      toast({
+        title: "오류",
+        description: "상품 복제에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
   };
@@ -229,6 +252,16 @@ export default function ProductsPage() {
 
   return (
     <div className="p-8">
+      {duplicateProductMutation.isPending && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+              <p className="text-lg font-medium">상품을 복제하는 중...</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">상품 관리</h1>
@@ -382,58 +415,13 @@ export default function ProductsPage() {
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
-                          variant={product.is_new_badge ? "default" : "outline"}
+                          variant="outline"
                           onClick={() =>
-                            handleToggleNewBadge(
-                              product.id,
-                              product.is_new_badge || false
-                            )
+                            handleDuplicate(product.id, product.name)
                           }
-                          title={
-                            product.is_new_badge
-                              ? "NEW 뱃지 끄기"
-                              : "NEW 뱃지 켜기"
-                          }
+                          title="상품 복제"
                         >
-                          NEW
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            product.is_sale_badge ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            handleToggleSaleBadge(
-                              product.id,
-                              product.is_sale_badge || false
-                            )
-                          }
-                          title={
-                            product.is_sale_badge
-                              ? "SALE 뱃지 끄기"
-                              : "SALE 뱃지 켜기"
-                          }
-                        >
-                          SALE
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            product.is_out_of_stock ? "default" : "outline"
-                          }
-                          onClick={() =>
-                            handleToggleOutOfStock(
-                              product.id,
-                              product.is_out_of_stock || false
-                            )
-                          }
-                          title={
-                            product.is_out_of_stock
-                              ? "판매중으로 변경"
-                              : "품절 처리"
-                          }
-                        >
-                          {product.is_out_of_stock ? "품절" : "판매중"}
+                          복제
                         </Button>
                         <Button
                           size="sm"
@@ -443,14 +431,14 @@ export default function ProductsPage() {
                           }
                           title="상품 수정"
                         >
-                          <Pencil className="h-4 w-4" />
+                          수정
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(product.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          삭제
                         </Button>
                       </div>
                     </TableCell>

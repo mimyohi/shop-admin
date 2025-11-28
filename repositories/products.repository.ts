@@ -225,4 +225,92 @@ export const productsRepository = {
 
     return data
   },
+
+  /**
+   * 상품 복제
+   */
+  async duplicate(id: string): Promise<Product> {
+    // 1. 원본 상품 정보 가져오기
+    const { data: originalProduct, error: fetchError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !originalProduct) {
+      console.error('Error fetching original product:', fetchError)
+      throw new Error('Failed to fetch original product')
+    }
+
+    // 2. 새 상품 생성 (slug는 자동 생성됨)
+    const { id: _, slug: __, created_at: ___, updated_at: ____, ...productData } = originalProduct
+    const newProductData = {
+      ...productData,
+      name: `${originalProduct.name} (복사)`,
+      is_visible_on_main: false, // 복사본은 기본적으로 숨김
+    }
+
+    const { data: newProduct, error: createError } = await supabase
+      .from('products')
+      .insert(newProductData)
+      .select()
+      .single()
+
+    if (createError || !newProduct) {
+      console.error('Error creating duplicate product:', createError)
+      throw new Error('Failed to create duplicate product')
+    }
+
+    // 3. 옵션 복사
+    const { data: options, error: optionsError } = await supabase
+      .from('product_options')
+      .select('*')
+      .eq('product_id', id)
+
+    if (!optionsError && options && options.length > 0) {
+      for (const option of options) {
+        const { id: optionId, product_id: _, created_at: ___, updated_at: ____, ...optionData } = option
+
+        const { data: newOption, error: newOptionError } = await supabase
+          .from('product_options')
+          .insert({ ...optionData, product_id: newProduct.id })
+          .select()
+          .single()
+
+        if (!newOptionError && newOption) {
+          // 4. 옵션 값 복사
+          const { data: values, error: valuesError } = await supabase
+            .from('product_option_values')
+            .select('*')
+            .eq('option_id', optionId)
+
+          if (!valuesError && values && values.length > 0) {
+            const newValues = values.map(({ id: _, option_id: __, created_at: ___, updated_at: ____, ...valueData }) => ({
+              ...valueData,
+              option_id: newOption.id,
+            }))
+
+            await supabase.from('product_option_values').insert(newValues)
+          }
+        }
+      }
+    }
+
+    // 5. 추가상품 복사
+    const { data: addons, error: addonsError } = await supabase
+      .from('product_addons')
+      .select('*')
+      .eq('product_id', id)
+
+    if (!addonsError && addons && addons.length > 0) {
+      const newAddons = addons.map(({ id: _, product_id: __, created_at: ___, updated_at: ____, ...addonData }) => ({
+        ...addonData,
+        product_id: newProduct.id,
+      }))
+
+      await supabase.from('product_addons').insert(newAddons)
+    }
+
+    return newProduct
+  },
 }
