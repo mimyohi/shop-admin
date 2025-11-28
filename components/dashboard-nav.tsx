@@ -16,6 +16,8 @@ import {
   Ticket,
   Coins,
   BarChart3,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 
 const navItems = [
@@ -57,7 +59,12 @@ const navItems = [
   },
 ];
 
-export function DashboardNav() {
+type DashboardNavProps = {
+  collapsed?: boolean;
+  onToggle?: () => void;
+};
+
+export function DashboardNav({ collapsed = false, onToggle }: DashboardNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { adminUser, logout } = useAdminStore();
@@ -68,9 +75,31 @@ export function DashboardNav() {
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-gray-900 text-white">
-      <div className="flex h-16 items-center justify-center border-b border-gray-800">
-        <h1 className="text-xl font-bold">Shop Admin</h1>
+    <div
+      className={cn(
+        "flex h-screen flex-col bg-gray-900 text-white transition-all duration-200",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4">
+        <h1 className={cn("text-xl font-bold", collapsed && "sr-only")}>Shop Admin</h1>
+        {onToggle && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onToggle}
+            className="text-gray-400 hover:bg-gray-800 hover:text-white"
+          >
+            {collapsed ? (
+              <ChevronsRight className="h-4 w-4" />
+            ) : (
+              <ChevronsLeft className="h-4 w-4" />
+            )}
+            <span className="sr-only">
+              {collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+            </span>
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
@@ -88,14 +117,16 @@ export function DashboardNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-gray-800 text-white"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ,
+                  collapsed ? "justify-center" : "gap-3"
                 )}
               >
                 <Icon className="h-5 w-5" />
-                {item.title}
+                {!collapsed && item.title}
               </Link>
             );
           })}
@@ -103,21 +134,26 @@ export function DashboardNav() {
       </div>
 
       <div className="border-t border-gray-800 p-4">
-        <div className="mb-3 rounded-lg bg-gray-800 p-3">
-          <p className="text-sm font-medium">
-            {adminUser?.full_name || adminUser?.username}
-          </p>
-          <p className="text-xs text-gray-400">
-            {adminUser?.role === "master" ? "마스터 관리자" : "관리자"}
-          </p>
-        </div>
+        {!collapsed && (
+          <div className="mb-3 rounded-lg bg-gray-800 p-3">
+            <p className="text-sm font-medium">
+              {adminUser?.full_name || adminUser?.username}
+            </p>
+            <p className="text-xs text-gray-400">
+              {adminUser?.role === "master" ? "마스터 관리자" : "관리자"}
+            </p>
+          </div>
+        )}
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full justify-start gap-2 border-gray-700 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white"
+          className={cn(
+            "w-full gap-2 border-gray-700 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white",
+            collapsed ? "justify-center" : "justify-start"
+          )}
         >
           <LogOut className="h-4 w-4" />
-          로그아웃
+          {!collapsed && "로그아웃"}
         </Button>
       </div>
     </div>
