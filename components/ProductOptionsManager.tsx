@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, GripVertical, Settings2 } from "lucide-react";
+import ImageUpload from "@/components/ImageUpload";
 import { productOptionsQueries } from "@/queries/product-options.queries";
 import {
   createProductOption,
@@ -70,6 +71,7 @@ interface ProductAddon {
   name: string;
   description: string | null;
   price: number;
+  image_url?: string | null;
   is_available: boolean;
   display_order: number;
 }
@@ -106,6 +108,7 @@ export default function ProductOptionsManager({
     name: "",
     description: "",
     price: "",
+    image_url: "",
     is_available: true,
   });
 
@@ -303,7 +306,14 @@ export default function ProductOptionsManager({
 
   // === Addons Management ===
   const addAddonItem = async () => {
-    if (!newAddon.name.trim() || !newAddon.price) return;
+    if (!newAddon.name.trim() || !newAddon.price) {
+      alert("상품명과 가격은 필수 항목입니다.");
+      return;
+    }
+    if (!newAddon.image_url.trim()) {
+      alert("이미지를 업로드해주세요.");
+      return;
+    }
 
     try {
       if (mode === "create") {
@@ -313,6 +323,7 @@ export default function ProductOptionsManager({
           name: newAddon.name,
           description: newAddon.description || null,
           price: parseFloat(newAddon.price),
+          image_url: newAddon.image_url || null,
           is_available: newAddon.is_available,
           display_order: addons.length,
         };
@@ -323,6 +334,7 @@ export default function ProductOptionsManager({
           name: "",
           description: "",
           price: "",
+          image_url: "",
           is_available: true,
         });
       } else {
@@ -330,6 +342,7 @@ export default function ProductOptionsManager({
           name: newAddon.name,
           description: newAddon.description || null,
           price: parseFloat(newAddon.price),
+          image_url: newAddon.image_url || null,
           is_available: newAddon.is_available,
           display_order: addons.length,
         });
@@ -341,6 +354,7 @@ export default function ProductOptionsManager({
           name: "",
           description: "",
           price: "",
+          image_url: "",
           is_available: true,
         });
       }
@@ -470,8 +484,15 @@ export default function ProductOptionsManager({
           {addons.map((addon) => (
             <div
               key={addon.id}
-              className="flex items-center gap-2 p-3 border rounded"
+              className="flex items-start gap-3 p-3 border rounded"
             >
+              {addon.image_url && (
+                <img
+                  src={addon.image_url}
+                  alt={addon.name}
+                  className="w-16 h-16 object-cover rounded"
+                />
+              )}
               <div className="flex-1">
                 <div className="font-semibold">{addon.name}</div>
                 <div className="text-sm text-gray-500">{addon.description}</div>
@@ -527,6 +548,17 @@ export default function ProductOptionsManager({
                   setNewAddon({ ...newAddon, description: e.target.value })
                 }
               />
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  추가상품 이미지 <span className="text-red-500">*</span>
+                </Label>
+                <ImageUpload
+                  currentImageUrl={newAddon.image_url}
+                  onUploadComplete={(url) =>
+                    setNewAddon({ ...newAddon, image_url: url })
+                  }
+                />
+              </div>
               <Button type="button" onClick={addAddonItem} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 추가
