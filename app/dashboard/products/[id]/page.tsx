@@ -22,6 +22,7 @@ import MultiImageUpload from "@/components/MultiImageUpload";
 import ProductAddonsManager from "@/components/ProductAddonsManager";
 import ProductOptionsManager from "@/components/ProductOptionsManager";
 import { productsQueries, useUpdateProduct } from "@/queries/products.queries";
+import { PermissionGuard } from "@/components/permission-guard";
 
 interface Product {
   id: string;
@@ -184,8 +185,9 @@ export default function ProductEditPage({
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
+    <PermissionGuard requireMaster>
+      <div className="p-8">
+        <div className="mb-6">
         <Button
           variant="outline"
           onClick={() => router.push("/dashboard/products")}
@@ -426,6 +428,7 @@ export default function ProductEditPage({
           </Button>
         </div>
       </form>
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

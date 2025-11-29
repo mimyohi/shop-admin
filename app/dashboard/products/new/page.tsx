@@ -21,6 +21,7 @@ import MultiImageUpload from '@/components/MultiImageUpload'
 import ProductAddonsManager from '@/components/ProductAddonsManager'
 import ProductOptionsManager from '@/components/ProductOptionsManager'
 import { createProductWithOptions } from '@/lib/actions/products'
+import { PermissionGuard } from '@/components/permission-guard'
 
 interface VisibilityCondition {
   parent_values: string[]
@@ -115,15 +116,11 @@ export default function NewProductPage() {
         is_sale_badge: formData.is_sale_badge,
       }
 
-      const result = await createProductWithOptions({
+      await createProductWithOptions({
         product: productData,
         options: [],
         addons: addons,
       })
-
-      if (!result.success) {
-        throw new Error(result.error)
-      }
 
       toast({
         title: '성공',
@@ -144,8 +141,9 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
+    <PermissionGuard requireMaster>
+      <div className="p-8">
+        <div className="mb-6">
         <Button
           variant="outline"
           onClick={() => router.push('/dashboard/products')}
@@ -346,6 +344,7 @@ export default function NewProductPage() {
           </Button>
         </div>
       </form>
-    </div>
+      </div>
+    </PermissionGuard>
   )
 }

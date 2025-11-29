@@ -55,6 +55,7 @@ export interface OrderItem {
   // Product Options 관련 필드
   option_id?: string | null;
   option_name?: string | null;
+  option_price?: number;
   visit_type?: VisitType | null;
   selected_option_settings?: SelectedOptionSetting[] | null;
   created_at: string;

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { PointAdjustDialog } from "@/components/point-adjust-dialog";
 import { PointHistoryDialog } from "@/components/point-history-dialog";
+import { PermissionGuard } from "@/components/permission-guard";
 import { IssueCouponToUserDialog } from "@/components/issue-coupon-to-user-dialog";
 import {
   fetchUserOrderHistory,
@@ -36,14 +37,14 @@ import {
 
 interface UserDetail {
   id: string;
-  user_id: string;
+  user_id: string | null;
   email: string;
   display_name: string | null;
   phone: string | null;
-  phone_verified?: boolean;
+  phone_verified?: boolean | null;
   phone_verified_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
   points: number;
   total_earned: number;
   total_used: number;
@@ -249,8 +250,9 @@ export default function UserDetailPage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <PermissionGuard requireMaster>
+      <div className="p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Button
@@ -587,6 +589,7 @@ export default function UserDetailPage() {
         onOpenChange={setIsCouponDialogOpen}
         user={couponUserPayload}
       />
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

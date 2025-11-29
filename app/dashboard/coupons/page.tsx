@@ -26,6 +26,7 @@ import {
 } from "@/queries/coupons.queries";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import type { Coupon as CouponModel } from "@/models";
+import { PermissionGuard } from "@/components/permission-guard";
 
 type Coupon = CouponModel & {
   product_count?: number;
@@ -140,12 +141,13 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">쿠폰 관리</h1>
-          <p className="text-gray-500">쿠폰을 생성하고 관리하세요</p>
-        </div>
+    <PermissionGuard requireMaster>
+      <div className="p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">쿠폰 관리</h1>
+            <p className="text-gray-500">쿠폰을 생성하고 관리하세요</p>
+          </div>
         <Button
           onClick={() => {
             setSelectedCoupon(null);
@@ -370,6 +372,7 @@ export default function CouponsPage() {
         onOpenChange={setIsIssueDialogOpen}
         coupon={selectedCoupon}
       />
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

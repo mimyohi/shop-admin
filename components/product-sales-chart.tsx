@@ -10,12 +10,158 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  TooltipProps,
 } from "recharts";
 
 interface ProductSalesChartProps {
   data: ProductSalesData[];
   maxItems?: number;
 }
+
+// 옵션별 색상 정의 (차트와 툴팁에서 공통 사용)
+const optionColors = [
+  "#8b5cf6", // 보라
+  "#ec4899", // 핑크
+  "#f59e0b", // 주황
+  "#10b981", // 초록
+  "#3b82f6", // 파랑
+  "#ef4444", // 빨강
+];
+
+// Custom Tooltip Component
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+  allOptions,
+}: TooltipProps<number, string> & { allOptions: string[] }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  const data = payload[0].payload as ProductSalesData;
+
+  return (
+    <div
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.98)",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        padding: "16px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        minWidth: "280px",
+      }}
+    >
+      <p style={{ fontWeight: "bold", marginBottom: "12px", fontSize: "14px" }}>
+        {label}
+      </p>
+
+      {/* Total Sales */}
+      <div
+        style={{
+          marginBottom: "12px",
+          paddingBottom: "8px",
+          borderBottom: "1px solid #eee",
+        }}
+      >
+        <p style={{ fontSize: "13px", color: "#666" }}>총 매출액</p>
+        <p style={{ fontSize: "16px", fontWeight: "bold" }}>
+          {data.total_sales.toLocaleString()}원
+        </p>
+      </div>
+
+      {/* Option Breakdown with Ratio Bar */}
+      {data.option_breakdown && data.option_breakdown.length > 0 && (
+        <div
+          style={{
+            marginTop: "12px",
+            paddingTop: "8px",
+          }}
+        >
+          <p style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+            옵션별 매출 비중
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {data.option_breakdown.map((option, idx) => {
+              const optionPercent =
+                data.total_sales > 0
+                  ? (option.sales / data.total_sales) * 100
+                  : 0;
+
+              // 차트와 동일한 색상 매칭
+              const optionIndex = allOptions.indexOf(option.option_name);
+              const barColor = optionColors[optionIndex % optionColors.length];
+
+              return (
+                <div key={idx} style={{ fontSize: "11px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ color: "#666", fontWeight: "500" }}>
+                      {option.option_name}
+                    </span>
+                    <span style={{ fontWeight: "600", color: "#333" }}>
+                      {optionPercent.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "10px",
+                      color: "#888",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span>{option.sales.toLocaleString()}원</span>
+                    <span>
+                      {option.quantity}개 / {option.order_count}건
+                    </span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "6px",
+                      backgroundColor: "#f3f4f6",
+                      borderRadius: "3px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${optionPercent}%`,
+                        height: "100%",
+                        backgroundColor: barColor,
+                        transition: "width 0.3s ease",
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Other Stats */}
+      <div
+        style={{
+          marginTop: "12px",
+          paddingTop: "8px",
+          borderTop: "1px solid #eee",
+          fontSize: "11px",
+          color: "#666",
+        }}
+      >
+        <div>판매량: {data.total_quantity}개</div>
+        <div>주문 건수: {data.order_count}건</div>
+      </div>
+    </div>
+  );
+};
 
 export function ProductSalesChart({
   data,
@@ -24,10 +170,42 @@ export function ProductSalesChart({
   // 상위 N개 상품만 표시 (성능 고려)
   const chartData = data.slice(0, maxItems);
 
+  // 모든 상품의 옵션들을 수집하여 유니크한 옵션 목록 생성
+  const allOptions = new Set<string>();
+  chartData.forEach((item) => {
+    item.option_breakdown?.forEach((option) => {
+      allOptions.add(option.option_name);
+    });
+  });
+
+  // 옵션 이름을 배열로 변환하여 순서 보장
+  const optionNames = Array.from(allOptions);
+
+  // 차트 데이터를 옵션별로 변환
+  const transformedData = chartData.map((item) => {
+    const row: any = {
+      product_name: item.product_name,
+      total_sales: item.total_sales,
+      option_breakdown: item.option_breakdown,
+      base_sales: item.base_sales,
+      option_sales: item.option_sales,
+      addon_sales: item.addon_sales,
+      total_quantity: item.total_quantity,
+      order_count: item.order_count,
+    };
+
+    // 각 옵션별 매출을 별도 키로 추가
+    item.option_breakdown?.forEach((option) => {
+      row[`option_${option.option_name}`] = option.sales;
+    });
+
+    return row;
+  });
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <BarChart
-        data={chartData}
+        data={transformedData}
         margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
@@ -39,29 +217,22 @@ export function ProductSalesChart({
           fontSize={12}
         />
         <YAxis tickFormatter={(value) => value.toLocaleString()} />
-        <Tooltip
-          formatter={(value: number, name: string) => {
-            if (name === "total_sales") {
-              return [value.toLocaleString() + "원", "매출액"];
-            }
-            if (name === "total_quantity") {
-              return [value.toLocaleString() + "개", "판매량"];
-            }
-            return [value, name];
-          }}
-          contentStyle={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
-        />
+        <Tooltip content={<CustomTooltip allOptions={optionNames} />} />
         <Legend />
-        <Bar
-          dataKey="total_sales"
-          fill="#3b82f6"
-          name="매출액"
-          radius={[8, 8, 0, 0]}
-        />
+
+        {/* 옵션별로 스택된 바 생성 */}
+        {optionNames.map((optionName, idx) => (
+          <Bar
+            key={optionName}
+            dataKey={`option_${optionName}`}
+            stackId="sales"
+            fill={optionColors[idx % optionColors.length]}
+            name={optionName}
+            radius={
+              idx === optionNames.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]
+            }
+          />
+        ))}
       </BarChart>
     </ResponsiveContainer>
   );

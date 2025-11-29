@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usersQueries } from "@/queries/users.queries";
 import { parseAsString, useQueryState } from "nuqs";
+import { PermissionGuard } from "@/components/permission-guard";
 
 interface User {
   id: string;
@@ -62,11 +63,12 @@ export default function UsersPage() {
   }, [isError, toast]);
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">유저 관리</h1>
-        <p className="text-gray-500">유저 정보 및 포인트를 관리하세요</p>
-      </div>
+    <PermissionGuard requireMaster>
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">유저 관리</h1>
+          <p className="text-gray-500">유저 정보 및 포인트를 관리하세요</p>
+        </div>
 
       {/* 필터 영역 */}
       <Card className="mb-6">
@@ -146,6 +148,7 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

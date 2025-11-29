@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // 알림톡 발송
     const result = await sendShippingNotificationAlimtalk(phone, {
       orderId: order.order_id,
-      customerName: order.user_name || order.shipping_name,
+      customerName: order.user_name || order.shipping_name || "고객",
       shippingCompany: order.shipping_company,
       trackingNumber: order.tracking_number,
     });

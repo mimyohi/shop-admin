@@ -7,6 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import {
   fetchOptionsByProductId,
@@ -44,6 +52,14 @@ export default function ProductOptionsManager({
   const [options, setOptions] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  // Default setup dialog
+  const [showDefaultSetupDialog, setShowDefaultSetupDialog] = useState(false);
+  const [selectedDefaultOptions, setSelectedDefaultOptions] = useState({
+    oneMonth: true,
+    twoMonths: true,
+    threeMonths: true,
+  });
 
   // New option form
   const [newOption, setNewOption] = useState({
@@ -212,7 +228,6 @@ export default function ProductOptionsManager({
         ...prev,
         [optionId]: {
           name: "",
-          is_required: false,
         },
       }));
     }
@@ -239,7 +254,6 @@ export default function ProductOptionsManager({
         ...prev,
         [optionId]: {
           name: "",
-          is_required: false,
         },
       }));
     } catch (error: any) {
@@ -374,6 +388,109 @@ export default function ProductOptionsManager({
     }
   };
 
+  // === Default Setup ===
+  const openDefaultSetupDialog = () => {
+    if (!productId) {
+      alert("상품을 먼저 생성해주세요.");
+      return;
+    }
+    setShowDefaultSetupDialog(true);
+  };
+
+  const applyDefaultOptions = async () => {
+    try {
+      setLoading(true);
+      setShowDefaultSetupDialog(false);
+
+      const defaultOptionsData = [];
+      if (selectedDefaultOptions.oneMonth) {
+        defaultOptionsData.push({ name: "1개월", price: 0 });
+      }
+      if (selectedDefaultOptions.twoMonths) {
+        defaultOptionsData.push({ name: "2개월", price: 0 });
+      }
+      if (selectedDefaultOptions.threeMonths) {
+        defaultOptionsData.push({ name: "3개월", price: 0 });
+      }
+
+      if (defaultOptionsData.length === 0) {
+        alert("최소 하나의 옵션을 선택해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      const defaultSettings = ["1개월", "2개월", "3개월"];
+      const defaultTypes = ["1단계", "2단계", "3단계"];
+
+      // Create options with settings and types
+      for (let i = 0; i < defaultOptionsData.length; i++) {
+        const optionData = defaultOptionsData[i];
+
+        // Create option
+        const optionResult = await createProductOption(productId!, {
+          name: optionData.name,
+          price: optionData.price,
+          use_settings_on_first: true,
+          use_settings_on_revisit_with_consult: true,
+          use_settings_on_revisit_no_consult: true,
+          display_order: options.length + i,
+        });
+
+        if (!optionResult.success || !optionResult.data) {
+          throw new Error(`${optionData.name} 옵션 생성 실패: ${optionResult.error}`);
+        }
+
+        const optionId = optionResult.data.id;
+
+        // Create settings for this option
+        for (let j = 0; j < defaultSettings.length; j++) {
+          const settingName = defaultSettings[j];
+
+          const settingResult = await createProductOptionSetting(optionId, {
+            name: settingName,
+            display_order: j,
+          });
+
+          if (!settingResult.success || !settingResult.data) {
+            throw new Error(`${settingName} 설정 생성 실패: ${settingResult.error}`);
+          }
+
+          const settingId = settingResult.data.id;
+
+          // Create types for this setting
+          for (let k = 0; k < defaultTypes.length; k++) {
+            const typeName = defaultTypes[k];
+
+            const typeResult = await createProductOptionSettingType(settingId, {
+              name: typeName,
+              is_available: true,
+              display_order: k,
+            });
+
+            if (!typeResult.success) {
+              throw new Error(`${typeName} 타입 생성 실패: ${typeResult.error}`);
+            }
+          }
+        }
+      }
+
+      alert("기본 옵션이 성공적으로 생성되었습니다.");
+      await loadOptions();
+
+      // Reset selection
+      setSelectedDefaultOptions({
+        oneMonth: true,
+        twoMonths: true,
+        threeMonths: true,
+      });
+    } catch (error: any) {
+      console.error("Error setting default options:", error);
+      alert(error.message || "기본 옵션 생성에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (mode === "create") {
     return (
       <Card>
@@ -400,12 +517,26 @@ export default function ProductOptionsManager({
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
-        <CardTitle>상품 옵션 관리</CardTitle>
-        <p className="text-sm text-gray-500 mt-2">
-          옵션 → 설정 → 타입 구조로 관리됩니다(ex.3개월-1/2/3개월-1/2/3단계)
-        </p>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle>상품 옵션 관리</CardTitle>
+            <p className="text-sm text-gray-500 mt-2">
+              옵션 → 설정 → 타입 구조로 관리됩니다(ex.3개월-1/2/3개월-1/2/3단계)
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={openDefaultSetupDialog}
+            disabled={loading}
+            variant="outline"
+            className="ml-4"
+          >
+            기본 옵션 세팅
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Existing Options */}
@@ -464,6 +595,72 @@ export default function ProductOptionsManager({
             {/* Option Details (Expanded) */}
             {expanded[option.id]?.option && (
               <div className="p-4 space-y-4">
+                {/* Option Edit Section */}
+                <div className="space-y-3 border-b pb-4">
+                  <h4 className="font-semibold text-sm">옵션 정보 수정</h4>
+
+                  <div className="grid gap-3">
+                    <div>
+                      <Label className="text-xs">추가 가격</Label>
+                      <Input
+                        type="number"
+                        value={option.price}
+                        onChange={(e) =>
+                          updateOptionField(
+                            option.id,
+                            "price",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">방문 유형별 설정 사용</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={option.use_settings_on_first}
+                          onCheckedChange={(checked) =>
+                            updateOptionField(
+                              option.id,
+                              "use_settings_on_first",
+                              checked
+                            )
+                          }
+                        />
+                        <Label className="text-xs font-normal">초진 시 설정 사용</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={option.use_settings_on_revisit_with_consult}
+                          onCheckedChange={(checked) =>
+                            updateOptionField(
+                              option.id,
+                              "use_settings_on_revisit_with_consult",
+                              checked
+                            )
+                          }
+                        />
+                        <Label className="text-xs font-normal">재진(상담O) 시 설정 사용</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={option.use_settings_on_revisit_no_consult}
+                          onCheckedChange={(checked) =>
+                            updateOptionField(
+                              option.id,
+                              "use_settings_on_revisit_no_consult",
+                              checked
+                            )
+                          }
+                        />
+                        <Label className="text-xs font-normal">재진(상담X) 시 설정 사용</Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Settings List */}
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm">설정 목록</h4>
@@ -492,14 +689,6 @@ export default function ProductOptionsManager({
                               <div className="font-semibold text-sm">
                                 {setting.name}
                               </div>
-                              {setting.is_required && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs mt-1"
-                                >
-                                  필수
-                                </Badge>
-                              )}
                             </div>
                             <Button
                               type="button"
@@ -690,5 +879,81 @@ export default function ProductOptionsManager({
         </div>
       </CardContent>
     </Card>
+
+    {/* Default Setup Dialog */}
+    <Dialog open={showDefaultSetupDialog} onOpenChange={setShowDefaultSetupDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>기본 옵션 세팅</DialogTitle>
+          <DialogDescription>
+            추가할 옵션을 선택해주세요. 각 옵션에는 1/2/3개월 설정과 1/2/3단계 타입이 자동으로 추가됩니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="oneMonth"
+              checked={selectedDefaultOptions.oneMonth}
+              onCheckedChange={(checked) =>
+                setSelectedDefaultOptions({
+                  ...selectedDefaultOptions,
+                  oneMonth: checked as boolean,
+                })
+              }
+            />
+            <Label htmlFor="oneMonth" className="cursor-pointer">
+              1개월 옵션
+            </Label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="twoMonths"
+              checked={selectedDefaultOptions.twoMonths}
+              onCheckedChange={(checked) =>
+                setSelectedDefaultOptions({
+                  ...selectedDefaultOptions,
+                  twoMonths: checked as boolean,
+                })
+              }
+            />
+            <Label htmlFor="twoMonths" className="cursor-pointer">
+              2개월 옵션
+            </Label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="threeMonths"
+              checked={selectedDefaultOptions.threeMonths}
+              onCheckedChange={(checked) =>
+                setSelectedDefaultOptions({
+                  ...selectedDefaultOptions,
+                  threeMonths: checked as boolean,
+                })
+              }
+            />
+            <Label htmlFor="threeMonths" className="cursor-pointer">
+              3개월 옵션
+            </Label>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowDefaultSetupDialog(false)}
+          >
+            취소
+          </Button>
+          <Button type="button" onClick={applyDefaultOptions} disabled={loading}>
+            {loading ? "생성 중..." : "생성"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }

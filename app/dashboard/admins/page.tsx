@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation"
 import { adminUsersQueries, useDeleteAdminUser, useResetAdminPassword } from "@/queries/admin-users.queries"
 import { ResetPasswordDialog } from "@/components/reset-password-dialog"
 import { createAdminUser } from "@/lib/actions/auth"
+import { PermissionGuard } from "@/components/permission-guard"
 
 interface AdminUser {
   id: string
@@ -58,20 +59,11 @@ export default function AdminsPage() {
     role: "admin",
   })
 
-  useEffect(() => {
-    if (adminUser?.role !== 'master') {
-      router.push('/dashboard')
-    }
-  }, [adminUser, router])
-
   const {
     data: admins = [],
     isLoading,
     refetch: refetchAdmins,
-  } = useQuery({
-    ...adminUsersQueries.list(),
-    enabled: adminUser?.role === 'master',
-  })
+  } = useQuery(adminUsersQueries.list())
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -170,12 +162,9 @@ export default function AdminsPage() {
     setShowForm(false)
   }
 
-  if (adminUser?.role !== 'master') {
-    return null
-  }
-
   return (
-    <div className="p-8">
+    <PermissionGuard requireMaster>
+      <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">관리자 관리</h1>
@@ -344,6 +333,7 @@ export default function AdminsPage() {
         adminUsername={resetPasswordDialog.adminUsername}
         onConfirm={handleResetPassword}
       />
-    </div>
+      </div>
+    </PermissionGuard>
   )
 }
