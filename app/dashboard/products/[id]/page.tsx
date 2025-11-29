@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import MultiImageUpload from "@/components/MultiImageUpload";
+import ProductAddonsManager from "@/components/ProductAddonsManager";
 import ProductOptionsManager from "@/components/ProductOptionsManager";
 import { productsQueries, useUpdateProduct } from "@/queries/products.queries";
 
@@ -80,14 +81,19 @@ export default function ProductEditPage({
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
-        discount_rate: product.discount_rate !== null && product.discount_rate !== undefined ? product.discount_rate.toString() : "0",
+        discount_rate:
+          product.discount_rate !== null && product.discount_rate !== undefined
+            ? product.discount_rate.toString()
+            : "0",
         category: product.category,
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],
         sale_start_at: product.sale_start_at
           ? product.sale_start_at.slice(0, 16)
           : "",
-        sale_end_at: product.sale_end_at ? product.sale_end_at.slice(0, 16) : "",
+        sale_end_at: product.sale_end_at
+          ? product.sale_end_at.slice(0, 16)
+          : "",
         is_visible_on_main: product.is_visible_on_main ?? true,
         is_out_of_stock: product.is_out_of_stock ?? false,
         is_new_badge: product.is_new_badge ?? false,
@@ -109,11 +115,7 @@ export default function ProductEditPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.price ||
-      !formData.category
-    ) {
+    if (!formData.name || !formData.price || !formData.category) {
       toast({
         title: "오류",
         description: "필수 항목을 모두 입력해주세요.",
@@ -129,7 +131,9 @@ export default function ProductEditPage({
         name: formData.name,
         description: formData.description,
         price: parseInt(formData.price),
-        discount_rate: formData.discount_rate ? parseInt(formData.discount_rate) : 0,
+        discount_rate: formData.discount_rate
+          ? parseInt(formData.discount_rate)
+          : 0,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -245,9 +249,7 @@ export default function ProductEditPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="discount_rate">
-                  할인률 (%)
-                </Label>
+                <Label htmlFor="discount_rate">할인률 (%)</Label>
                 <Input
                   id="discount_rate"
                   type="number"
@@ -282,7 +284,10 @@ export default function ProductEditPage({
                   id="is_visible_on_main"
                   checked={formData.is_visible_on_main}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_visible_on_main: checked as boolean })
+                    setFormData({
+                      ...formData,
+                      is_visible_on_main: checked as boolean,
+                    })
                   }
                 />
                 <Label htmlFor="is_visible_on_main" className="cursor-pointer">
@@ -294,7 +299,10 @@ export default function ProductEditPage({
                   id="is_out_of_stock"
                   checked={formData.is_out_of_stock}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_out_of_stock: checked as boolean })
+                    setFormData({
+                      ...formData,
+                      is_out_of_stock: checked as boolean,
+                    })
                   }
                 />
                 <Label htmlFor="is_out_of_stock" className="cursor-pointer">
@@ -306,7 +314,10 @@ export default function ProductEditPage({
                   id="is_new_badge"
                   checked={formData.is_new_badge}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_new_badge: checked as boolean })
+                    setFormData({
+                      ...formData,
+                      is_new_badge: checked as boolean,
+                    })
                   }
                 />
                 <Label htmlFor="is_new_badge" className="cursor-pointer">
@@ -318,7 +329,10 @@ export default function ProductEditPage({
                   id="is_sale_badge"
                   checked={formData.is_sale_badge}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_sale_badge: checked as boolean })
+                    setFormData({
+                      ...formData,
+                      is_sale_badge: checked as boolean,
+                    })
                   }
                 />
                 <Label htmlFor="is_sale_badge" className="cursor-pointer">
@@ -352,7 +366,9 @@ export default function ProductEditPage({
 
             {/* 판매 기간 설정 */}
             <div className="border-t pt-4 mt-4">
-              <h3 className="text-lg font-semibold mb-4">판매 기간 설정 (선택)</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                판매 기간 설정 (선택)
+              </h3>
               <p className="text-sm text-gray-500 mb-4">
                 판매 기간을 설정하지 않으면 상시 판매됩니다.
               </p>
@@ -387,12 +403,14 @@ export default function ProductEditPage({
                 </div>
               </div>
             </div>
-
           </CardContent>
         </Card>
 
-        {/* 옵션 및 추가상품 관리 */}
+        {/* 상품 옵션 관리 */}
         <ProductOptionsManager productId={product.id} />
+
+        {/* 추가상품 관리 */}
+        <ProductAddonsManager productId={product.id} />
 
         {/* 제출 버튼 */}
         <div className="flex gap-2">

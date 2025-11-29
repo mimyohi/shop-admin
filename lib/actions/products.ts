@@ -141,73 +141,7 @@ export async function duplicateProduct(id: string) {
   return result
 }
 
-// Product Options Actions
-export async function createProductOption(productId: string, data: any) {
-  try {
-    const result = await productOptionsRepository.createOption(productId, data)
-    revalidatePath(`/dashboard/products/${productId}`)
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Create product option error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function updateProductOption(optionId: string, data: any) {
-  try {
-    const result = await productOptionsRepository.updateOption(optionId, data)
-    revalidatePath('/dashboard/products')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Update product option error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function deleteProductOption(optionId: string) {
-  try {
-    await productOptionsRepository.deleteOption(optionId)
-    revalidatePath('/dashboard/products')
-    return { success: true }
-  } catch (error: any) {
-    console.error('Delete product option error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function createOptionValue(optionId: string, data: any) {
-  try {
-    const result = await productOptionsRepository.createOptionValue(optionId, data)
-    revalidatePath('/dashboard/products')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Create option value error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function updateOptionValue(valueId: string, data: any) {
-  try {
-    const result = await productOptionsRepository.updateOptionValue(valueId, data)
-    revalidatePath('/dashboard/products')
-    return { success: true, data: result }
-  } catch (error: any) {
-    console.error('Update option value error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function deleteOptionValue(valueId: string) {
-  try {
-    await productOptionsRepository.deleteOptionValue(valueId)
-    revalidatePath('/dashboard/products')
-    return { success: true }
-  } catch (error: any) {
-    console.error('Delete option value error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
+// Product Addon Actions
 export async function createAddon(productId: string, data: any) {
   try {
     const result = await productOptionsRepository.createAddon(productId, data)

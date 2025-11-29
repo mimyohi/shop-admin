@@ -1,39 +1,102 @@
 import { supabaseServer as supabase } from '@/lib/supabase-server'
-import type { ProductAddon, ProductOption, ProductOptionValue } from '@/models'
+import type { ProductAddon, ProductOption } from '@/models'
 
 export interface ProductConfiguration {
-  options: (ProductOption & { values?: ProductOptionValue[] })[]
+  options: []  // 이전 options는 제거됨, 호환성을 위해 빈 배열
   addons: ProductAddon[]
 }
 
 export const productOptionsRepository = {
-  async findOptionsByProductId(productId: string) {
+  async findConfigurationByProductId(productId: string): Promise<ProductConfiguration> {
+    const addons = await this.findAddonsByProductId(productId)
+    return { options: [], addons }
+  },
+
+  /**
+   * 모든 옵션 조회 (product_id가 null인 것만 - 아직 연결되지 않은 옵션)
+   */
+  async findUnlinkedOptions(): Promise<ProductOption[]> {
     const { data, error } = await supabase
       .from('product_options')
-      .select(
-        `
-        *,
-        product_option_values (*)
-      `
-      )
+      .select('*')
+      .is('product_id', null)
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching unlinked options:', error)
+      throw new Error('Failed to fetch unlinked options')
+    }
+
+    return data || []
+  },
+
+  /**
+   * 특정 상품에 연결된 옵션들 조회
+   */
+  async findByProductId(productId: string): Promise<ProductOption[]> {
+    const { data, error } = await supabase
+      .from('product_options')
+      .select('*')
       .eq('product_id', productId)
       .order('display_order')
 
     if (error) {
-      console.error('Error fetching product options:', error)
-      throw new Error('Failed to fetch product options')
+      console.error('Error fetching options by product_id:', error)
+      throw new Error('Failed to fetch options by product_id')
     }
 
-    return (
-      data?.map((option) => ({
-        ...option,
-        values: (option.product_option_values as ProductOptionValue[] | undefined)?.sort(
-          (a, b) => a.display_order - b.display_order
-        ),
-      })) || []
-    )
+    return data || []
   },
 
+  /**
+   * 옵션을 상품에 연결
+   */
+  async linkToProduct(optionId: string, productId: string): Promise<void> {
+    const { error } = await supabase
+      .from('product_options')
+      .update({ product_id: productId })
+      .eq('id', optionId)
+
+    if (error) {
+      console.error('Error linking option to product:', error)
+      throw new Error('Failed to link option to product')
+    }
+  },
+
+  /**
+   * 옵션과 상품 연결 해제
+   */
+  async unlinkFromProduct(optionId: string): Promise<void> {
+    const { error } = await supabase
+      .from('product_options')
+      .update({ product_id: null })
+      .eq('id', optionId)
+
+    if (error) {
+      console.error('Error unlinking option from product:', error)
+      throw new Error('Failed to unlink option from product')
+    }
+  },
+
+  /**
+   * 옵션 ID로 조회
+   */
+  async findById(optionId: string): Promise<ProductOption | null> {
+    const { data, error } = await supabase
+      .from('product_options')
+      .select('*')
+      .eq('id', optionId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching option:', error)
+      return null
+    }
+
+    return data
+  },
+
+  // === Addons 관련 메서드 ===
   async findAddonsByProductId(productId: string) {
     const { data, error } = await supabase
       .from('product_addons')
@@ -49,107 +112,7 @@ export const productOptionsRepository = {
     return data || []
   },
 
-  async findConfigurationByProductId(productId: string): Promise<ProductConfiguration> {
-    const [options, addons] = await Promise.all([
-      this.findOptionsByProductId(productId),
-      this.findAddonsByProductId(productId),
-    ])
-
-    return { options, addons }
-  },
-
-  async createOption(productId: string, data: any): Promise<ProductOption> {
-    const { data: option, error } = await supabase
-      .from('product_options')
-      .insert({
-        product_id: productId,
-        ...data,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating product option:', error)
-      throw new Error('Failed to create product option')
-    }
-
-    return option
-  },
-
-  async updateOption(optionId: string, data: any): Promise<ProductOption> {
-    const { data: option, error } = await supabase
-      .from('product_options')
-      .update(data)
-      .eq('id', optionId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating product option:', error)
-      throw new Error('Failed to update product option')
-    }
-
-    return option
-  },
-
-  async deleteOption(optionId: string): Promise<void> {
-    const { error } = await supabase
-      .from('product_options')
-      .delete()
-      .eq('id', optionId)
-
-    if (error) {
-      console.error('Error deleting product option:', error)
-      throw new Error('Failed to delete product option')
-    }
-  },
-
-  async createOptionValue(optionId: string, data: any): Promise<ProductOptionValue> {
-    const { data: value, error } = await supabase
-      .from('product_option_values')
-      .insert({
-        option_id: optionId,
-        ...data,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating option value:', error)
-      throw new Error('Failed to create option value')
-    }
-
-    return value
-  },
-
-  async updateOptionValue(valueId: string, data: any): Promise<ProductOptionValue> {
-    const { data: value, error } = await supabase
-      .from('product_option_values')
-      .update(data)
-      .eq('id', valueId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating option value:', error)
-      throw new Error('Failed to update option value')
-    }
-
-    return value
-  },
-
-  async deleteOptionValue(valueId: string): Promise<void> {
-    const { error } = await supabase
-      .from('product_option_values')
-      .delete()
-      .eq('id', valueId)
-
-    if (error) {
-      console.error('Error deleting option value:', error)
-      throw new Error('Failed to delete option value')
-    }
-  },
-
+  // === Addon 생성/수정/삭제 메서드 ===
   async createAddon(productId: string, data: any): Promise<ProductAddon> {
     const { data: addon, error } = await supabase
       .from('product_addons')

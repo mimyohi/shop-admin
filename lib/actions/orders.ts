@@ -174,3 +174,21 @@ export async function setAdminMemo(orderId: string, memo: string | null) {
   revalidatePath(`/dashboard/orders/${orderId}`)
   return { success: true }
 }
+
+export async function updateOrderItemOptionSettings(orderItemId: string, orderId: string, selectedOptionSettings: any[]) {
+  const { error } = await supabaseServer
+    .from('order_items')
+    .update({
+      selected_option_settings: selectedOptionSettings,
+    })
+    .eq('id', orderItemId)
+
+  if (error) {
+    console.error('Update order item option settings error:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/dashboard/orders')
+  revalidatePath(`/dashboard/orders/${orderId}`)
+  return { success: true }
+}

@@ -34,7 +34,10 @@ import {
   setConsultationStatus,
   setHandlerAdmin,
   setShippingInfo,
+  updateOrderItemOptionSettings,
 } from "@/lib/actions/orders";
+import { VisitType, SelectedOptionSetting } from "@/models";
+import OptionSettingsSelector from "@/components/OptionSettingsSelector";
 
 interface HealthConsultation {
   id: string;
@@ -76,10 +79,15 @@ interface AdminUser {
 
 interface OrderItem {
   id: string;
-  product_id: string;
+  product_id?: string | null;
   product_name: string;
   product_price: number;
   quantity: number;
+  // Product Options 관련 필드
+  option_id?: string | null;
+  option_name?: string | null;
+  visit_type?: VisitType | null;
+  selected_option_settings?: SelectedOptionSetting[] | null;
 }
 
 interface Order {
@@ -209,6 +217,8 @@ export default function OrderDetailPage() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [groupOptionsDialogOpen, setGroupOptionsDialogOpen] = useState(false);
+  const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItem | null>(null);
 
   const {
     data: order,
@@ -227,6 +237,18 @@ export default function OrderDetailPage() {
       setShippingCompany(order.shipping_company || "");
       setTrackingNumber(order.tracking_number || "");
       setOrderMemo(order.admin_memo ?? "");
+
+      // Debug: Log order items to check option_id
+      console.log("Order items:", order.order_items);
+      order.order_items?.forEach((item, idx) => {
+        console.log(`Item ${idx}:`, {
+          product_name: item.product_name,
+          option_id: item.option_id,
+          option_name: item.option_name,
+          visit_type: item.visit_type,
+          selected_option_settings: item.selected_option_settings,
+        });
+      });
     }
   }, [order]);
 
@@ -935,6 +957,11 @@ export default function OrderDetailPage() {
             )}
           </CardHeader>
           <CardContent>
+            {!healthConsultation ? (
+              <div className="text-center py-8 text-gray-500">
+                문진 정보가 없습니다.
+              </div>
+            ) : (
             <div className="space-y-4">
               {/* User ID 정보 */}
               {healthConsultation.user_id && (
@@ -1416,6 +1443,7 @@ export default function OrderDetailPage() {
                 </div>
               </div>
             </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1503,9 +1531,53 @@ export default function OrderDetailPage() {
                     {order.order_items.map((item) => (
                       <div key={item.id} className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-sm">
-                          <div className="font-medium mb-2">
-                            {item.product_name}
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="font-medium">
+                              {item.product_name}
+                              {item.option_id && (
+                                <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                  옵션 상품
+                                </span>
+                              )}
+                            </div>
+                            {item.option_id ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedOrderItem(item);
+                                  setGroupOptionsDialogOpen(true);
+                                }}
+                              >
+                                설정 변경
+                              </Button>
+                            ) : (
+                              <div className="text-xs text-gray-400">
+                                옵션 ID 없음
+                              </div>
+                            )}
                           </div>
+                          {item.option_id && item.visit_type && (
+                            <div className="text-xs text-gray-600 mb-1">
+                              방문 타입:{" "}
+                              {item.visit_type === "first"
+                                ? "초진"
+                                : item.visit_type === "revisit_with_consult"
+                                ? "재진(상담)"
+                                : "재진(상담X)"}
+                            </div>
+                          )}
+                          {item.option_id && item.selected_option_settings && item.selected_option_settings.length > 0 && (
+                            <div className="text-xs text-gray-600 mb-2">
+                              선택 설정:
+                              {item.selected_option_settings.map((setting, idx) => (
+                                <div key={idx} className="ml-2">
+                                  • {setting.setting_name}: {setting.type_name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex justify-between text-xs text-gray-600 mb-1">
                             <span>단가</span>
                             <span className="font-medium">
@@ -1727,6 +1799,23 @@ export default function OrderDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Option Settings Selector Dialog */}
+        {selectedOrderItem && selectedOrderItem.option_id && (
+          <OptionSettingsSelector
+            open={groupOptionsDialogOpen}
+            onOpenChange={setGroupOptionsDialogOpen}
+            orderItemId={selectedOrderItem.id}
+            orderId={order.id}
+            optionId={selectedOrderItem.option_id}
+            optionName={selectedOrderItem.option_name || "옵션 상품"}
+            currentSelections={selectedOrderItem.selected_option_settings}
+            onSaved={() => {
+              // Refetch order data
+              refetchOrder();
+            }}
+          />
+        )}
       </div>
     </div>
   );

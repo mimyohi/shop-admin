@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "./database.types";
 
 // 서버 전용 Supabase 클라이언트 (Service Role 사용)
 // 이 파일은 서버 컴포넌트, API 라우트, 서버 액션에서만 import하세요
@@ -15,7 +16,7 @@ if (!supabaseServiceKey && typeof window === "undefined") {
   );
 }
 
-export const supabaseServer = createClient(
+export const supabaseServer = createClient<Database>(
   supabaseUrl,
   supabaseServiceKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
   {

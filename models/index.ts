@@ -5,6 +5,9 @@
 // Product models
 export * from './product.model'
 
+// Product Option models (이전 Product Group)
+export * from './product-option.model'
+
 // Order models
 export * from './order.model'
 

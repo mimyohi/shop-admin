@@ -1,4 +1,5 @@
-import { SelectedOption, SelectedAddon } from "./product.model";
+import { SelectedAddon } from "./product.model";
+import { SelectedOptionSetting, VisitType } from "./product-option.model";
 
 /**
  * Orders 테이블 모델
@@ -26,8 +27,6 @@ export interface Order {
   payment_key?: string;
   order_id: string;
   admin_memo?: string;
-  selected_options?: SelectedOption[];
-  selected_addons?: SelectedAddon[];
   created_at: string;
   updated_at: string;
   handled_at: string | null;
@@ -47,12 +46,17 @@ export interface Order {
 export interface OrderItem {
   id: string;
   order_id: string;
-  product_id: string;
+  product_id?: string | null;
   product_name: string;
   product_price: number;
   quantity: number;
-  selected_options?: SelectedOption[];
-  selected_addons?: SelectedAddon[];
+  // Product Addons (추가상품)
+  selected_addons?: SelectedAddon[] | null;
+  // Product Options 관련 필드
+  option_id?: string | null;
+  option_name?: string | null;
+  visit_type?: VisitType | null;
+  selected_option_settings?: SelectedOptionSetting[] | null;
   created_at: string;
 }
 

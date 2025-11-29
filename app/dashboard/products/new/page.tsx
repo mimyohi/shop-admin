@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft } from 'lucide-react'
 import ImageUpload from '@/components/ImageUpload'
 import MultiImageUpload from '@/components/MultiImageUpload'
+import ProductAddonsManager from '@/components/ProductAddonsManager'
 import ProductOptionsManager from '@/components/ProductOptionsManager'
 import { createProductWithOptions } from '@/lib/actions/products'
 
@@ -82,7 +83,6 @@ export default function NewProductPage() {
     is_sale_badge: false,
   })
 
-  const [options, setOptions] = useState<ProductOption[]>([])
   const [addons, setAddons] = useState<ProductAddon[]>([])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +117,7 @@ export default function NewProductPage() {
 
       const result = await createProductWithOptions({
         product: productData,
-        options: options,
+        options: [],
         addons: addons,
       })
 
@@ -322,14 +322,15 @@ export default function NewProductPage() {
           </CardContent>
         </Card>
 
-        {/* 옵션 및 추가상품 섹션 */}
-        <ProductOptionsManager
+        {/* 추가상품 섹션 */}
+        <ProductAddonsManager
           mode="create"
-          initialOptions={options}
           initialAddons={addons}
-          onOptionsChange={setOptions}
           onAddonsChange={setAddons}
         />
+
+        {/* 상품 옵션 관리 */}
+        <ProductOptionsManager mode="create" />
 
         {/* 제출 버튼 */}
         <div className="flex gap-2">
