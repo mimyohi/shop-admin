@@ -355,18 +355,20 @@ export default function ProductOptionsManager({
             <div className="flex-1">
               <CardTitle>상품 옵션 관리</CardTitle>
               <p className="text-sm text-gray-500 mt-2">
-                옵션: 유저가 선택하는 상품 단위(ex.1개월 패키지, 2개월 패키지,
+                - 옵션: 유저가 선택하는 상품 단위(ex.1개월 패키지, 2개월 패키지,
                 3개월 패키지)
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                설정: 유저가 선택한 옵션에 대해서 설정을 무조건 해야하는
-                값(ex.첫번째 개월,두번째 개월,세번째 개월) -{" "}
+                - 설정: 유저가 선택한 옵션에 대해서 설정을 무조건 해야하는
+                값(ex.첫번째 개월,두번째 개월,세번째 개월)
+              </p>
+              <p className="text-sm text-gray-500 mt-2 ml-2">
                 <b className="text-black">
-                  다만 초진인 경우 유저가 설정하지 않고 상담 이후에 결정됨
+                  - 다만 초진인 경우 유저가 설정하지 않고 상담 이후에 결정됨
                 </b>
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                타입: 각 설정에 대해서 유저가 선택할 수 있는
+                - 타입: 각 설정에 대해서 유저가 선택할 수 있는
                 값(ex.1단계,2단계,3단계)
               </p>
             </div>
