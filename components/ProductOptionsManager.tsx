@@ -137,8 +137,6 @@ export default function ProductOptionsManager({
   };
 
   const deleteOption = (optionId: string) => {
-    if (!confirm("이 옵션과 모든 하위 설정/타입을 삭제하시겠습니까?")) return;
-
     const updatedOptions = options.filter((opt) => opt.id !== optionId);
     onOptionsChange?.(updatedOptions);
   };
@@ -185,8 +183,6 @@ export default function ProductOptionsManager({
   };
 
   const deleteSetting = (settingId: string) => {
-    if (!confirm("이 설정과 모든 하위 타입을 삭제하시겠습니까?")) return;
-
     const updatedOptions = options.map((opt) => ({
       ...opt,
       settings: opt.settings?.filter((s) => s.id !== settingId),
@@ -250,8 +246,6 @@ export default function ProductOptionsManager({
   };
 
   const deleteType = (typeId: string) => {
-    if (!confirm("이 타입을 삭제하시겠습니까?")) return;
-
     const updatedOptions = options.map((opt) => ({
       ...opt,
       settings: opt.settings?.map((setting) => ({
@@ -270,15 +264,19 @@ export default function ProductOptionsManager({
   const applyDefaultOptions = () => {
     setShowDefaultSetupDialog(false);
 
-    const defaultOptionsData = [];
+    const defaultOptionsData: {
+      name: string;
+      price: number;
+      settingCount: number;
+    }[] = [];
     if (selectedDefaultOptions.oneMonth) {
-      defaultOptionsData.push({ name: "1개월", price: 0 });
+      defaultOptionsData.push({ name: "1개월", price: 0, settingCount: 1 });
     }
     if (selectedDefaultOptions.twoMonths) {
-      defaultOptionsData.push({ name: "2개월", price: 0 });
+      defaultOptionsData.push({ name: "2개월", price: 0, settingCount: 2 });
     }
     if (selectedDefaultOptions.threeMonths) {
-      defaultOptionsData.push({ name: "3개월", price: 0 });
+      defaultOptionsData.push({ name: "3개월", price: 0, settingCount: 3 });
     }
 
     if (defaultOptionsData.length === 0) {
@@ -286,7 +284,7 @@ export default function ProductOptionsManager({
       return;
     }
 
-    const defaultSettings = ["1개월", "2개월", "3개월"];
+    const allSettings = ["1개월", "2개월", "3개월"];
     const defaultTypes = ["1단계", "2단계", "3단계"];
 
     const newOptions: ProductOption[] = [];
@@ -296,7 +294,10 @@ export default function ProductOptionsManager({
       const optionData = defaultOptionsData[i];
       const optionId = `temp-${Date.now()}-${i}`;
 
-      const settings = defaultSettings.map((settingName, j) => {
+      // 옵션에 맞는 설정 개수만큼만 생성 (1개월 -> 1개, 2개월 -> 2개, 3개월 -> 3개)
+      const settingsForOption = allSettings.slice(0, optionData.settingCount);
+
+      const settings = settingsForOption.map((settingName, j) => {
         const settingId = `temp-setting-${Date.now()}-${i}-${j}`;
         const types = defaultTypes.map((typeName, k) => ({
           id: `temp-type-${Date.now()}-${i}-${j}-${k}`,
@@ -336,8 +337,6 @@ export default function ProductOptionsManager({
 
     const updatedOptions = [...options, ...newOptions];
     onOptionsChange?.(updatedOptions);
-
-    alert("기본 옵션이 성공적으로 생성되었습니다.");
 
     // Reset selection
     setSelectedDefaultOptions({
