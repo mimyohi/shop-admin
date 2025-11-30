@@ -334,6 +334,7 @@ export default function NewProductPage() {
           <ProductOptionsManager
             initialOptions={options}
             onOptionsChange={setOptions}
+            basePrice={parseInt(formData.price) || 0}
           />
 
           {/* 추가상품 섹션 */}

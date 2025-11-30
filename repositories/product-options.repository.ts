@@ -31,12 +31,18 @@ export const productOptionsRepository = {
   },
 
   /**
-   * 특정 상품에 연결된 옵션들 조회
+   * 특정 상품에 연결된 옵션들 조회 (settings, types 포함)
    */
   async findByProductId(productId: string): Promise<ProductOption[]> {
     const { data, error } = await supabase
       .from('product_options')
-      .select('*')
+      .select(`
+        *,
+        settings:product_option_settings(
+          *,
+          types:product_option_setting_types(*)
+        )
+      `)
       .eq('product_id', productId)
       .order('display_order')
 
@@ -45,7 +51,18 @@ export const productOptionsRepository = {
       throw new Error('Failed to fetch options by product_id')
     }
 
-    return (data as any) || []
+    // settings 정렬
+    const sortedData = (data || []).map((option: any) => ({
+      ...option,
+      settings: (option.settings || [])
+        .sort((a: any, b: any) => a.display_order - b.display_order)
+        .map((setting: any) => ({
+          ...setting,
+          types: (setting.types || []).sort((a: any, b: any) => a.display_order - b.display_order)
+        }))
+    }))
+
+    return sortedData as ProductOption[]
   },
 
   /**

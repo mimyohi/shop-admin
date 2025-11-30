@@ -438,6 +438,7 @@ export default function ProductEditPage({
         <ProductOptionsManager
           initialOptions={options}
           onOptionsChange={setOptions}
+          basePrice={parseInt(formData.price) || 0}
         />
 
         {/* 추가상품 관리 */}

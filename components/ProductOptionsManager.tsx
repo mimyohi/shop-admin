@@ -1,710 +1,293 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Trash2 } from "lucide-react";
 import { ProductOption, ProductOptionSetting } from "@/models";
 
 interface Props {
   initialOptions?: ProductOption[];
   onOptionsChange?: (options: ProductOption[]) => void;
-}
-
-interface ExpandedState {
-  [optionId: string]: {
-    option: boolean;
-    settings: {
-      [settingId: string]: boolean;
-    };
-  };
+  basePrice?: number;
 }
 
 export default function ProductOptionsManager({
   initialOptions = [],
   onOptionsChange,
+  basePrice = 0,
 }: Props) {
   const options = initialOptions;
-  const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  // Default setup dialog
-  const [showDefaultSetupDialog, setShowDefaultSetupDialog] = useState(false);
-  const [selectedDefaultOptions, setSelectedDefaultOptions] = useState({
-    oneMonth: true,
-    twoMonths: true,
-    threeMonths: true,
-  });
+  // 설정 자동 생성 (1개월, 2개월, 3개월)
+  const generateSettings = (
+    optionId: string,
+    count: number,
+    hasTypes: boolean
+  ): ProductOptionSetting[] => {
+    const settingNames = ["1개월", "2개월", "3개월"];
+    const typeNames = ["1단계", "2단계", "3단계"];
 
-  // New option form
-  const [newOption, setNewOption] = useState({
-    name: "",
-    price: "",
-    /** @note 일단은 기본값으로 아래와 같이 설정 */
-    use_settings_on_first: false,
-    use_settings_on_revisit_with_consult: true,
-    use_settings_on_revisit_no_consult: true,
-  });
-
-  // New setting forms (keyed by option id)
-  const [newSettings, setNewSettings] = useState<{
-    [optionId: string]: {
-      name: string;
-    };
-  }>({});
-
-  // New type forms (keyed by setting id)
-  const [newTypes, setNewTypes] = useState<{
-    [settingId: string]: {
-      name: string;
-      is_available: boolean;
-    };
-  }>({});
-
-  const addOption = () => {
-    if (!newOption.name.trim()) {
-      alert("옵션명은 필수 항목입니다.");
-      return;
-    }
-    if (!newOption.price) {
-      alert("추가 가격은 필수 항목입니다.");
-      return;
-    }
-
-    const newOptionData: ProductOption = {
-      id: `temp-${Date.now()}`,
-      product_id: "",
-      name: newOption.name,
-      price: parseFloat(newOption.price) || 0,
-      use_settings_on_first: newOption.use_settings_on_first,
-      use_settings_on_revisit_with_consult:
-        newOption.use_settings_on_revisit_with_consult,
-      use_settings_on_revisit_no_consult:
-        newOption.use_settings_on_revisit_no_consult,
-      display_order: options.length,
-      settings: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const updatedOptions = [...options, newOptionData];
-    onOptionsChange?.(updatedOptions);
-
-    // Reset form
-    setNewOption({
-      name: "",
-      price: "",
-      use_settings_on_first: false,
-      use_settings_on_revisit_with_consult: true,
-      use_settings_on_revisit_no_consult: true,
+    return settingNames.slice(0, count).map((name, index) => {
+      const settingId = `temp-setting-${Date.now()}-${index}`;
+      return {
+        id: settingId,
+        option_id: optionId,
+        name,
+        display_order: index,
+        types: hasTypes
+          ? typeNames.map((typeName, typeIndex) => ({
+              id: `temp-type-${Date.now()}-${index}-${typeIndex}`,
+              setting_id: settingId,
+              name: typeName,
+              is_available: true,
+              display_order: typeIndex,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }))
+          : [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     });
   };
 
-  const toggleOptionExpanded = (optionId: string) => {
-    setExpanded((prev) => ({
-      ...prev,
-      [optionId]: {
-        ...prev[optionId],
-        option: !prev[optionId]?.option,
-        settings: prev[optionId]?.settings || {},
-      },
-    }));
+  // 옵션의 타입 존재 여부 확인
+  const hasTypes = (option: ProductOption): boolean => {
+    return (
+      option.settings?.some(
+        (setting) => setting.types && setting.types.length > 0
+      ) ?? false
+    );
   };
 
-  const toggleSettingExpanded = (optionId: string, settingId: string) => {
-    setExpanded((prev) => ({
-      ...prev,
-      [optionId]: {
-        ...prev[optionId],
-        option: prev[optionId]?.option ?? false,
-        settings: {
-          ...prev[optionId]?.settings,
-          [settingId]: !prev[optionId]?.settings?.[settingId],
+  // 옵션명 변경
+  const updateOptionName = (optionId: string, name: string) => {
+    const updatedOptions = options.map((opt) =>
+      opt.id === optionId ? { ...opt, name } : opt
+    );
+    onOptionsChange?.(updatedOptions);
+  };
+
+  // 개월 개수 변경
+  const updateSettingsCount = (optionId: string, count: number) => {
+    const option = options.find((o) => o.id === optionId);
+    if (!option) return;
+
+    const currentHasTypes = hasTypes(option);
+    const newSettings = generateSettings(optionId, count, currentHasTypes);
+
+    const updatedOptions = options.map((opt) =>
+      opt.id === optionId ? { ...opt, settings: newSettings } : opt
+    );
+    onOptionsChange?.(updatedOptions);
+  };
+
+  // 단계여부 변경
+  const updateHasTypes = (optionId: string, newHasTypes: boolean) => {
+    const option = options.find((o) => o.id === optionId);
+    if (!option) return;
+
+    const typeNames = ["1단계", "2단계", "3단계"];
+    const timestamp = Date.now();
+
+    // settings가 없거나 비어있으면 기본 설정 1개 생성
+    let currentSettings = option.settings || [];
+    if (currentSettings.length === 0) {
+      const defaultSettingId = `temp-setting-${timestamp}-0`;
+      currentSettings = [
+        {
+          id: defaultSettingId,
+          option_id: optionId,
+          name: "1개월",
+          display_order: 0,
+          types: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
-      },
+      ];
+    }
+
+    const updatedSettings = currentSettings.map((setting, settingIndex) => ({
+      ...setting,
+      types: newHasTypes
+        ? typeNames.map((typeName, typeIndex) => ({
+            id: `temp-type-${timestamp}-${settingIndex}-${typeIndex}`,
+            setting_id: setting.id,
+            name: typeName,
+            is_available: true,
+            display_order: typeIndex,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }))
+        : [],
     }));
+
+    const updatedOptions = options.map((opt) =>
+      opt.id === optionId ? { ...opt, settings: updatedSettings } : opt
+    );
+    onOptionsChange?.(updatedOptions);
   };
 
+  // 가격 변경 (실제 가격 입력 → 추가가격 계산)
+  const updateOptionPrice = (optionId: string, actualPrice: number) => {
+    const additionalPrice = actualPrice - basePrice;
+    const updatedOptions = options.map((opt) =>
+      opt.id === optionId ? { ...opt, price: additionalPrice } : opt
+    );
+    onOptionsChange?.(updatedOptions);
+  };
+
+  // 옵션 삭제
   const deleteOption = (optionId: string) => {
     const updatedOptions = options.filter((opt) => opt.id !== optionId);
     onOptionsChange?.(updatedOptions);
   };
 
-  const updateOptionField = (optionId: string, field: string, value: any) => {
-    const updatedOptions = options.map((opt) =>
-      opt.id === optionId ? { ...opt, [field]: value } : opt
-    );
-    onOptionsChange?.(updatedOptions);
-  };
-
-  const addSetting = (optionId: string) => {
-    const newSetting = newSettings[optionId];
-    if (!newSetting?.name.trim()) {
-      alert("설정명은 필수 항목입니다.");
-      return;
-    }
-
-    const option = options.find((o) => o.id === optionId);
-
-    const newSettingData: ProductOptionSetting = {
-      id: `temp-setting-${Date.now()}`,
-      option_id: optionId,
-      name: newSetting.name,
-      display_order: option?.settings?.length || 0,
-      types: [],
+  // 새 옵션 추가
+  const addNewOption = () => {
+    const optionId = `temp-${Date.now()}`;
+    const newOption: ProductOption = {
+      id: optionId,
+      product_id: "",
+      name: "",
+      price: 0,
+      use_settings_on_first: false,
+      use_settings_on_revisit_with_consult: true,
+      use_settings_on_revisit_no_consult: true,
+      display_order: options.length,
+      settings: generateSettings(optionId, 1, true), // 기본 1개월, 단계 있음
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    const updatedOptions = options.map((opt) =>
-      opt.id === optionId
-        ? { ...opt, settings: [...(opt.settings || []), newSettingData] }
-        : opt
-    );
-    onOptionsChange?.(updatedOptions);
-
-    setNewSettings((prev) => ({
-      ...prev,
-      [optionId]: {
-        name: "",
-      },
-    }));
-  };
-
-  const deleteSetting = (settingId: string) => {
-    const updatedOptions = options.map((opt) => ({
-      ...opt,
-      settings: opt.settings?.filter((s) => s.id !== settingId),
-    }));
+    const updatedOptions = [...options, newOption];
     onOptionsChange?.(updatedOptions);
   };
 
-  // === Type Management ===
-  const initNewType = (settingId: string) => {
-    if (!newTypes[settingId]) {
-      setNewTypes((prev) => ({
-        ...prev,
-        [settingId]: {
-          name: "",
-          is_available: true,
-        },
-      }));
-    }
-  };
-
-  const addType = (settingId: string) => {
-    const newType = newTypes[settingId];
-    if (!newType?.name.trim()) {
-      alert("타입명은 필수 항목입니다.");
-      return;
-    }
-
-    let setting: ProductOptionSetting | undefined;
-    for (const option of options) {
-      setting = option.settings?.find((s) => s.id === settingId);
-      if (setting) break;
-    }
-
-    const newTypeData = {
-      id: `temp-type-${Date.now()}`,
-      setting_id: settingId,
-      name: newType.name,
-      is_available: newType.is_available,
-      display_order: setting?.types?.length || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const updatedOptions = options.map((opt) => ({
-      ...opt,
-      settings: opt.settings?.map((s) =>
-        s.id === settingId
-          ? { ...s, types: [...(s.types || []), newTypeData] }
-          : s
-      ),
-    }));
-    onOptionsChange?.(updatedOptions);
-
-    setNewTypes((prev) => ({
-      ...prev,
-      [settingId]: {
-        name: "",
-        is_available: true,
-      },
-    }));
-  };
-
-  const deleteType = (typeId: string) => {
-    const updatedOptions = options.map((opt) => ({
-      ...opt,
-      settings: opt.settings?.map((setting) => ({
-        ...setting,
-        types: setting.types?.filter((t) => t.id !== typeId),
-      })),
-    }));
-    onOptionsChange?.(updatedOptions);
-  };
-
-  // === Default Setup ===
-  const openDefaultSetupDialog = () => {
-    setShowDefaultSetupDialog(true);
-  };
-
-  const applyDefaultOptions = () => {
-    setShowDefaultSetupDialog(false);
-
-    const defaultOptionsData: {
-      name: string;
-      price: number;
-      settingCount: number;
-    }[] = [];
-    if (selectedDefaultOptions.oneMonth) {
-      defaultOptionsData.push({ name: "1개월", price: 0, settingCount: 1 });
-    }
-    if (selectedDefaultOptions.twoMonths) {
-      defaultOptionsData.push({ name: "2개월", price: 0, settingCount: 2 });
-    }
-    if (selectedDefaultOptions.threeMonths) {
-      defaultOptionsData.push({ name: "3개월", price: 0, settingCount: 3 });
-    }
-
-    if (defaultOptionsData.length === 0) {
-      alert("최소 하나의 옵션을 선택해주세요.");
-      return;
-    }
-
-    const allSettings = ["1개월", "2개월", "3개월"];
-    const defaultTypes = ["1단계", "2단계", "3단계"];
-
-    const newOptions: ProductOption[] = [];
-
-    // Create options with settings and types
-    for (let i = 0; i < defaultOptionsData.length; i++) {
-      const optionData = defaultOptionsData[i];
-      const optionId = `temp-${Date.now()}-${i}`;
-
-      // 옵션에 맞는 설정 개수만큼만 생성 (1개월 -> 1개, 2개월 -> 2개, 3개월 -> 3개)
-      const settingsForOption = allSettings.slice(0, optionData.settingCount);
-
-      const settings = settingsForOption.map((settingName, j) => {
-        const settingId = `temp-setting-${Date.now()}-${i}-${j}`;
-        const types = defaultTypes.map((typeName, k) => ({
-          id: `temp-type-${Date.now()}-${i}-${j}-${k}`,
-          setting_id: settingId,
-          name: typeName,
-          is_available: true,
-          display_order: k,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
-
-        return {
-          id: settingId,
-          option_id: optionId,
-          name: settingName,
-          display_order: j,
-          types,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-      });
-
-      newOptions.push({
-        id: optionId,
-        product_id: "",
-        name: optionData.name,
-        price: optionData.price,
-        use_settings_on_first: true,
-        use_settings_on_revisit_with_consult: true,
-        use_settings_on_revisit_no_consult: true,
-        display_order: options.length + i,
-        settings,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
-
-    const updatedOptions = [...options, ...newOptions];
-    onOptionsChange?.(updatedOptions);
-
-    // Reset selection
-    setSelectedDefaultOptions({
-      oneMonth: true,
-      twoMonths: true,
-      threeMonths: true,
-    });
+  // 실제 가격 계산 (추가가격 + 기본가격)
+  const getActualPrice = (option: ProductOption): number => {
+    return basePrice + option.price;
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle>상품 옵션 관리</CardTitle>
-              <p className="text-sm text-gray-500 mt-2">
-                - 옵션: 유저가 선택하는 상품 단위(ex.1개월 패키지, 2개월 패키지,
-                3개월 패키지)
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                - 설정: 유저가 선택한 옵션에 대해서 설정을 무조건 해야하는
-                값(ex.첫번째 개월,두번째 개월,세번째 개월)
-              </p>
-              <p className="text-sm text-gray-500 mt-2 ml-2">
-                <b className="text-black">
-                  - 다만 초진인 경우 유저가 설정하지 않고 상담 이후에 결정됨
-                </b>
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                - 타입: 각 설정에 대해서 유저가 선택할 수 있는
-                값(ex.1단계,2단계,3단계)
-              </p>
-            </div>
-            <Button
-              type="button"
-              onClick={openDefaultSetupDialog}
-              variant="outline"
-              className="ml-4"
-            >
-              기본 옵션 세팅
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Existing Options */}
-          {options.map((option) => (
-            <div key={option.id} className="border rounded-lg">
-              {/* Option Header */}
-              <div className="p-4 bg-gray-50 border-b">
-                <div className="flex items-start gap-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleOptionExpanded(option.id)}
-                    className="p-0 h-6 w-6"
-                  >
-                    {expanded[option.id]?.option ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <div className="flex-1">
-                    <div className="font-semibold text-lg">{option.name}</div>
-                    <div className="text-sm text-gray-600">
-                      추가 가격: +{option.price.toLocaleString()}원
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => deleteOption(option.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>상품 옵션</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {options.map((option) => (
+          <Card key={option.id}>
+            <CardContent className="p-6 space-y-4">
+              {/* 상품명 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>상품명</Label>
+                <Input
+                  value={option.name}
+                  onChange={(e) => updateOptionName(option.id, e.target.value)}
+                  placeholder="예: 채유패키지 - 2개월"
+                />
               </div>
 
-              {/* Option Details (Expanded) */}
-              {expanded[option.id]?.option && (
-                <div className="p-4 space-y-4">
-                  {/* Option Edit Section */}
-                  <div className="space-y-3 border-b pb-4">
-                    <h4 className="font-semibold text-sm">옵션 정보 수정</h4>
-
-                    <div className="grid gap-3">
-                      <div>
-                        <Label className="text-xs">추가 가격</Label>
-                        <Input
-                          type="number"
-                          value={option.price}
-                          onChange={(e) =>
-                            updateOptionField(
-                              option.id,
-                              "price",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Settings List */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">설정 목록</h4>
-                    {option.settings && option.settings.length > 0 ? (
-                      option.settings.map((setting) => (
-                        <div
-                          key={setting.id}
-                          className="border rounded-lg ml-4"
-                        >
-                          {/* Setting Header */}
-                          <div className="p-3 bg-blue-50 border-b">
-                            <div className="flex items-start gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  toggleSettingExpanded(option.id, setting.id)
-                                }
-                                className="p-0 h-5 w-5"
-                              >
-                                {expanded[option.id]?.settings?.[setting.id] ? (
-                                  <ChevronDown className="h-3 w-3" />
-                                ) : (
-                                  <ChevronRight className="h-3 w-3" />
-                                )}
-                              </Button>
-                              <div className="flex-1">
-                                <div className="font-semibold text-sm">
-                                  {setting.name}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => deleteSetting(setting.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Setting Details (Expanded) */}
-                          {expanded[option.id]?.settings?.[setting.id] && (
-                            <div className="p-3 space-y-3">
-                              {/* Types List */}
-                              <div className="space-y-2">
-                                <h5 className="font-semibold text-xs">
-                                  타입 목록
-                                </h5>
-                                {setting.types && setting.types.length > 0 ? (
-                                  setting.types.map((type) => (
-                                    <div
-                                      key={type.id}
-                                      className="flex items-start gap-2 p-2 border rounded ml-4"
-                                    >
-                                      <div className="flex-1">
-                                        <div className="font-medium text-xs">
-                                          {type.name}
-                                        </div>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => deleteType(type.id)}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <div className="text-xs text-gray-500 ml-4">
-                                    타입이 없습니다
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Add New Type */}
-                              <div className="border-t pt-3 ml-4">
-                                <h5 className="font-semibold text-xs mb-2">
-                                  새 타입 추가
-                                </h5>
-                                <div className="grid gap-2">
-                                  <Input
-                                    placeholder="타입명 *"
-                                    value={newTypes[setting.id]?.name || ""}
-                                    onChange={(e) =>
-                                      setNewTypes((prev) => ({
-                                        ...prev,
-                                        [setting.id]: {
-                                          ...prev[setting.id],
-                                          name: e.target.value,
-                                        },
-                                      }))
-                                    }
-                                  />
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => addType(setting.id)}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    타입 추가
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-sm text-gray-500 ml-4">
-                        설정이 없습니다
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Add New Setting */}
-                  <div className="border-t pt-4 ml-4">
-                    <h4 className="font-semibold text-sm mb-3">새 설정 추가</h4>
-                    <div className="grid gap-2">
-                      <Input
-                        placeholder="설정명 *"
-                        value={newSettings[option.id]?.name || ""}
-                        onChange={(e) =>
-                          setNewSettings((prev) => ({
-                            ...prev,
-                            [option.id]: {
-                              ...prev[option.id],
-                              name: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => addSetting(option.id)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        설정 추가
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Add New Option */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">새 옵션 추가</h3>
-            <div className="grid gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  placeholder="옵션명 *"
-                  value={newOption.name}
-                  onChange={(e) =>
-                    setNewOption({ ...newOption, name: e.target.value })
-                  }
-                />
+              {/* 개월 개수 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>개월수</Label>
                 <Input
                   type="number"
-                  placeholder="추가 가격 *"
-                  value={newOption.price}
-                  onChange={(e) =>
-                    setNewOption({ ...newOption, price: e.target.value })
-                  }
+                  min={1}
+                  max={3}
+                  value={option.settings?.length || 1}
+                  onChange={(e) => {
+                    const count = Math.min(
+                      3,
+                      Math.max(1, parseInt(e.target.value) || 1)
+                    );
+                    updateSettingsCount(option.id, count);
+                  }}
                 />
               </div>
-              <div className="space-y-2">
-                <Button type="button" onClick={addOption} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  옵션 추가
+
+              {/* 단계여부 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>단계여부</Label>
+                <Select
+                  value={hasTypes(option) ? "존재" : "없음"}
+                  onValueChange={(value) =>
+                    updateHasTypes(option.id, value === "존재")
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="존재">존재</SelectItem>
+                    <SelectItem value="없음">없음</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {hasTypes(option) && (
+                <p className="text-sm text-gray-500 ml-[136px]">
+                  단계는 재진인 사람에게만 노출됩니다.
+                </p>
+              )}
+
+              {/* 가격 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>가격</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={getActualPrice(option)}
+                    onChange={(e) =>
+                      updateOptionPrice(
+                        option.id,
+                        parseInt(e.target.value) || 0
+                      )
+                    }
+                    placeholder="실제 판매 가격"
+                  />
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    (추가가격: {option.price >= 0 ? "+" : ""}
+                    {option.price.toLocaleString()}원)
+                  </span>
+                </div>
+              </div>
+
+              {/* 삭제 버튼 */}
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteOption(option.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  삭제
                 </Button>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ))}
 
-      {/* Default Setup Dialog */}
-      <Dialog
-        open={showDefaultSetupDialog}
-        onOpenChange={setShowDefaultSetupDialog}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>기본 옵션 세팅</DialogTitle>
-            <DialogDescription>
-              추가할 옵션을 선택해주세요. 각 옵션에는 1/2/3개월 설정과 1/2/3단계
-              타입이 자동으로 추가됩니다.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="oneMonth"
-                checked={selectedDefaultOptions.oneMonth}
-                onCheckedChange={(checked) =>
-                  setSelectedDefaultOptions({
-                    ...selectedDefaultOptions,
-                    oneMonth: checked as boolean,
-                  })
-                }
-              />
-              <Label htmlFor="oneMonth" className="cursor-pointer">
-                1개월 옵션
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="twoMonths"
-                checked={selectedDefaultOptions.twoMonths}
-                onCheckedChange={(checked) =>
-                  setSelectedDefaultOptions({
-                    ...selectedDefaultOptions,
-                    twoMonths: checked as boolean,
-                  })
-                }
-              />
-              <Label htmlFor="twoMonths" className="cursor-pointer">
-                2개월 옵션
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="threeMonths"
-                checked={selectedDefaultOptions.threeMonths}
-                onCheckedChange={(checked) =>
-                  setSelectedDefaultOptions({
-                    ...selectedDefaultOptions,
-                    threeMonths: checked as boolean,
-                  })
-                }
-              />
-              <Label htmlFor="threeMonths" className="cursor-pointer">
-                3개월 옵션
-              </Label>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDefaultSetupDialog(false)}
-            >
-              취소
-            </Button>
-            <Button type="button" onClick={applyDefaultOptions}>
-              생성
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        {/* 옵션 추가 버튼 */}
+        <Button
+          type="button"
+          onClick={addNewOption}
+          variant="outline"
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          옵션 추가
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
