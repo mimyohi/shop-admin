@@ -99,7 +99,7 @@ export const couponsRepository = {
       return null
     }
 
-    return data
+    return data as any as any
   },
 
   /**
@@ -121,7 +121,7 @@ export const couponsRepository = {
       throw new Error('Failed to create coupon')
     }
 
-    return data
+    return data as any as any
   },
 
   /**
@@ -143,7 +143,7 @@ export const couponsRepository = {
       throw new Error('Failed to update coupon')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -179,7 +179,7 @@ export const couponsRepository = {
       throw new Error('Failed to fetch coupon products')
     }
 
-    return data?.map((item) => item.product_id) || []
+    return (data as any)?.map((item: any) => item.product_id) || []
   },
 
   /**
@@ -230,6 +230,10 @@ export const couponsRepository = {
       throw new Error('해당 이메일의 사용자를 찾을 수 없습니다.')
     }
 
+    if (!user.user_id) {
+      throw new Error('사용자 ID가 유효하지 않습니다.')
+    }
+
     // 이미 발급된 쿠폰인지 확인
     const { data: existingCoupon } = await supabase
       .from('user_coupons')
@@ -258,7 +262,7 @@ export const couponsRepository = {
       throw new Error('쿠폰 발급에 실패했습니다.')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -293,7 +297,7 @@ export const couponsRepository = {
       throw new Error('쿠폰 발급에 실패했습니다.')
     }
 
-    return data
+    return data as any
   },
 
   /**

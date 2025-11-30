@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { pointsQueries } from "@/queries/points.queries";
 
 interface UserPoint {
-  user_id: string;
+  user_id: string | null;
   points: number;
   user_profiles: {
     email: string;
@@ -104,7 +104,7 @@ export function PointHistoryDialog({
               {history.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="text-sm">
-                    {new Date(item.created_at).toLocaleString("ko-KR")}
+                    {item.created_at ? new Date(item.created_at).toLocaleString("ko-KR") : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={item.type === "earn" ? "default" : "secondary"}>

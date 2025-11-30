@@ -3,6 +3,7 @@ import {
   ProductSalesData,
   ProductSalesFilters,
   OptionSalesBreakdown,
+  AddonSalesBreakdown,
 } from "@/types/product-sales.types";
 
 export const productSalesRepository = {
@@ -50,7 +51,7 @@ export const productSalesRepository = {
     console.log("📊 Product sales raw data count:", data?.length || 0);
     console.log("📊 First item:", data?.[0]);
 
-    // 1단계: 상품별로 그룹화 (옵션별 매출 포함)
+    // 1단계: 상품별로 그룹화 (옵션별, 애드온별 매출 포함)
     const productMap = new Map<string, {
       product_id: string;
       product_name: string;
@@ -63,6 +64,14 @@ export const productSalesRepository = {
       options: Map<string, {
         option_id: string | null;
         option_name: string;
+        sales: number;
+        quantity: number;
+        order_count: number;
+      }>;
+      // 애드온별 상세 데이터
+      addons: Map<string, {
+        addon_id: string;
+        addon_name: string;
         sales: number;
         quantity: number;
         order_count: number;
@@ -104,6 +113,7 @@ export const productSalesRepository = {
           total_quantity: 0,
           order_count: 0,
           options: new Map(),
+          addons: new Map(),
         });
       }
 
@@ -116,7 +126,7 @@ export const productSalesRepository = {
       product.total_quantity += item.quantity;
       product.order_count += 1;
 
-      // 옵션별 집계
+      // 옵션별 집계 (기본가 + 옵션가만, 애드온 제외)
       if (!product.options.has(optionKey)) {
         product.options.set(optionKey, {
           option_id: optionId,
@@ -128,9 +138,35 @@ export const productSalesRepository = {
       }
 
       const optionData = product.options.get(optionKey)!;
-      optionData.sales += totalItemSales;
+      optionData.sales += baseSales + optionSales; // 애드온 제외
       optionData.quantity += item.quantity;
       optionData.order_count += 1;
+
+      // 애드온별 집계
+      if (item.selected_addons && Array.isArray(item.selected_addons)) {
+        item.selected_addons.forEach((addon: any) => {
+          const addonId = addon.id || addon.addon_id;
+          const addonName = addon.name || addon.addon_name || "알 수 없음";
+          const addonPrice = addon.price || 0;
+          const addonQuantity = addon.quantity || 1;
+          const addonTotalSales = addonPrice * addonQuantity * item.quantity;
+
+          if (!product.addons.has(addonId)) {
+            product.addons.set(addonId, {
+              addon_id: addonId,
+              addon_name: addonName,
+              sales: 0,
+              quantity: 0,
+              order_count: 0,
+            });
+          }
+
+          const addonData = product.addons.get(addonId)!;
+          addonData.sales += addonTotalSales;
+          addonData.quantity += addonQuantity * item.quantity;
+          addonData.order_count += 1;
+        });
+      }
     });
 
     // Convert to final format
@@ -145,6 +181,8 @@ export const productSalesRepository = {
         total_quantity: product.total_quantity,
         order_count: product.order_count,
         option_breakdown: Array.from(product.options.values())
+          .sort((a, b) => b.sales - a.sales), // 매출 높은 순으로 정렬
+        addon_breakdown: Array.from(product.addons.values())
           .sort((a, b) => b.sales - a.sales), // 매출 높은 순으로 정렬
       })
     );

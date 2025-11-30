@@ -14,11 +14,11 @@ export type VisitType = 'first' | 'revisit_with_consult' | 'revisit_no_consult'
 export interface ProductOption {
   id: string
   product_id?: string | null // Product와의 1:N 관계 (NULL 가능)
-  slug?: string
+  slug?: string | null
   name: string
-  category?: string
-  image_url?: string
-  detail_images?: string[]
+  category?: string | null
+  image_url?: string | null
+  detail_images?: string[] | null
 
   // 가격 (Option 단위)
   price: number
@@ -29,9 +29,9 @@ export interface ProductOption {
   use_settings_on_revisit_no_consult: boolean
 
   // 표시 관련
-  is_new_badge?: boolean
-  is_sale_badge?: boolean
-  display_order?: number
+  is_new_badge?: boolean | null
+  is_sale_badge?: boolean | null
+  display_order?: number | null
 
   created_at: string
   updated_at: string

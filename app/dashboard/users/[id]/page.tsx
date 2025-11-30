@@ -62,7 +62,7 @@ interface OrderHistoryItem {
   status: string;
   consultation_status: string;
   total_amount: number;
-  created_at: string;
+  created_at: string | null;
   order_items?: OrderItemSummary[];
 }
 
@@ -324,11 +324,11 @@ export default function UserDetailPage() {
               <div>
                 <p className="text-sm text-gray-500">가입일</p>
                 <p className="font-medium">
-                  {new Date(user.created_at).toLocaleString("ko-KR")}
+                  {user.created_at ? new Date(user.created_at).toLocaleString("ko-KR") : "-"}
                 </p>
                 <p className="text-xs text-gray-500">
                   최종 업데이트:{" "}
-                  {new Date(user.updated_at).toLocaleString("ko-KR")}
+                  {user.updated_at ? new Date(user.updated_at).toLocaleString("ko-KR") : "-"}
                 </p>
               </div>
             </div>
@@ -510,7 +510,7 @@ export default function UserDetailPage() {
                         {order.order_id}
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleString("ko-KR")}
+                        {order.created_at ? new Date(order.created_at).toLocaleString("ko-KR") : "-"}
                       </TableCell>
                       <TableCell>
                         <Badge

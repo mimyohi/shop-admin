@@ -20,9 +20,6 @@ export * from './coupon.model'
 // Point models
 export * from './point.model'
 
-// Review models
-export * from './review.model'
-
 // Admin models
 export * from './admin.model'
 

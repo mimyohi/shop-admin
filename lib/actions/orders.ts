@@ -192,3 +192,72 @@ export async function updateOrderItemOptionSettings(orderItemId: string, orderId
   revalidatePath(`/dashboard/orders/${orderId}`)
   return { success: true }
 }
+
+export async function exportShippingExcel(orderIds: string[]) {
+  if (!orderIds.length) {
+    return { success: false, error: '선택된 주문이 없습니다.' }
+  }
+
+  // 선택된 주문들의 상세 정보 조회 (order_items 포함)
+  const { data: orders, error: fetchError } = await supabaseServer
+    .from('orders')
+    .select('*, order_items(*)')
+    .in('id', orderIds)
+
+  if (fetchError) {
+    console.error('Fetch orders for excel error:', fetchError)
+    return { success: false, error: fetchError.message }
+  }
+
+  if (!orders || orders.length === 0) {
+    return { success: false, error: '주문을 찾을 수 없습니다.' }
+  }
+
+  // 엑셀 생성
+  const { generateShippingExcel } = await import('@/lib/utils/excel-export')
+  const excelBase64 = generateShippingExcel(orders as Parameters<typeof generateShippingExcel>[0])
+
+  return { success: true, data: excelBase64, count: orders.length }
+}
+
+export async function exportShippingExcelAndUpdateStatus(orderIds: string[]) {
+  if (!orderIds.length) {
+    return { success: false, error: '선택된 주문이 없습니다.' }
+  }
+
+  // 선택된 주문들의 상세 정보 조회 (order_items 포함)
+  const { data: orders, error: fetchError } = await supabaseServer
+    .from('orders')
+    .select('*, order_items(*)')
+    .in('id', orderIds)
+
+  if (fetchError) {
+    console.error('Fetch orders for excel error:', fetchError)
+    return { success: false, error: fetchError.message }
+  }
+
+  if (!orders || orders.length === 0) {
+    return { success: false, error: '주문을 찾을 수 없습니다.' }
+  }
+
+  // 엑셀 생성
+  const { generateShippingExcel } = await import('@/lib/utils/excel-export')
+  const excelBase64 = generateShippingExcel(orders as Parameters<typeof generateShippingExcel>[0])
+
+  // 상태를 배송중으로 업데이트
+  const { error: updateError } = await supabaseServer
+    .from('orders')
+    .update({
+      consultation_status: 'shipping_in_progress',
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', orderIds)
+
+  if (updateError) {
+    console.error('Update status to shipping_in_progress error:', updateError)
+    return { success: false, error: updateError.message }
+  }
+
+  revalidatePath('/dashboard/orders')
+  return { success: true, data: excelBase64, count: orders.length }
+}

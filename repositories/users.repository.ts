@@ -53,17 +53,21 @@ export const usersRepository = {
           orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0
 
         // 포인트
-        const { data: pointsData } = await supabase
-          .from('user_points')
-          .select('points')
-          .eq('user_id', user.user_id)
-          .single()
+        let points = 0
+        if (user.user_id) {
+          const { data: pointsData } = await supabase
+            .from('user_points')
+            .select('points')
+            .eq('user_id', user.user_id)
+            .single()
+          points = pointsData?.points || 0
+        }
 
         return {
           ...user,
           order_count: orderCount,
           total_spent: totalSpent,
-          points: pointsData?.points || 0,
+          points,
         } as UserWithStats
       })
     )
@@ -110,17 +114,21 @@ export const usersRepository = {
       orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0
 
     // 포인트
-    const { data: pointsData } = await supabase
-      .from('user_points')
-      .select('points')
-      .eq('user_id', user.user_id)
-      .single()
+    let points = 0
+    if (user.user_id) {
+      const { data: pointsData } = await supabase
+        .from('user_points')
+        .select('points')
+        .eq('user_id', user.user_id)
+        .single()
+      points = pointsData?.points || 0
+    }
 
     return {
       ...user,
       order_count: orderCount,
       total_spent: totalSpent,
-      points: pointsData?.points || 0,
+      points,
     } as UserWithStats
   },
 

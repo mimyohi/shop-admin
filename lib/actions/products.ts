@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase-server'
 import { productOptionsRepository } from '@/repositories/product-options.repository'
 import { productsRepository } from '@/repositories/products.repository'
 import { CreateProductData, ProductFilters, UpdateProductData } from '@/types/products.types'
+import type { ProductOption, ProductAddon } from '@/models'
 
 export async function fetchProducts(filters: ProductFilters = {}) {
   return productsRepository.findMany(filters)
@@ -16,6 +17,14 @@ export async function fetchProduct(id: string) {
 
 export async function fetchProductCategories() {
   return productsRepository.findCategories()
+}
+
+export async function fetchProductOptions(productId: string): Promise<ProductOption[]> {
+  return productOptionsRepository.findByProductId(productId)
+}
+
+export async function fetchProductAddons(productId: string): Promise<ProductAddon[]> {
+  return productOptionsRepository.findAddonsByProductId(productId)
 }
 
 export async function createProduct(data: CreateProductData) {
@@ -38,61 +47,107 @@ export async function createProductWithOptions(data: {
 
   if (productError) throw productError
 
-  // 2. 옵션 저장
-  for (const option of data.options) {
-    const { data: newOption, error: optionError } = await supabaseServer
-      .from('product_options')
-      .insert([{
+  try {
+    // 2. 모든 옵션 배치 삽입
+    if (data.options.length > 0) {
+      const optionsData = data.options.map((option: any) => ({
         product_id: newProduct.id,
         name: option.name,
-        is_required: option.is_required,
+        price: option.price,
+        use_settings_on_first: option.use_settings_on_first ?? false,
+        use_settings_on_revisit_with_consult: option.use_settings_on_revisit_with_consult ?? false,
+        use_settings_on_revisit_no_consult: option.use_settings_on_revisit_no_consult ?? false,
         display_order: option.display_order,
-      }])
-      .select()
-      .single()
-
-    if (optionError) throw optionError
-
-    // 3. 옵션 값 저장
-    if (option.values && option.values.length > 0) {
-      const optionValues = option.values.map((value: any) => ({
-        option_id: newOption.id,
-        value: value.value,
-        price_adjustment: value.price_adjustment,
-        stock: value.stock,
-        is_available: value.is_available,
-        display_order: value.display_order,
       }))
 
-      const { error: valuesError } = await supabaseServer
-        .from('product_option_values')
-        .insert(optionValues)
+      const { data: newOptions, error: optionError } = await supabaseServer
+        .from('product_options')
+        .insert(optionsData)
+        .select()
 
-      if (valuesError) throw valuesError
+      if (optionError) throw optionError
+
+      // 3. 모든 Settings 배치 삽입
+      const allSettingsData: any[] = []
+      const optionSettingsMap: Map<number, { optionIdx: number; settings: any[] }> = new Map()
+
+      data.options.forEach((option: any, optionIdx: number) => {
+        if (option.settings && option.settings.length > 0) {
+          const newOptionId = newOptions[optionIdx].id
+          option.settings.forEach((setting: any) => {
+            allSettingsData.push({
+              option_id: newOptionId,
+              name: setting.name,
+              display_order: setting.display_order,
+              _temp_option_idx: optionIdx,
+              _temp_setting_types: setting.types || [],
+            })
+          })
+        }
+      })
+
+      if (allSettingsData.length > 0) {
+        // 임시 필드 제거 후 삽입
+        const settingsToInsert = allSettingsData.map(({ _temp_option_idx, _temp_setting_types, ...rest }) => rest)
+
+        const { data: newSettings, error: settingError } = await supabaseServer
+          .from('product_option_settings')
+          .insert(settingsToInsert)
+          .select()
+
+        if (settingError) throw settingError
+
+        // 4. 모든 Setting Types 배치 삽입
+        const allTypesData: any[] = []
+        newSettings.forEach((newSetting: any, idx: number) => {
+          const types = allSettingsData[idx]._temp_setting_types
+          if (types && types.length > 0) {
+            types.forEach((type: any) => {
+              allTypesData.push({
+                setting_id: newSetting.id,
+                name: type.name,
+                display_order: type.display_order,
+              })
+            })
+          }
+        })
+
+        if (allTypesData.length > 0) {
+          const { error: typesError } = await supabaseServer
+            .from('product_option_setting_types')
+            .insert(allTypesData)
+
+          if (typesError) throw typesError
+        }
+      }
     }
+
+    // 5. 추가상품 배치 삽입
+    if (data.addons.length > 0) {
+      const addonData = data.addons.map((addon: any) => ({
+        product_id: newProduct.id,
+        name: addon.name,
+        description: addon.description,
+        price: addon.price,
+        image_url: addon.image_url || null,
+        is_available: addon.is_available,
+        display_order: addon.display_order,
+      }))
+
+      const { error: addonsError } = await supabaseServer
+        .from('product_addons')
+        .insert(addonData)
+
+      if (addonsError) throw addonsError
+    }
+
+    revalidatePath('/dashboard/products')
+    return newProduct
+  } catch (error) {
+    // 실패 시 생성된 상품 삭제 (롤백)
+    await supabaseServer.from('products').delete().eq('id', newProduct.id)
+    throw error
   }
-
-  // 4. 추가상품 저장
-  if (data.addons.length > 0) {
-    const addonData = data.addons.map((addon: any) => ({
-      product_id: newProduct.id,
-      name: addon.name,
-      description: addon.description,
-      price: addon.price,
-      stock: addon.stock,
-      is_available: addon.is_available,
-      display_order: addon.display_order,
-    }))
-
-    const { error: addonsError } = await supabaseServer
-      .from('product_addons')
-      .insert(addonData)
-
-    if (addonsError) throw addonsError
-  }
-
-  revalidatePath('/dashboard/products')
-  return newProduct
 }
 
 export async function updateProduct(id: string, data: UpdateProductData) {
@@ -139,6 +194,155 @@ export async function duplicateProduct(id: string) {
   const result = await productsRepository.duplicate(id)
   revalidatePath('/dashboard/products')
   return result
+}
+
+export async function updateProductWithOptions(data: {
+  productId: string
+  product: any
+  options: any[]
+  addons: any[]
+}) {
+  // 1. 상품 업데이트
+  const updatedProduct = await productsRepository.update(data.productId, data.product)
+
+  // 2. 기존 옵션 삭제 (CASCADE로 settings, types도 함께 삭제됨)
+  // 먼저 모든 관련 데이터를 한 번에 조회
+  const { data: existingOptions } = await supabaseServer
+    .from('product_options')
+    .select('id')
+    .eq('product_id', data.productId)
+
+  if (existingOptions && existingOptions.length > 0) {
+    const optionIds = existingOptions.map(opt => opt.id)
+
+    // 모든 settings ID 조회
+    const { data: existingSettings } = await supabaseServer
+      .from('product_option_settings')
+      .select('id')
+      .in('option_id', optionIds)
+
+    // setting types 배치 삭제
+    if (existingSettings && existingSettings.length > 0) {
+      const settingIds = existingSettings.map(s => s.id)
+      await supabaseServer
+        .from('product_option_setting_types')
+        .delete()
+        .in('setting_id', settingIds)
+    }
+
+    // settings 배치 삭제
+    await supabaseServer
+      .from('product_option_settings')
+      .delete()
+      .in('option_id', optionIds)
+
+    // options 배치 삭제
+    await supabaseServer
+      .from('product_options')
+      .delete()
+      .eq('product_id', data.productId)
+  }
+
+  // 3. 새 옵션 배치 저장
+  if (data.options.length > 0) {
+    const optionsData = data.options.map((option: any) => ({
+      product_id: data.productId,
+      name: option.name,
+      price: option.price,
+      use_settings_on_first: option.use_settings_on_first ?? false,
+      use_settings_on_revisit_with_consult: option.use_settings_on_revisit_with_consult ?? false,
+      use_settings_on_revisit_no_consult: option.use_settings_on_revisit_no_consult ?? false,
+      display_order: option.display_order,
+    }))
+
+    const { data: newOptions, error: optionError } = await supabaseServer
+      .from('product_options')
+      .insert(optionsData)
+      .select()
+
+    if (optionError) throw optionError
+
+    // 4. 모든 Settings 배치 삽입
+    const allSettingsData: any[] = []
+
+    data.options.forEach((option: any, optionIdx: number) => {
+      if (option.settings && option.settings.length > 0) {
+        const newOptionId = newOptions[optionIdx].id
+        option.settings.forEach((setting: any) => {
+          allSettingsData.push({
+            option_id: newOptionId,
+            name: setting.name,
+            display_order: setting.display_order,
+            _temp_setting_types: setting.types || [],
+          })
+        })
+      }
+    })
+
+    if (allSettingsData.length > 0) {
+      // 임시 필드 제거 후 삽입
+      const settingsToInsert = allSettingsData.map(({ _temp_setting_types, ...rest }) => rest)
+
+      const { data: newSettings, error: settingError } = await supabaseServer
+        .from('product_option_settings')
+        .insert(settingsToInsert)
+        .select()
+
+      if (settingError) throw settingError
+
+      // 5. 모든 Setting Types 배치 삽입
+      const allTypesData: any[] = []
+      newSettings.forEach((newSetting: any, idx: number) => {
+        const types = allSettingsData[idx]._temp_setting_types
+        if (types && types.length > 0) {
+          types.forEach((type: any) => {
+            allTypesData.push({
+              setting_id: newSetting.id,
+              name: type.name,
+              display_order: type.display_order,
+            })
+          })
+        }
+      })
+
+      if (allTypesData.length > 0) {
+        const { error: typesError } = await supabaseServer
+          .from('product_option_setting_types')
+          .insert(allTypesData)
+
+        if (typesError) throw typesError
+      }
+    }
+  }
+
+  // 6. 기존 추가상품 삭제 후 새로 생성
+  await supabaseServer
+    .from('product_addons')
+    .delete()
+    .eq('product_id', data.productId)
+
+  // 7. 새 추가상품 배치 저장
+  if (data.addons.length > 0) {
+    const addonData = data.addons.map((addon: any) => ({
+      product_id: data.productId,
+      name: addon.name,
+      description: addon.description,
+      price: addon.price,
+      image_url: addon.image_url || null,
+      is_available: addon.is_available,
+      display_order: addon.display_order,
+    }))
+
+    const { error: addonsError } = await supabaseServer
+      .from('product_addons')
+      .insert(addonData)
+
+    if (addonsError) throw addonsError
+  }
+
+  revalidatePath('/dashboard/products')
+  revalidatePath(`/dashboard/products/${data.productId}`)
+  return updatedProduct
 }
 
 // Product Addon Actions

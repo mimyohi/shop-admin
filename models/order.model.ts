@@ -10,6 +10,7 @@ export type ConsultationStatus =
   | "on_hold"
   | "consultation_completed"
   | "shipping_on_hold"
+  | "shipping_in_progress"
   | "shipping_completed"
   | "cancelled";
 
@@ -38,6 +39,7 @@ export interface Order {
   shipping_company?: string;
   tracking_number?: string;
   shipped_at?: string | null;
+  shipping_message?: string;
 }
 
 /**

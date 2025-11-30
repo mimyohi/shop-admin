@@ -28,6 +28,9 @@ export default function ProductSalesPage() {
     salesData?.reduce((sum, item) => sum + item.total_sales, 0) || 0;
   const totalQuantity =
     salesData?.reduce((sum, item) => sum + item.total_quantity, 0) || 0;
+  const totalAddonSales =
+    salesData?.reduce((sum, item) => sum + item.addon_sales, 0) || 0;
+  const addonPercentage = totalRevenue > 0 ? (totalAddonSales / totalRevenue) * 100 : 0;
 
   return (
     <PermissionGuard requireMaster>
@@ -68,6 +71,22 @@ export default function ProductSalesPage() {
             <CardContent>
               <div className="text-2xl font-bold">
                 {isLoading ? "-" : `${totalQuantity.toLocaleString()}개`}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                추가상품 매출
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? "-" : `${totalAddonSales.toLocaleString()}원`}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                {isLoading ? "" : `전체의 ${addonPercentage.toFixed(1)}%`}
               </div>
             </CardContent>
           </Card>

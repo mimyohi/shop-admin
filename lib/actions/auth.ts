@@ -43,10 +43,10 @@ export async function loginAdmin(
       username: adminUser.username,
       email: adminUser.email,
       full_name: adminUser.full_name,
-      role: adminUser.role,
-      is_active: adminUser.is_active,
-      created_at: adminUser.created_at,
-      last_login_at: adminUser.last_login_at,
+      role: adminUser.role as 'admin' | 'master' | undefined,
+      is_active: adminUser.is_active ?? undefined,
+      created_at: adminUser.created_at ?? undefined,
+      last_login_at: adminUser.last_login_at ?? undefined,
     }
   } catch (error) {
     console.error('Login error:', error)
@@ -158,7 +158,7 @@ export async function logAdminActivity(
       action,
       resource_type: resourceType,
       resource_id: resourceId,
-      details,
+      details: details as any,
     })
   } catch (error) {
     console.error('Log activity error:', error)

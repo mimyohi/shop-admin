@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
+import { supabaseServer } from "@/lib/supabase-server";
 
 const portoneApiSecret = env.PORTONE_API_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentId, reason } = await request.json();
+    const { paymentId, reason, orderId } = await request.json();
 
     if (!paymentId) {
       return NextResponse.json(
@@ -37,6 +38,29 @@ export async function POST(request: NextRequest) {
         { error: data.message || "결제 취소에 실패했습니다." },
         { status: response.status }
       );
+    }
+
+    // 결제 취소 성공 시 주문 상태도 업데이트
+    if (orderId) {
+      const { error: updateError } = await supabaseServer
+        .from("orders")
+        .update({
+          status: "cancelled",
+          consultation_status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        console.error("주문 상태 업데이트 실패:", updateError);
+        // 결제 취소는 성공했으므로 경고만 반환
+        return NextResponse.json({
+          success: true,
+          message: "결제는 취소되었으나 주문 상태 업데이트에 실패했습니다.",
+          data,
+          warning: "주문 상태 업데이트 실패",
+        });
+      }
     }
 
     return NextResponse.json({

@@ -23,7 +23,15 @@ export const adminUsersRepository = {
       throw new Error('Failed to fetch admin users')
     }
 
-    return data || []
+    return (data || []).map(user => ({
+      ...user,
+      role: user.role as 'admin' | 'master' | undefined,
+      is_active: user.is_active ?? undefined,
+      created_at: user.created_at ?? undefined,
+      updated_at: user.updated_at ?? undefined,
+      last_login_at: user.last_login_at ?? undefined,
+      created_by: user.created_by ?? undefined,
+    }))
   },
 
   /**

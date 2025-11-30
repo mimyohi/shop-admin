@@ -1,5 +1,30 @@
-export const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY!;
-export const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET!;
+// 빌드 타임인지 확인
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.NEXT_RUNTIME;
+
+// 필수 환경 변수 검증 함수
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value && !isBuildTime) {
+    console.warn(`경고: 환경 변수 ${name}이(가) 설정되지 않았습니다.`);
+  }
+  return value || '';
+}
+
+// 서버 사이드에서만 필수인 환경 변수 검증
+function getServerRequiredEnvVar(name: string): string {
+  // 클라이언트에서는 빈 문자열 반환 (서버에서만 사용되는 환경 변수)
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+  const value = process.env[name];
+  if (!value && !isBuildTime) {
+    console.warn(`경고: 서버 환경 변수 ${name}이(가) 설정되지 않았습니다.`);
+  }
+  return value || '';
+}
+
+export const SOLAPI_API_KEY = getServerRequiredEnvVar('SOLAPI_API_KEY');
+export const SOLAPI_API_SECRET = getServerRequiredEnvVar('SOLAPI_API_SECRET');
 export const KAKAO_SENDER_KEY = process.env.KAKAO_SENDER_KEY;
 export const KAKAO_TEMPLATE_OTP =
   process.env.KAKAO_TEMPLATE_OTP ?? "otp_auth";
@@ -11,13 +36,13 @@ export const KAKAO_TEMPLATE_CANCEL =
   process.env.KAKAO_TEMPLATE_CANCEL ?? "order_cancellation";
 
 export const NEXT_PUBLIC_SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL');
 export const NEXT_PUBLIC_SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 export const SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET!;
+export const PORTONE_API_SECRET = getServerRequiredEnvVar('PORTONE_API_SECRET');
 export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 export const EMAIL_FROM =
   process.env.EMAIL_FROM ?? "noreply@yourdomain.com";

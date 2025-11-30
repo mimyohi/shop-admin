@@ -16,10 +16,10 @@ export interface UserPoints {
  */
 export interface PointHistory {
   id: string
-  user_id: string
+  user_id: string | null
   points: number
   type: 'earn' | 'use'
   reason: string
-  order_id?: string
-  created_at: string
+  order_id?: string | null
+  created_at: string | null
 }

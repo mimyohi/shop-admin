@@ -8,6 +8,7 @@ export interface ProductSalesData {
   total_quantity: number // 총 판매 수량
   order_count: number // 주문 건수
   option_breakdown?: OptionSalesBreakdown[] // 옵션별 매출 상세
+  addon_breakdown?: AddonSalesBreakdown[] // 애드온별 매출 상세
 }
 
 export interface OptionSalesBreakdown {
@@ -16,6 +17,14 @@ export interface OptionSalesBreakdown {
   sales: number // 해당 옵션의 총 매출
   quantity: number
   order_count: number
+}
+
+export interface AddonSalesBreakdown {
+  addon_id: string
+  addon_name: string
+  sales: number // 해당 애드온의 총 매출
+  quantity: number // 애드온이 선택된 총 횟수
+  order_count: number // 애드온이 포함된 주문 건수
 }
 
 export interface ProductSalesFilters {

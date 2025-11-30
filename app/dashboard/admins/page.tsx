@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -46,6 +46,7 @@ export default function AdminsPage() {
     adminUsername: "",
   })
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const adminUser = useAdminStore((state) => state.adminUser)
   const router = useRouter()
   const deleteAdminMutation = useDeleteAdminUser()
@@ -80,13 +81,15 @@ export default function AdminsPage() {
         formData.role as 'admin' | 'master'
       )
 
+      // 관리자 목록 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: adminUsersQueries.all() })
+
       toast({
         title: "성공",
         description: "관리자가 등록되었습니다.",
       })
 
       resetForm()
-      refetchAdmins()
     } catch (error) {
       console.error('Error creating admin:', error)
       toast({

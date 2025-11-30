@@ -3,7 +3,7 @@
  */
 export interface Product {
   id: string;
-  slug?: string;
+  slug?: string | null;
   name: string;
   description: string;
   price: number;
@@ -16,8 +16,6 @@ export interface Product {
   is_sale_badge?: boolean;
   sale_start_at?: string | null;
   sale_end_at?: string | null;
-  average_rating?: number;
-  review_count?: number;
   created_at: string;
   updated_at: string;
   discount_rate: string;
@@ -33,10 +31,10 @@ export interface ProductAddon {
   description: string | null;
   price: number;
   image_url?: string | null;
-  is_available: boolean;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
+  is_available: boolean | null;
+  display_order: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 /**

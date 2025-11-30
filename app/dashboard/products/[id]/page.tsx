@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,8 @@ import ProductAddonsManager from "@/components/ProductAddonsManager";
 import ProductOptionsManager from "@/components/ProductOptionsManager";
 import { productsQueries, useUpdateProduct } from "@/queries/products.queries";
 import { PermissionGuard } from "@/components/permission-guard";
+import { fetchProductOptions, fetchProductAddons, updateProductWithOptions } from "@/lib/actions/products";
+import { ProductOption } from "@/models";
 
 interface Product {
   id: string;
@@ -50,6 +52,7 @@ export default function ProductEditPage({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { id } = use(params);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -68,6 +71,9 @@ export default function ProductEditPage({
     is_new_badge: false,
     is_sale_badge: false,
   });
+
+  const [options, setOptions] = useState<ProductOption[]>([]);
+  const [addons, setAddons] = useState<any[]>([]);
 
   const updateProductMutation = useUpdateProduct();
   const {
@@ -100,6 +106,10 @@ export default function ProductEditPage({
         is_new_badge: product.is_new_badge ?? false,
         is_sale_badge: product.is_sale_badge ?? false,
       });
+
+      // Fetch options and addons
+      fetchProductOptions(product.id).then(setOptions);
+      fetchProductAddons(product.id).then(setAddons);
     }
   }, [product]);
 
@@ -146,9 +156,25 @@ export default function ProductEditPage({
         is_sale_badge: formData.is_sale_badge,
       };
 
-      await updateProductMutation.mutateAsync({
-        id,
-        data: productData,
+      await updateProductWithOptions({
+        productId: id,
+        product: productData,
+        options: options,
+        addons: addons,
+      });
+
+      // React Query 캐시 무효화 - 리스트와 상세 모두
+      queryClient.invalidateQueries({ queryKey: productsQueries.lists() });
+      queryClient.invalidateQueries({
+        queryKey: productsQueries.detail(id).queryKey,
+      });
+      // 카테고리도 변경될 수 있으므로 무효화
+      queryClient.invalidateQueries({
+        queryKey: productsQueries.categories().queryKey,
+      });
+      // 상품 옵션 캐시도 무효화
+      queryClient.invalidateQueries({
+        queryKey: ['admin-productOptions', id],
       });
 
       toast({
@@ -409,10 +435,16 @@ export default function ProductEditPage({
         </Card>
 
         {/* 상품 옵션 관리 */}
-        <ProductOptionsManager productId={product.id} />
+        <ProductOptionsManager
+          initialOptions={options}
+          onOptionsChange={setOptions}
+        />
 
         {/* 추가상품 관리 */}
-        <ProductAddonsManager productId={product.id} />
+        <ProductAddonsManager
+          initialAddons={addons}
+          onAddonsChange={setAddons}
+        />
 
         {/* 제출 버튼 */}
         <div className="flex gap-2">

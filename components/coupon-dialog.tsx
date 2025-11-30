@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +70,7 @@ export function CouponDialog({
   onSuccess,
 }: CouponDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [applyToAllProducts, setApplyToAllProducts] = useState(true);
@@ -183,6 +184,11 @@ export function CouponDialog({
       if (!productUpdate.success) {
         throw new Error(productUpdate.error);
       }
+
+      // 쿠폰 관련 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
+      // 쿠폰-상품 연결 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ["admin-couponProducts", savedCoupon.id] });
 
       toast({
         title: "성공",

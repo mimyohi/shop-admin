@@ -835,7 +835,6 @@ export type Database = {
       }
       products: {
         Row: {
-          average_rating: number | null
           category: string | null
           created_at: string | null
           description: string | null
@@ -849,14 +848,12 @@ export type Database = {
           is_visible_on_main: boolean | null
           name: string
           price: number
-          review_count: number | null
           sale_end_at: string | null
           sale_start_at: string | null
           slug: string | null
           updated_at: string | null
         }
         Insert: {
-          average_rating?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -870,14 +867,12 @@ export type Database = {
           is_visible_on_main?: boolean | null
           name: string
           price: number
-          review_count?: number | null
           sale_end_at?: string | null
           sale_start_at?: string | null
           slug?: string | null
           updated_at?: string | null
         }
         Update: {
-          average_rating?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -891,61 +886,12 @@ export type Database = {
           is_visible_on_main?: boolean | null
           name?: string
           price?: number
-          review_count?: number | null
           sale_end_at?: string | null
           sale_start_at?: string | null
           slug?: string | null
           updated_at?: string | null
         }
         Relationships: []
-      }
-      reviews: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          id: string
-          product_id: string | null
-          rating: number
-          updated_at: string | null
-          user_email: string
-          user_name: string
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          product_id?: string | null
-          rating: number
-          updated_at?: string | null
-          user_email: string
-          user_name: string
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          product_id?: string | null
-          rating?: number
-          updated_at?: string | null
-          user_email?: string
-          user_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "coupon_applicable_products"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "reviews_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       shipping_addresses: {
         Row: {

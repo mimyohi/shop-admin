@@ -27,7 +27,7 @@ export const productOptionsRepository = {
       throw new Error('Failed to fetch unlinked options')
     }
 
-    return data || []
+    return (data as any) || []
   },
 
   /**
@@ -45,7 +45,7 @@ export const productOptionsRepository = {
       throw new Error('Failed to fetch options by product_id')
     }
 
-    return data || []
+    return (data as any) || []
   },
 
   /**
@@ -93,7 +93,7 @@ export const productOptionsRepository = {
       return null
     }
 
-    return data
+    return data as any
   },
 
   // === Addons 관련 메서드 ===

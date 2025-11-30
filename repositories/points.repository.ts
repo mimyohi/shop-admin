@@ -15,83 +15,37 @@ export const pointsRepository = {
       throw new Error('Failed to fetch point history')
     }
 
-    return data || []
+    return (data as any) || []
   },
 
   async addPoints(userId: string, points: number, reason: string): Promise<void> {
-    // 포인트 히스토리 추가
-    const { error: historyError } = await supabase
-      .from('point_history')
-      .insert({
-        user_id: userId,
-        points,
-        reason,
-        type: 'earn',
-        created_at: new Date().toISOString(),
-      })
-
-    if (historyError) {
-      console.error('Error adding point history:', historyError)
-      throw new Error('Failed to add point history')
-    }
-
-    // 유저의 총 포인트 업데이트
-    const { error: updateError } = await supabase.rpc('increment_user_points', {
+    // add_points RPC 함수가 포인트 히스토리 추가 및 포인트 업데이트를 모두 처리
+    const { error } = await supabase.rpc('add_points', {
       p_user_id: userId,
       p_points: points,
+      p_reason: reason,
     })
 
-    if (updateError) {
-      console.error('Error updating user points:', updateError)
-      throw new Error('Failed to update user points')
+    if (error) {
+      console.error('Error adding points:', error)
+      throw new Error('Failed to add points')
     }
   },
 
   async usePoints(userId: string, points: number, reason: string): Promise<boolean> {
-    // 유저의 현재 포인트 조회
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('points')
-      .eq('id', userId)
-      .single()
-
-    if (userError || !user) {
-      console.error('Error fetching user points:', userError)
-      throw new Error('Failed to fetch user points')
-    }
-
-    // 포인트가 충분한지 확인
-    if ((user.points || 0) < points) {
-      return false
-    }
-
-    // 포인트 히스토리 추가
-    const { error: historyError } = await supabase
-      .from('point_history')
-      .insert({
-        user_id: userId,
-        points: -points,
-        reason,
-        type: 'use',
-        created_at: new Date().toISOString(),
-      })
-
-    if (historyError) {
-      console.error('Error adding point history:', historyError)
-      throw new Error('Failed to add point history')
-    }
-
-    // 유저의 총 포인트 업데이트
-    const { error: updateError } = await supabase.rpc('increment_user_points', {
+    // use_points RPC 함수 사용
+    const { data, error } = await supabase.rpc('use_points', {
       p_user_id: userId,
-      p_points: -points,
+      p_points: points,
+      p_reason: reason,
     })
 
-    if (updateError) {
-      console.error('Error updating user points:', updateError)
-      throw new Error('Failed to update user points')
+    if (error) {
+      console.error('Error using points:', error)
+      throw new Error('Failed to use points')
     }
 
-    return true
+    // RPC 함수가 boolean을 반환 (포인트 부족 시 false)
+    return data as boolean
   },
 }

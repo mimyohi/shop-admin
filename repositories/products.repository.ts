@@ -84,7 +84,7 @@ export const productsRepository = {
       return null
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -102,7 +102,7 @@ export const productsRepository = {
       throw new Error('Failed to create product')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -124,7 +124,7 @@ export const productsRepository = {
       throw new Error('Failed to update product')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -179,7 +179,7 @@ export const productsRepository = {
       throw new Error('Failed to toggle product out of stock')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -201,7 +201,7 @@ export const productsRepository = {
       throw new Error('Failed to toggle product new badge')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -223,7 +223,7 @@ export const productsRepository = {
       throw new Error('Failed to toggle product sale badge')
     }
 
-    return data
+    return data as any
   },
 
   /**
@@ -278,19 +278,39 @@ export const productsRepository = {
           .single()
 
         if (!newOptionError && newOption) {
-          // 4. 옵션 값 복사
-          const { data: values, error: valuesError } = await supabase
-            .from('product_option_values')
+          // 4. 옵션 Settings 복사
+          const { data: settings, error: settingsError } = await supabase
+            .from('product_option_settings')
             .select('*')
             .eq('option_id', optionId)
 
-          if (!valuesError && values && values.length > 0) {
-            const newValues = values.map(({ id: _, option_id: __, created_at: ___, updated_at: ____, ...valueData }) => ({
-              ...valueData,
-              option_id: newOption.id,
-            }))
+          if (!settingsError && settings && settings.length > 0) {
+            for (const setting of settings) {
+              const { id: settingId, option_id: _, created_at: ___, updated_at: ____, ...settingData } = setting
 
-            await supabase.from('product_option_values').insert(newValues)
+              const { data: newSetting, error: newSettingError } = await supabase
+                .from('product_option_settings')
+                .insert({ ...settingData, option_id: newOption.id })
+                .select()
+                .single()
+
+              if (!newSettingError && newSetting) {
+                // 5. Setting Types 복사
+                const { data: types, error: typesError } = await supabase
+                  .from('product_option_setting_types')
+                  .select('*')
+                  .eq('setting_id', settingId)
+
+                if (!typesError && types && types.length > 0) {
+                  const newTypes = types.map(({ id: _, setting_id: __, created_at: ___, updated_at: ____, ...typeData }) => ({
+                    ...typeData,
+                    setting_id: newSetting.id,
+                  }))
+
+                  await supabase.from('product_option_setting_types').insert(newTypes)
+                }
+              }
+            }
           }
         }
       }
@@ -311,6 +331,6 @@ export const productsRepository = {
       await supabase.from('product_addons').insert(newAddons)
     }
 
-    return newProduct
+    return newProduct as any
   },
 }

@@ -60,9 +60,16 @@ export function useUpdateOrderStatus() {
       status: string
       paymentKey?: string
     }) => updateOrderStatus(orderId, status, paymentKey),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ordersQueries.lists() })
       queryClient.invalidateQueries({ queryKey: ordersQueries.stats().queryKey })
+      queryClient.invalidateQueries({
+        queryKey: ordersQueries.detail(variables.orderId).queryKey,
+      })
+      // 상담 상태 카운트도 무효화
+      queryClient.invalidateQueries({
+        queryKey: [...ordersQueries.all(), 'consultation-status-counts'],
+      })
     },
   })
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, FileSpreadsheet } from "lucide-react";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
@@ -39,84 +39,18 @@ import {
   bulkUpdateConsultationStatus,
   setAssignedAdmin,
   setHandlerAdmin,
+  exportShippingExcelAndUpdateStatus,
 } from "@/lib/actions/orders";
-
-interface AdminUser {
-  id: string;
-  username: string;
-  full_name: string | null;
-}
-
-interface OrderItem {
-  id: string;
-  product_id: string | null;
-  product_name: string;
-}
-
-interface HealthConsultation {
-  id: string;
-  user_id?: string | null;
-  chief_complaint?: string;
-  symptom_duration?: string;
-  symptom_severity?: string;
-  symptom_checklist?: any;
-  basic_info?: {
-    birth_date?: string;
-    height?: number;
-    weight?: number;
-    gender?: string;
-    blood_pressure?: string;
-    pulse?: string;
-    medications?: string;
-  };
-  goals?: {
-    target_weight?: number;
-    target_period?: string;
-    diet_experience?: string;
-    min_weight?: number;
-    max_weight?: number;
-  };
-  lifestyle_info?: {
-    meals_per_day?: string;
-    late_night_snack?: string;
-    sleep_hours?: string;
-    weekly_drinks?: string;
-    weekly_alcohol?: string;
-  };
-  health?: {
-    allergies?: string;
-    diseases?: string;
-    current_medications?: string;
-  };
-}
-
-interface Order {
-  id: string;
-  order_id: string;
-  user_name: string;
-  user_email: string;
-  user_phone: string;
-  total_amount: number;
-  status: string;
-  payment_key: string;
-  consultation_status: string;
-  assigned_admin_id: string | null;
-  handler_admin_id: string | null;
-  handled_at: string | null;
-  created_at: string;
-  order_health_consultation: HealthConsultation;
-  assigned_admin?: AdminUser;
-  handler_admin?: AdminUser;
-  order_items?: OrderItem[];
-}
+import { OrderWithDetails } from "@/types/orders.types";
+import { ConsultationStatus } from "@/models/order.model";
 
 type ConsultationTabConfig = {
-  value: Order["consultation_status"];
+  value: ConsultationStatus;
   label: string;
-  nextStatus?: Order["consultation_status"];
+  nextStatus?: ConsultationStatus;
   nextLabel?: string;
   extraActions?: Array<{
-    targetStatus: Order["consultation_status"];
+    targetStatus: ConsultationStatus;
     label: string;
   }>;
 };
@@ -124,7 +58,7 @@ type ConsultationTabConfig = {
 type PaymentStatusFilter = "all" | "paid" | "pending" | "cancelled";
 type SortOption = "latest" | "oldest" | "amount_high" | "amount_low";
 
-const DEFAULT_TAB: Order["consultation_status"] = "chatting_required";
+const DEFAULT_TAB: ConsultationStatus = "chatting_required";
 const PAGE_SIZE = 20;
 const DEFAULT_FILTERS = {
   search: "",
@@ -170,6 +104,10 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     nextLabel: "선택 배송중으로 이동",
     extraActions: [
       {
+        targetStatus: "consultation_required",
+        label: "선택 상담 필요로 이동",
+      },
+      {
         targetStatus: "shipping_on_hold",
         label: "선택 배송보류로 이동",
       },
@@ -202,6 +140,12 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
   {
     value: "shipping_completed",
     label: "배송완료",
+    extraActions: [
+      {
+        targetStatus: "shipping_in_progress",
+        label: "선택 배송중으로 복귀",
+      },
+    ],
   },
   {
     value: "cancelled",
@@ -211,7 +155,7 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
 
 const CONSULTATION_TAB_VALUES = CONSULTATION_TABS.map(
   (tab) => tab.value
-) as Order["consultation_status"][];
+) as ConsultationStatus[];
 
 const formatCurrency = (amount?: number | null) => {
   if (amount === null || amount === undefined) return "-";
@@ -220,21 +164,42 @@ const formatCurrency = (amount?: number | null) => {
   return `${numericAmount.toLocaleString("ko-KR")}원`;
 };
 
+const getVisitTypeLabel = (visitType?: string | null) => {
+  if (!visitType) return "-";
+  const visitTypeMap: Record<string, string> = {
+    first: "초진",
+    revisit_with_consult: "재진(상담)",
+    revisit_no_consult: "재진(상담X)",
+  };
+  return visitTypeMap[visitType] || visitType;
+};
+
+const getOrderVisitType = (order: OrderWithDetails) => {
+  // 주문 항목에서 visit_type을 찾아 반환
+  if (!order.order_items || order.order_items.length === 0) return null;
+
+  // 첫 번째 order_item의 visit_type을 반환 (모든 항목이 같은 visit_type을 가진다고 가정)
+  const firstItem = order.order_items[0];
+  return firstItem.visit_type || null;
+};
+
 const INITIAL_SELECTION_STATE = CONSULTATION_TABS.reduce((acc, tab) => {
   acc[tab.value] = [];
   return acc;
-}, {} as Record<Order["consultation_status"], string[]>);
+}, {} as Record<ConsultationStatus, string[]>);
 
 export default function OrdersPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
     parseAsStringEnum(CONSULTATION_TAB_VALUES).withDefault(DEFAULT_TAB)
   );
   const [selectedOrders, setSelectedOrders] = useState<
-    Record<Order["consultation_status"], string[]>
+    Record<ConsultationStatus, string[]>
   >(INITIAL_SELECTION_STATE);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   // 필터 상태
@@ -367,10 +332,13 @@ export default function OrdersPage() {
     });
   }, [orderList, activeTab]);
 
-  const statusCountsQuery = useQuery(
+  const {
+    data: statusCountsData,
+    refetch: refetchStatusCounts,
+  } = useQuery(
     ordersQueries.consultationStatusCounts(CONSULTATION_TAB_VALUES)
   );
-  const statusCounts = statusCountsQuery.data || {};
+  const statusCounts = statusCountsData || {};
 
   const resetFilters = () => {
     void setSearchTerm(DEFAULT_FILTERS.search);
@@ -394,13 +362,53 @@ export default function OrdersPage() {
     router.push(`/dashboard/orders/${orderId}`);
   };
 
+  // 옵션 설정이 미완료된 주문인지 확인
+  const hasIncompleteOptionSettings = (order: OrderWithDetails): boolean => {
+    if (!order.order_items) return false;
+    return order.order_items.some(
+      (item) =>
+        item.option_id &&
+        (!item.selected_option_settings ||
+          item.selected_option_settings.length === 0)
+    );
+  };
+
   const handleBulkStatusUpdate = async (
-    targetStatus: Order["consultation_status"],
-    sourceStatus: Order["consultation_status"]
+    targetStatus: ConsultationStatus,
+    sourceStatus: ConsultationStatus
   ) => {
-    const selected = selectedOrders[sourceStatus] || [];
+    let selected = selectedOrders[sourceStatus] || [];
     if (selected.length === 0) {
       return;
+    }
+
+    // 상담 필요 -> 상담 완료 전환 시 옵션 설정 미완료 주문 제외
+    let skippedCount = 0;
+    if (
+      sourceStatus === "consultation_required" &&
+      targetStatus === "consultation_completed"
+    ) {
+      const originalCount = selected.length;
+      const ordersToProcess = orderList.filter(
+        (order) =>
+          selected.includes(order.id) && !hasIncompleteOptionSettings(order)
+      );
+      const skippedOrders = orderList.filter(
+        (order) =>
+          selected.includes(order.id) && hasIncompleteOptionSettings(order)
+      );
+      skippedCount = skippedOrders.length;
+      selected = ordersToProcess.map((order) => order.id);
+
+      if (selected.length === 0) {
+        toast({
+          title: "알림",
+          description:
+            "선택한 모든 주문에 옵션 설정이 필요합니다. 옵션 설정 후 다시 시도해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
@@ -410,16 +418,25 @@ export default function OrdersPage() {
         throw new Error(result.error || "주문 상태 변경에 실패했습니다.");
       }
 
-      toast({
-        title: "성공",
-        description: `선택한 주문 ${selected.length}건의 상담 상태를 변경했습니다.`,
-      });
+      if (skippedCount > 0) {
+        toast({
+          title: "일부 완료",
+          description: `${selected.length}건 변경 완료, ${skippedCount}건은 옵션 설정이 필요하여 제외되었습니다.`,
+        });
+      } else {
+        toast({
+          title: "성공",
+          description: `선택한 주문 ${selected.length}건의 상담 상태를 변경했습니다.`,
+        });
+      }
 
       setSelectedOrders((prev) => ({
         ...prev,
         [sourceStatus]: [],
       }));
-      await refetchOrders();
+      // 모든 주문 목록 쿼리 무효화 (원본 탭, 대상 탭 모두 갱신)
+      await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
+      await refetchStatusCounts();
     } catch (error) {
       console.error("Error updating order status:", error);
       toast({
@@ -484,6 +501,71 @@ export default function OrdersPage() {
         description: "상담 담당자 변경에 실패했습니다.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleExportExcel = async () => {
+    const selected = selectedOrders["consultation_completed"] || [];
+    if (selected.length === 0) {
+      toast({
+        title: "알림",
+        description: "엑셀로 추출할 주문을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const result = await exportShippingExcelAndUpdateStatus(selected);
+
+      if (!result.success) {
+        throw new Error(result.error || "엑셀 추출에 실패했습니다.");
+      }
+
+      // base64 데이터를 Blob으로 변환하여 다운로드
+      const byteCharacters = atob(result.data!);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      // 다운로드 트리거
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const today = new Date().toISOString().split("T")[0];
+      link.download = `배송목록_${today}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "성공",
+        description: `${result.count}건의 주문이 엑셀로 추출되었고, 배송중 상태로 변경되었습니다.`,
+      });
+
+      setSelectedOrders((prev) => ({
+        ...prev,
+        consultation_completed: [],
+      }));
+      // 모든 주문 목록 쿼리 무효화 (배송필요 -> 배송중 이동)
+      await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
+      await refetchStatusCounts();
+    } catch (error) {
+      console.error("Error exporting excel:", error);
+      toast({
+        title: "오류",
+        description: "엑셀 추출에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -580,6 +662,22 @@ export default function OrdersPage() {
                 {action.label}
               </Button>
             ))}
+            {activeTab === "consultation_completed" && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={
+                  currentSelected.length === 0 ||
+                  isExporting ||
+                  ordersLoading
+                }
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-1" />
+                {isExporting ? "추출 중..." : "엑셀 추출"}
+              </Button>
+            )}
           </div>
         </div>
         <Table>
@@ -597,6 +695,7 @@ export default function OrdersPage() {
               <TableHead>주문번호</TableHead>
               <TableHead>접수 담당자</TableHead>
               <TableHead>주문자</TableHead>
+              <TableHead>초진/재진</TableHead>
               <TableHead>주문일시</TableHead>
               <TableHead>금액</TableHead>
               <TableHead>연락처</TableHead>
@@ -622,7 +721,7 @@ export default function OrdersPage() {
                   />
                 </TableCell>
                 <TableCell className="font-mono text-xs">
-                  {order.order_id.substring(0, 8)}...
+                  {order.order_id}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select
@@ -645,6 +744,21 @@ export default function OrdersPage() {
                   </Select>
                 </TableCell>
                 <TableCell className="font-medium">{order.user_name}</TableCell>
+                <TableCell className="text-sm">
+                  <span
+                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                      getOrderVisitType(order) === "first"
+                        ? "bg-green-100 text-green-800"
+                        : getOrderVisitType(order) === "revisit_with_consult"
+                        ? "bg-blue-100 text-blue-800"
+                        : getOrderVisitType(order) === "revisit_no_consult"
+                        ? "bg-gray-100 text-gray-800"
+                        : "bg-gray-50 text-gray-500"
+                    }`}
+                  >
+                    {getVisitTypeLabel(getOrderVisitType(order))}
+                  </span>
+                </TableCell>
                 <TableCell className="text-sm">
                   {new Date(order.created_at).toLocaleDateString("ko-KR", {
                     year: "2-digit",
@@ -960,7 +1074,7 @@ export default function OrdersPage() {
           <Tabs
             value={activeTab}
             onValueChange={(value) => {
-              void setActiveTab(value as Order["consultation_status"]);
+              void setActiveTab(value as ConsultationStatus);
               void setPage(1);
             }}
             className="w-full"

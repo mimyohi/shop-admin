@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
-import { productOptionsQueries } from "@/queries/product-options.queries";
-import { createAddon, deleteAddon, updateAddon } from "@/lib/actions/products";
 
 interface ProductAddon {
   id: string;
@@ -24,20 +21,15 @@ interface ProductAddon {
 }
 
 interface Props {
-  productId?: string;
-  mode?: "create" | "edit";
   initialAddons?: ProductAddon[];
   onAddonsChange?: (addons: ProductAddon[]) => void;
 }
 
 export default function ProductAddonsManager({
-  productId,
-  mode = "edit",
   initialAddons = [],
   onAddonsChange,
 }: Props) {
-  const [addons, setAddons] = useState<ProductAddon[]>(initialAddons);
-  const [loading, setLoading] = useState(mode === "edit");
+  const addons = initialAddons;
 
   // New addon form
   const [newAddon, setNewAddon] = useState({
@@ -48,23 +40,8 @@ export default function ProductAddonsManager({
     is_available: true,
   });
 
-  const shouldFetchConfiguration = mode === "edit" && !!productId;
-  const { data: configurationData } = useQuery({
-    ...productOptionsQueries.configuration(productId || ""),
-    enabled: shouldFetchConfiguration,
-  });
-
-  useEffect(() => {
-    if (shouldFetchConfiguration && configurationData) {
-      setAddons(configurationData.addons as ProductAddon[]);
-      setLoading(false);
-    } else if (!shouldFetchConfiguration) {
-      setLoading(false);
-    }
-  }, [shouldFetchConfiguration, configurationData]);
-
   // === Addons Management ===
-  const addAddonItem = async () => {
+  const addAddonItem = () => {
     if (!newAddon.name.trim() || !newAddon.price) {
       alert("상품명과 가격은 필수 항목입니다.");
       return;
@@ -74,108 +51,40 @@ export default function ProductAddonsManager({
       return;
     }
 
-    try {
-      if (mode === "create") {
-        const newAddonData: ProductAddon = {
-          id: `temp-addon-${Date.now()}`,
-          product_id: "",
-          name: newAddon.name,
-          description: newAddon.description || null,
-          price: parseFloat(newAddon.price),
-          image_url: newAddon.image_url || null,
-          is_available: newAddon.is_available,
-          display_order: addons.length,
-        };
-        const updatedAddons = [...addons, newAddonData];
-        setAddons(updatedAddons);
-        onAddonsChange?.(updatedAddons);
-        setNewAddon({
-          name: "",
-          description: "",
-          price: "",
-          image_url: "",
-          is_available: true,
-        });
-      } else {
-        const result = await createAddon(productId!, {
-          name: newAddon.name,
-          description: newAddon.description || null,
-          price: parseFloat(newAddon.price),
-          image_url: newAddon.image_url || null,
-          is_available: newAddon.is_available,
-          display_order: addons.length,
-        });
-
-        if (!result.success) throw new Error(result.error);
-
-        setAddons([...addons, result.data as ProductAddon]);
-        setNewAddon({
-          name: "",
-          description: "",
-          price: "",
-          image_url: "",
-          is_available: true,
-        });
-      }
-    } catch (error: any) {
-      console.error("Error adding addon:", error);
-      alert(error.message || "추가상품 등록에 실패했습니다.");
-    }
+    const newAddonData: ProductAddon = {
+      id: `temp-addon-${Date.now()}`,
+      product_id: "",
+      name: newAddon.name,
+      description: newAddon.description || null,
+      price: parseFloat(newAddon.price),
+      image_url: newAddon.image_url || null,
+      is_available: newAddon.is_available,
+      display_order: addons.length,
+    };
+    const updatedAddons = [...addons, newAddonData];
+    onAddonsChange?.(updatedAddons);
+    setNewAddon({
+      name: "",
+      description: "",
+      price: "",
+      image_url: "",
+      is_available: true,
+    });
   };
 
-  const deleteAddonItem = async (addonId: string) => {
+  const deleteAddonItem = (addonId: string) => {
     if (!confirm("이 추가상품을 삭제하시겠습니까?")) return;
 
-    try {
-      if (mode === "create") {
-        const updatedAddons = addons.filter((a) => a.id !== addonId);
-        setAddons(updatedAddons);
-        onAddonsChange?.(updatedAddons);
-      } else {
-        const result = await deleteAddon(addonId);
-
-        if (!result.success) throw new Error(result.error);
-        setAddons(addons.filter((a) => a.id !== addonId));
-      }
-    } catch (error: any) {
-      console.error("Error deleting addon:", error);
-      alert(error.message || "추가상품 삭제에 실패했습니다.");
-    }
+    const updatedAddons = addons.filter((a) => a.id !== addonId);
+    onAddonsChange?.(updatedAddons);
   };
 
-  const toggleAddonAvailability = async (
-    addonId: string,
-    isAvailable: boolean
-  ) => {
-    try {
-      if (mode === "create") {
-        const updatedAddons = addons.map((a) =>
-          a.id === addonId ? { ...a, is_available: isAvailable } : a
-        );
-        setAddons(updatedAddons);
-        onAddonsChange?.(updatedAddons);
-      } else {
-        const result = await updateAddon(addonId, {
-          is_available: isAvailable,
-        });
-
-        if (!result.success) throw new Error(result.error);
-
-        setAddons(
-          addons.map((a) =>
-            a.id === addonId ? { ...a, is_available: isAvailable } : a
-          )
-        );
-      }
-    } catch (error: any) {
-      console.error("Error updating addon:", error);
-      alert(error.message || "추가상품 업데이트에 실패했습니다.");
-    }
+  const toggleAddonAvailability = (addonId: string, isAvailable: boolean) => {
+    const updatedAddons = addons.map((a) =>
+      a.id === addonId ? { ...a, is_available: isAvailable } : a
+    );
+    onAddonsChange?.(updatedAddons);
   };
-
-  if (loading) {
-    return <div className="p-4">로딩 중...</div>;
-  }
 
   return (
     <Card>

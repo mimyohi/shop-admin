@@ -24,7 +24,7 @@ import { couponsQueries } from "@/queries/coupons.queries";
 import { issueCouponToUser } from "@/lib/actions/coupons";
 
 interface User {
-  user_id: string;
+  user_id: string | null;
   email: string;
   display_name: string | null;
 }
@@ -68,7 +68,7 @@ export function IssueCouponToUserDialog({
 
   const handleIssue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedCouponId) return;
+    if (!user || !selectedCouponId || !user.user_id) return;
 
     setIsLoading(true);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { adjustUserPoints } from "@/lib/actions/points";
 
 interface UserPoint {
-  user_id: string;
+  user_id: string | null;
   points: number;
   user_profiles: {
     email: string;
@@ -41,6 +42,7 @@ export function PointAdjustDialog({
   onSuccess,
 }: PointAdjustDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [points, setPoints] = useState("");
   const [reason, setReason] = useState("");
@@ -68,6 +70,15 @@ export function PointAdjustDialog({
       return;
     }
 
+    if (!userPoint.user_id) {
+      toast({
+        title: "오류",
+        description: "사용자 ID가 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -84,6 +95,11 @@ export function PointAdjustDialog({
       if (!result.success) {
         throw new Error(result.error);
       }
+
+      // 포인트 관련 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ['admin-pointHistory', userPoint.user_id] });
+      // 유저 정보 캐시 무효화 (포인트 정보 포함)
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
 
       toast({
         title: "성공",
