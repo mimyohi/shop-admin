@@ -1,240 +1,171 @@
 # Shop Admin Dashboard
 
-쇼핑몰 관리를 위한 어드민 대시보드 프로젝트입니다. shadcn/ui와 Next.js를 사용하여 구축되었습니다.
+쇼핑몰 관리를 위한 어드민 대시보드
+
+## 빠른 시작
+
+```bash
+# 1. 패키지 설치
+npm install --legacy-peer-deps
+
+# 2. 환경 변수 설정
+cp .env.example .env.local
+# .env.local 파일에 Supabase 정보 입력
+
+# 3. DB 스키마 적용 (Supabase SQL Editor)
+# supabase/admin_schema.sql 실행
+
+# 4. 개발 서버 실행
+npm run dev
+# http://localhost:3001
+```
+
+**기본 로그인**: `master` / `admin123`
+
+---
+
+## 환경 변수
+
+`.env.local` 파일 필요:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # 선택
+```
+
+### 여러 환경 사용
+
+```bash
+# 기본 (.env.local 사용)
+npm run dev
+
+# 테스트 환경 (.env.test 사용)
+yarn dev:test
+
+# 다른 env 파일 지정
+ENV_FILE=.env.dev yarn dev:test
+ENV_FILE=.env.dev npx tsx scripts/insert-mock-data.ts
+```
+
+---
 
 ## 주요 기능
 
-### 1. 관리자 인증
+| 기능        | 설명                            | 권한         |
+| ----------- | ------------------------------- | ------------ |
+| 대시보드    | 통계 현황 (상품, 주문, 매출)    | 전체         |
+| 상품 관리   | CRUD, 옵션, 추가상품, 이미지    | 전체         |
+| 주문 관리   | 상태 변경, 배송 알림, 결제 취소 | 전체         |
+| 회원 관리   | 포인트 조정, 쿠폰 발급          | 전체         |
+| 쿠폰 관리   | 생성, 발급, 이력 조회           | 전체         |
+| 매출 리포트 | 상품별 매출, 차트               | 전체         |
+| 어드민 관리 | 계정 생성/삭제, 비밀번호 초기화 | **마스터만** |
 
-- 아이디/비밀번호 기반 로그인
-- 마스터 관리자와 일반 관리자 권한 구분
-- 세션 관리 (Zustand persist)
+---
 
-### 2. 상품 관리
+## 권한
 
-- 상품 등록, 수정, 삭제
-- 상품 정보 (이름, 설명, 가격, 재고, 카테고리, 이미지)
-- 실시간 상품 목록 조회
+| 역할     | 설명                       |
+| -------- | -------------------------- |
+| `master` | 전체 기능 + 어드민 관리    |
+| `admin`  | 어드민 관리 제외 전체 기능 |
 
-### 3. 주문 관리
-
-- 주문 목록 조회
-- 주문 상태 관리 (결제대기 → 결제완료 → 배송준비 → 배송중 → 배송완료)
-- 주문 상세 정보 확인
-
-### 4. 어드민 유저 관리 (마스터 관리자 전용)
-
-- 새로운 관리자 계정 생성
-- 관리자 목록 조회
-- 관리자 삭제
-
-### 5. 대시보드
-
-- 주요 통계 정보 (전체 상품 수, 주문 수, 총 매출, 대기중 주문)
-- 한눈에 보는 운영 현황
-
-## 기술 스택
-
-- **프레임워크**: Next.js 16 (App Router)
-- **언어**: TypeScript
-- **UI 라이브러리**: shadcn/ui (Radix UI + Tailwind CSS)
-- **데이터베이스**: Supabase (PostgreSQL)
-- **상태 관리**: Zustand
-- **인증**: bcryptjs
-- **스타일링**: Tailwind CSS
-
-## 설치 및 실행
-
-### 1. 패키지 설치
-
-```bash
-npm install
-```
-
-### 2. 환경 변수 설정
-
-`.env.local` 파일이 이미 설정되어 있습니다:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://mkbeonizkvrzjqihhcmg.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-`.env.dev` 같은 다른 파일을 동시에 보관하고 싶다면 그대로 두고 필요할 때만 사용하세요.
-대부분의 Next.js 실행은 기본적으로 `.env.local`을 읽지만,
-`scripts/insert-mock-data.ts`와 같은 스크립트는 `ENV_FILE` 환경 변수를 통해 다른 파일을 가리킬 수 있습니다:
-
-```bash
-npx tsx scripts/insert-mock-data.ts          # .env.local 사용
-ENV_FILE=.env.dev npx tsx scripts/insert-mock-data.ts  # .env.dev 사용
-```
-
-스크립트는 `ENV_FILE`에 지정한 상대/절대 경로를 그대로 읽습니다.
-
-`yarn dev:test` 명령은 `.env.test`(또는 `ENV_FILE`으로 지정한 파일)를 먼저 로드한 다음 Next 개발 서버를 띄웁니다:
-
-```bash
-yarn dev:test               # .env.test 사용
-ENV_FILE=.env.dev yarn dev:test  # 다른 파일 사용
-```
-
-필요한 `.env.test` 파일은 `.env.local`을 기준으로 복사한 뒤 테스트용 값만 바꿔두면 됩니다.
-
-### 3. Supabase 데이터베이스 스키마 적용
-
-Supabase 대시보드에서 SQL Editor를 열고 `supabase/admin_schema.sql` 파일의 내용을 실행하세요.
-
-이 스키마는 다음을 생성합니다:
-
-- `admin_users` 테이블 (관리자 계정)
-- `admin_activity_logs` 테이블 (관리자 활동 로그)
-- 초기 마스터 관리자 계정
-
-### 4. 마스터 관리자 계정 생성
-
-스키마 실행 후, bcrypt 해시를 생성하여 마스터 관리자의 비밀번호를 설정해야 합니다:
-
-```bash
-# Node.js에서 bcrypt 해시 생성
-node -e "const bcrypt = require('bcryptjs'); console.log(bcrypt.hashSync('admin123', 10))"
-```
-
-생성된 해시를 Supabase SQL Editor에서 실행:
-
-```sql
-INSERT INTO admin_users (username, email, password_hash, full_name, role)
-VALUES (
-  'master',
-  'master@shopadmin.com',
-  'your-generated-hash-here',
-  'Master Administrator',
-  'master'
-) ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
-```
-
-### 5. 개발 서버 실행
-
-```bash
-npm run dev
-```
-
-어드민 대시보드는 `http://localhost:3001`에서 실행됩니다.
-(포트 3001을 사용하여 shop 프로젝트(3000)와 충돌을 방지합니다)
-
-## 기본 로그인 정보
-
-스키마 적용 후 설정한 계정으로 로그인:
-
-- 아이디: `master`
-- 비밀번호: 위에서 설정한 비밀번호
+---
 
 ## 프로젝트 구조
 
 ```
 shop-admin/
 ├── app/
-│   ├── dashboard/          # 대시보드 페이지들
-│   │   ├── admins/        # 어드민 관리
-│   │   ├── orders/        # 주문 관리
-│   │   └── products/      # 상품 관리
-│   ├── login/             # 로그인 페이지
-│   ├── globals.css        # 전역 스타일
-│   └── layout.tsx         # 루트 레이아웃
-├── components/
-│   ├── ui/                # shadcn/ui 컴포넌트
-│   ├── auth-guard.tsx     # 인증 가드
-│   └── dashboard-nav.tsx  # 대시보드 네비게이션
-├── lib/
-│   ├── auth.ts           # 인증 관련 함수
-│   ├── supabase.ts       # Supabase 클라이언트
-│   └── utils.ts          # 유틸리티 함수
-├── store/
-│   └── admin-store.ts    # Zustand 상태 관리
-├── hooks/
-│   └── use-toast.ts      # Toast 훅
-├── supabase/
-│   └── admin_schema.sql  # 데이터베이스 스키마
-└── package.json
+│   ├── dashboard/           # 메인 페이지들
+│   │   ├── products/        # 상품 관리
+│   │   ├── orders/          # 주문 관리
+│   │   ├── users/           # 회원 관리
+│   │   ├── coupons/         # 쿠폰 관리
+│   │   ├── reports/         # 매출 리포트
+│   │   └── admins/          # 어드민 관리 (마스터)
+│   ├── login/               # 로그인
+│   └── api/                 # API 라우트
+├── components/              # UI 컴포넌트
+├── lib/actions/             # 서버 액션
+├── queries/                 # React Query 훅
+├── repositories/            # 데이터 접근 계층
+├── models/                  # 타입 정의
+├── store/                   # Zustand 상태 관리
+└── scripts/                 # 유틸리티 스크립트
 ```
 
-## 주요 페이지
+---
 
-- `/` - 루트 (로그인으로 리다이렉트)
-- `/login` - 로그인 페이지
-- `/dashboard` - 대시보드 홈
-- `/dashboard/products` - 상품 관리
-
-## 권한 시스템
-
-### 마스터 관리자 (master)
-
-- 모든 기능 접근 가능
-- 어드민 계정 생성/삭제
-- 상품 및 주문 관리
-
-### 일반 관리자 (admin)
-
-- 상품 관리
-- 주문 관리
-- 대시보드 조회
-- 어드민 관리 페이지 접근 불가
-
-## 데이터베이스 테이블
-
-### admin_users
-
-관리자 계정 정보를 저장합니다.
-
-### admin_activity_logs
-
-관리자의 활동을 기록합니다 (로그인, 상품 등록/수정/삭제, 어드민 생성 등).
-
-### products (shop 프로젝트와 공유)
-
-상품 정보를 저장합니다.
-
-### orders (shop 프로젝트와 공유)
-
-주문 정보를 저장합니다.
-
-## 개발 가이드
-
-### 새 관리자 추가하기
-
-1. 마스터 관리자로 로그인
-2. "어드민 관리" 메뉴 접속
-3. "관리자 추가" 버튼 클릭
-4. 필요한 정보 입력 후 등록
-
-### 상품 등록하기
-
-1. "상품 관리" 메뉴 접속
-2. "상품 등록" 버튼 클릭
-3. 상품 정보 입력 후 등록
-
-### 주문 상태 변경하기
-
-1. "주문 관리" 메뉴 접속
-2. 각 주문의 상태에 따라 다음 단계 버튼 클릭
-3. 자동으로 상태가 업데이트됨
-
-## 보안 고려사항
-
-- 비밀번호는 bcrypt로 해시화하여 저장
-- 클라이언트 사이드에서 인증 상태 검증 (AuthGuard)
-- Supabase RLS (Row Level Security) 활성화
-- 관리자 활동 로그 자동 기록
-
-## 빌드 및 배포
+## 스크립트
 
 ```bash
-# 프로덕션 빌드
-npm run build
+npm run dev          # 개발 서버 (포트 3001)
+npm run build        # 프로덕션 빌드
+npm start            # 프로덕션 서버
+npm run lint         # ESLint
+npm run typecheck    # TypeScript 체크
+npm run unused       # 미사용 코드 체크 (knip)
+```
 
-# 프로덕션 서버 실행
+---
+
+## 기술 스택
+
+- **프레임워크**: Next.js 16 (App Router)
+- **UI**: shadcn/ui, Tailwind CSS
+- **상태관리**: Zustand, React Query
+- **DB**: Supabase (PostgreSQL)
+- **차트**: Recharts
+- **인증**: bcryptjs
+
+---
+
+## DB 테이블
+
+| 테이블                | 설명        | 공유        |
+| --------------------- | ----------- | ----------- |
+| `admin_users`         | 관리자 계정 | 어드민 전용 |
+| `admin_activity_logs` | 활동 로그   | 어드민 전용 |
+| `products`            | 상품        | Shop과 공유 |
+| `orders`              | 주문        | Shop과 공유 |
+| `users`               | 회원        | Shop과 공유 |
+| `coupons`             | 쿠폰        | Shop과 공유 |
+
+---
+
+## 문제 해결
+
+### 로그인 실패
+
+```sql
+-- admin_users 테이블 확인
+SELECT * FROM admin_users WHERE username = 'master';
+```
+
+### Supabase 연결 오류
+
+- `.env.local` 의 URL/KEY 확인
+- Supabase 프로젝트 상태 확인
+
+### 포트 충돌
+
+- Shop 프로젝트가 3000 포트 사용
+- 어드민은 3001 포트 사용
+
+---
+
+## 배포
+
+```bash
+npm run build
 npm start
 ```
 
-## 라이센스
+배포 체크리스트:
 
-ISC
+- [ ] 환경 변수 프로덕션 값으로 설정
+- [ ] 마스터 비밀번호 변경
+- [ ] RLS 정책 검토
+- [ ] HTTPS 설정
