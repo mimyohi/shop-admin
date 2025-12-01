@@ -86,6 +86,10 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     nextLabel: "선택 배송필요(상담완료) 이동",
     extraActions: [
       {
+        targetStatus: "chatting_required",
+        label: "선택 접수 필요로 이동",
+      },
+      {
         targetStatus: "on_hold",
         label: "선택 보류로 이동",
       },

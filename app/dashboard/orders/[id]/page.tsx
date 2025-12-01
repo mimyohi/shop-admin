@@ -709,8 +709,6 @@ export default function OrderDetailPage() {
 
   const getStatusLabel = (status: string) => {
     const statusMap: Record<string, string> = {
-      payment_pending: "결제 대기",
-      expired: "만료",
       chatting_required: "접수 필요",
       consultation_required: "상담 필요",
       on_hold: "보류",
