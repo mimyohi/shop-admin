@@ -173,8 +173,8 @@ const CONSULTATION_STATUS_FLOW: Partial<
   consultation_completed: {
     prev: "consultation_required",
     prevLabel: "상담 필요로 이동",
-    next: "shipping_in_progress",
-    nextLabel: "배송중으로 이동",
+    next: "shipped",
+    nextLabel: "배송처리",
     extraActions: [
       {
         target: "shipping_on_hold",
@@ -183,29 +183,22 @@ const CONSULTATION_STATUS_FLOW: Partial<
       },
     ],
   },
-  shipping_in_progress: {
-    prev: "consultation_completed",
-    prevLabel: "배송필요(상담완료)로 이동",
-    next: "shipping_completed",
-    nextLabel: "배송완료 처리",
-  },
   shipping_on_hold: {
     prev: "consultation_completed",
     prevLabel: "배송필요(상담완료)로 이동",
-    next: "shipping_in_progress",
-    nextLabel: "배송중으로 이동",
+    next: "shipped",
+    nextLabel: "배송처리",
   },
-  shipping_completed: {
-    prev: "shipping_in_progress",
-    prevLabel: "배송중으로 이동",
+  shipped: {
+    prev: "consultation_completed",
+    prevLabel: "배송필요(상담완료)로 이동",
   },
 };
 
 const SHIPPING_PHASE_STATUSES: ConsultationStatus[] = [
   "consultation_completed",
-  "shipping_in_progress",
   "shipping_on_hold",
-  "shipping_completed",
+  "shipped",
 ];
 
 export default function OrderDetailPage() {
@@ -687,7 +680,7 @@ export default function OrderDetailPage() {
       on_hold: "보류",
       consultation_completed: "배송필요(상담완료)",
       shipping_on_hold: "배송보류",
-      shipping_completed: "배송처리 완료",
+      shipped: "배송처리",
       cancelled: "취소건",
     };
     return statusMap[status] || status;

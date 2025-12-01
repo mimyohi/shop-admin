@@ -10,8 +10,7 @@ export type ConsultationStatus =
   | "on_hold"
   | "consultation_completed"
   | "shipping_on_hold"
-  | "shipping_in_progress"
-  | "shipping_completed"
+  | "shipped"
   | "cancelled";
 
 export interface Order {

@@ -80,9 +80,8 @@ const consultationStatusLabels: Record<string, string> = {
   consultation_required: "상담 필요",
   on_hold: "보류",
   consultation_completed: "배송필요(상담완료)",
-  shipping_in_progress: "배송중",
   shipping_on_hold: "배송 보류",
-  shipping_completed: "배송 완료",
+  shipped: "배송처리",
   cancelled: "취소",
 };
 
@@ -101,7 +100,7 @@ const consultationBadgeClasses: Record<string, string> = {
   on_hold: "bg-yellow-100 text-yellow-800 border-yellow-200",
   consultation_completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
   shipping_on_hold: "bg-purple-100 text-purple-800 border-purple-200",
-  shipping_completed: "bg-teal-100 text-teal-800 border-teal-200",
+  shipped: "bg-teal-100 text-teal-800 border-teal-200",
   cancelled: "bg-rose-100 text-rose-800 border-rose-200",
 };
 

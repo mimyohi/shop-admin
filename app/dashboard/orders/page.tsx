@@ -100,8 +100,8 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
   {
     value: "consultation_completed",
     label: "배송필요(상담완료)",
-    nextStatus: "shipping_in_progress",
-    nextLabel: "선택 배송중으로 이동",
+    nextStatus: "shipped",
+    nextLabel: "선택 배송처리",
     extraActions: [
       {
         targetStatus: "consultation_required",
@@ -116,8 +116,8 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
   {
     value: "shipping_on_hold",
     label: "배송보류",
-    nextStatus: "shipping_in_progress",
-    nextLabel: "선택 배송중으로 이동",
+    nextStatus: "shipped",
+    nextLabel: "선택 배송처리",
     extraActions: [
       {
         targetStatus: "consultation_completed",
@@ -126,24 +126,12 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
-    value: "shipping_in_progress",
-    label: "배송중",
-    nextStatus: "shipping_completed",
-    nextLabel: "선택 배송완료 처리",
+    value: "shipped",
+    label: "배송처리",
     extraActions: [
       {
         targetStatus: "consultation_completed",
         label: "선택 배송필요 단계로 복귀",
-      },
-    ],
-  },
-  {
-    value: "shipping_completed",
-    label: "배송완료",
-    extraActions: [
-      {
-        targetStatus: "shipping_in_progress",
-        label: "선택 배송중으로 복귀",
       },
     ],
   },
@@ -1079,7 +1067,7 @@ export default function OrdersPage() {
             }}
             className="w-full"
           >
-            <TabsList className="w-full grid grid-cols-8 mb-4">
+            <TabsList className="w-full grid grid-cols-7 mb-4">
               {CONSULTATION_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}

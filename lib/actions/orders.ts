@@ -244,17 +244,17 @@ export async function exportShippingExcelAndUpdateStatus(orderIds: string[]) {
   const { generateShippingExcel } = await import('@/lib/utils/excel-export')
   const excelBase64 = generateShippingExcel(orders as Parameters<typeof generateShippingExcel>[0])
 
-  // 상태를 배송중으로 업데이트
+  // 상태를 배송처리로 업데이트
   const { error: updateError } = await supabaseServer
     .from('orders')
     .update({
-      consultation_status: 'shipping_in_progress',
+      consultation_status: 'shipped',
       updated_at: new Date().toISOString(),
     })
     .in('id', orderIds)
 
   if (updateError) {
-    console.error('Update status to shipping_in_progress error:', updateError)
+    console.error('Update status to shipped error:', updateError)
     return { success: false, error: updateError.message }
   }
 
