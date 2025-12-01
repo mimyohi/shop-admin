@@ -98,6 +98,42 @@ interface OrderItem {
   selected_option_settings?: SelectedOptionSetting[] | null;
 }
 
+// 상품별로 그룹화된 주문 아이템 타입
+interface GroupedOrderItem {
+  product_id: string | null;
+  product_name: string;
+  items: OrderItem[];
+  totalQuantity: number;
+  totalPrice: number;
+}
+
+// 주문 아이템을 상품별로 그룹화하는 함수
+const groupOrderItemsByProduct = (items: OrderItem[]): GroupedOrderItem[] => {
+  const groupMap = new Map<string, GroupedOrderItem>();
+
+  items.forEach((item) => {
+    // product_id가 있는 경우만 그룹화, 없으면 개별 아이템으로 처리
+    const key = item.product_id || `individual_${item.id}`;
+
+    if (groupMap.has(key)) {
+      const group = groupMap.get(key)!;
+      group.items.push(item);
+      group.totalQuantity += item.quantity;
+      group.totalPrice += item.product_price * item.quantity;
+    } else {
+      groupMap.set(key, {
+        product_id: item.product_id || null,
+        product_name: item.product_name,
+        items: [item],
+        totalQuantity: item.quantity,
+        totalPrice: item.product_price * item.quantity,
+      });
+    }
+  });
+
+  return Array.from(groupMap.values());
+};
+
 interface Order {
   id: string;
   order_id: string;
@@ -1624,111 +1660,185 @@ export default function OrderDetailPage() {
                     </div>
                   )}
                 {order.order_items && order.order_items.length > 0 ? (
-                  <div className="space-y-3">
-                    {order.order_items.map((item) => {
-                      const isMissingSetting =
-                        item.option_id &&
-                        (!item.selected_option_settings ||
-                          item.selected_option_settings.length === 0);
+                  <div className="space-y-4">
+                    {groupOrderItemsByProduct(order.order_items).map(
+                      (group) => {
+                        // 그룹 내 옵션 설정이 필요한 아이템이 있는지 확인
+                        const hasGroupMissingSetting = group.items.some(
+                          (item) =>
+                            item.option_id &&
+                            (!item.selected_option_settings ||
+                              item.selected_option_settings.length === 0)
+                        );
 
-                      return (
-                        <div
-                          key={item.id}
-                          className={`p-4 rounded-lg ${
-                            isMissingSetting
-                              ? "bg-amber-50 border-2 border-amber-300"
-                              : "bg-gray-50"
-                          }`}
-                        >
-                          <div className="text-sm">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="font-medium">
-                                {item.product_name}
-                                {item.option_id && (
-                                  <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                    옵션 상품
-                                  </span>
-                                )}
-                                {isMissingSetting && (
-                                  <span className="ml-2 text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded flex-shrink-0 inline-flex items-center gap-1">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    설정 필요
-                                  </span>
-                                )}
-                              </div>
-                              {item.option_id ? (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={
-                                    isMissingSetting ? "default" : "outline"
-                                  }
-                                  className={
-                                    isMissingSetting
-                                      ? "bg-amber-500 hover:bg-amber-600"
-                                      : ""
-                                  }
-                                  onClick={() => {
-                                    setSelectedOrderItem(item);
-                                    setGroupOptionsDialogOpen(true);
-                                  }}
-                                >
-                                  {isMissingSetting ? "설정하기" : "설정 변경"}
-                                </Button>
-                              ) : (
-                                <div className="text-xs text-gray-400">
-                                  설정 없음
+                        // 그룹에 아이템이 1개만 있으면 헤더 없이 간단히 표시
+                        const isSingleItem = group.items.length === 1;
+
+                        return (
+                          <div
+                            key={group.product_id || group.product_name}
+                            className={`rounded-lg border ${
+                              hasGroupMissingSetting
+                                ? "border-amber-300 bg-amber-50/50"
+                                : "border-gray-200 bg-gray-50"
+                            }`}
+                          >
+                            {/* 상품 헤더 - 여러 기간이 있을 때만 표시 */}
+                            {!isSingleItem && (
+                              <div className="p-4 border-b border-gray-200">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-semibold text-sm">
+                                      {group.product_name}
+                                    </h4>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {group.items.length}개 기간 선택 · 총 수량{" "}
+                                      {group.totalQuantity}개
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-bold text-blue-600">
+                                      {formatWon(group.totalPrice)}
+                                    </div>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                            {item.option_id && item.visit_type && (
-                              <div className="text-xs text-gray-600 mb-1">
-                                방문 타입:{" "}
-                                {item.visit_type === "first"
-                                  ? "초진"
-                                  : item.visit_type === "revisit_with_consult"
-                                  ? "재진(상담)"
-                                  : "재진(상담X)"}
                               </div>
                             )}
-                            {item.option_id &&
-                              item.selected_option_settings &&
-                              item.selected_option_settings.length > 0 && (
-                                <div className="text-xs text-gray-600 mb-2">
-                                  선택 설정:
-                                  {item.selected_option_settings.map(
-                                    (setting, idx) => (
-                                      <div key={idx} className="ml-2">
-                                        • {setting.setting_name}:{" "}
-                                        {setting.type_name}
+
+                            {/* 옵션 목록 */}
+                            <div
+                              className={
+                                isSingleItem ? "" : "divide-y divide-gray-100"
+                              }
+                            >
+                              {group.items.map((item) => {
+                                const isMissingSetting =
+                                  item.option_id &&
+                                  (!item.selected_option_settings ||
+                                    item.selected_option_settings.length === 0);
+
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`p-3 ${
+                                      isMissingSetting
+                                        ? "bg-amber-50"
+                                        : "bg-white"
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                          {/* 단일 아이템인 경우 상품명도 표시 */}
+                                          {isSingleItem && (
+                                            <span className="text-sm font-semibold text-gray-900">
+                                              {item.product_name}
+                                            </span>
+                                          )}
+                                          {/* 옵션명 표시 */}
+                                          {item.option_name && (
+                                            <span
+                                              className={`text-sm ${
+                                                isSingleItem
+                                                  ? "text-gray-600"
+                                                  : "font-medium text-gray-700"
+                                              }`}
+                                            >
+                                              {isSingleItem
+                                                ? `(${item.option_name})`
+                                                : item.option_name}
+                                            </span>
+                                          )}
+                                          {!item.option_name &&
+                                            !isSingleItem && (
+                                              <span className="text-sm text-gray-500">
+                                                기본
+                                              </span>
+                                            )}
+                                          {item.option_id && (
+                                            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                              기간
+                                            </span>
+                                          )}
+                                          {isMissingSetting && (
+                                            <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                              <AlertTriangle className="h-3 w-3" />
+                                              설정 필요
+                                            </span>
+                                          )}
+                                        </div>
+                                        {item.option_id && item.visit_type && (
+                                          <div className="text-xs text-gray-500 mb-1">
+                                            방문 타입:{" "}
+                                            {item.visit_type === "first"
+                                              ? "초진"
+                                              : item.visit_type ===
+                                                "revisit_with_consult"
+                                              ? "재진(상담)"
+                                              : "재진(상담X)"}
+                                          </div>
+                                        )}
+                                        {item.option_id &&
+                                          item.selected_option_settings &&
+                                          item.selected_option_settings.length >
+                                            0 && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              {item.selected_option_settings.map(
+                                                (setting, idx) => (
+                                                  <span
+                                                    key={idx}
+                                                    className="mr-2"
+                                                  >
+                                                    {setting.setting_name}:{" "}
+                                                    {setting.type_name}
+                                                  </span>
+                                                )
+                                              )}
+                                            </div>
+                                          )}
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          {formatWon(item.product_price)} ×{" "}
+                                          {item.quantity}개
+                                        </div>
                                       </div>
-                                    )
-                                  )}
-                                </div>
-                              )}
-                            <div className="flex justify-between text-xs text-gray-600 mb-1">
-                              <span>단가</span>
-                              <span className="font-medium">
-                                {formatWon(item.product_price)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-600 mb-2">
-                              <span>수량</span>
-                              <span className="font-medium">
-                                {item.quantity}개
-                              </span>
-                            </div>
-                            <Separator className="my-2" />
-                            <div className="flex justify-between text-sm font-semibold">
-                              <span>소계</span>
-                              <span className="text-blue-600">
-                                {formatWon(item.product_price * item.quantity)}
-                              </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">
+                                          {formatWon(
+                                            item.product_price * item.quantity
+                                          )}
+                                        </span>
+                                        {item.option_id && (
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant={
+                                              isMissingSetting
+                                                ? "default"
+                                                : "outline"
+                                            }
+                                            className={`h-7 text-xs ${
+                                              isMissingSetting
+                                                ? "bg-amber-500 hover:bg-amber-600"
+                                                : ""
+                                            }`}
+                                            onClick={() => {
+                                              setSelectedOrderItem(item);
+                                              setGroupOptionsDialogOpen(true);
+                                            }}
+                                          >
+                                            {isMissingSetting ? "설정" : "변경"}
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                   </div>
                 ) : (
                   <div className="bg-gray-50 p-4 rounded-lg text-center text-sm text-gray-500">
