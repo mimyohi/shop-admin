@@ -43,6 +43,47 @@ export async function uploadImage(formData: FormData) {
   }
 }
 
+export async function uploadBannerImage(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    if (!file) {
+      return { error: 'No file provided' }
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    // Convert File to ArrayBuffer then to Buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseServer.storage
+      .from('banner-images')
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Upload error:', error)
+      return { error: error.message }
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabaseServer.storage
+      .from('banner-images')
+      .getPublicUrl(data.path)
+
+    return { url: publicUrl }
+  } catch (error) {
+    console.error('Upload error:', error)
+    return { error: 'Failed to upload banner image' }
+  }
+}
+
 export async function deleteImage(url: string) {
   try {
     // Extract file path from URL

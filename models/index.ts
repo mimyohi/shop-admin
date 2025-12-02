@@ -25,3 +25,6 @@ export * from './admin.model'
 
 // Auth models
 export * from './auth.model'
+
+// Banner models
+export * from './banner.model'

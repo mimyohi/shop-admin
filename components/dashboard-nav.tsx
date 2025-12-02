@@ -18,6 +18,7 @@ import {
   BarChart3,
   ChevronsLeft,
   ChevronsRight,
+  Image,
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +32,12 @@ const navItems = [
     title: "상품 관리",
     href: "/dashboard/products",
     icon: Package,
+    masterOnly: true,
+  },
+  {
+    title: "배너 관리",
+    href: "/dashboard/banners",
+    icon: Image,
     masterOnly: true,
   },
   {

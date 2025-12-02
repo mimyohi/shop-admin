@@ -212,6 +212,57 @@ export type Database = {
         }
         Relationships: []
       }
+      main_banners: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          device_type: string
+          display_order: number | null
+          end_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          link_target: string | null
+          link_url: string | null
+          mobile_image_url: string | null
+          start_at: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          device_type: string
+          display_order?: number | null
+          end_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          link_target?: string | null
+          link_url?: string | null
+          mobile_image_url?: string | null
+          start_at?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          device_type?: string
+          display_order?: number | null
+          end_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          link_target?: string | null
+          link_url?: string | null
+          mobile_image_url?: string | null
+          start_at?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       mountain_zipcodes: {
         Row: {
           additional_fee: number
@@ -349,6 +400,7 @@ export type Database = {
           id: string
           option_id: string | null
           option_name: string | null
+          option_price: number
           order_id: string | null
           product_id: string | null
           product_name: string
@@ -356,6 +408,7 @@ export type Database = {
           quantity: number
           selected_addons: Json | null
           selected_option_settings: Json | null
+          selected_options: Json | null
           visit_type: string | null
         }
         Insert: {
@@ -363,6 +416,7 @@ export type Database = {
           id?: string
           option_id?: string | null
           option_name?: string | null
+          option_price?: number
           order_id?: string | null
           product_id?: string | null
           product_name: string
@@ -370,6 +424,7 @@ export type Database = {
           quantity: number
           selected_addons?: Json | null
           selected_option_settings?: Json | null
+          selected_options?: Json | null
           visit_type?: string | null
         }
         Update: {
@@ -377,6 +432,7 @@ export type Database = {
           id?: string
           option_id?: string | null
           option_name?: string | null
+          option_price?: number
           order_id?: string | null
           product_id?: string | null
           product_name?: string
@@ -384,11 +440,12 @@ export type Database = {
           quantity?: number
           selected_addons?: Json | null
           selected_option_settings?: Json | null
+          selected_options?: Json | null
           visit_type?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "order_items_group_id_fkey"
+            foreignKeyName: "order_items_option_id_fkey"
             columns: ["option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
@@ -436,6 +493,7 @@ export type Database = {
           shipping_address_detail: string | null
           shipping_address_id: string | null
           shipping_company: string | null
+          shipping_message: string | null
           shipping_name: string | null
           shipping_phone: string | null
           shipping_postal_code: string | null
@@ -468,6 +526,7 @@ export type Database = {
           shipping_address_detail?: string | null
           shipping_address_id?: string | null
           shipping_company?: string | null
+          shipping_message?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
           shipping_postal_code?: string | null
@@ -500,6 +559,7 @@ export type Database = {
           shipping_address_detail?: string | null
           shipping_address_id?: string | null
           shipping_company?: string | null
+          shipping_message?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
           shipping_postal_code?: string | null
@@ -670,43 +730,85 @@ export type Database = {
           },
         ]
       }
-      product_option_setting_types: {
+      product_banners: {
         Row: {
           created_at: string | null
           description: string | null
+          device_type: string
+          display_order: number | null
+          end_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          link_target: string | null
+          link_url: string | null
+          mobile_image_url: string | null
+          start_at: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          device_type: string
+          display_order?: number | null
+          end_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          link_target?: string | null
+          link_url?: string | null
+          mobile_image_url?: string | null
+          start_at?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          device_type?: string
+          display_order?: number | null
+          end_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          link_target?: string | null
+          link_url?: string | null
+          mobile_image_url?: string | null
+          start_at?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      product_option_setting_types: {
+        Row: {
+          created_at: string | null
           display_order: number | null
           id: string
-          image_url: string | null
-          is_available: boolean | null
           name: string
           setting_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
           display_order?: number | null
           id?: string
-          image_url?: string | null
-          is_available?: boolean | null
           name: string
           setting_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
           display_order?: number | null
           id?: string
-          image_url?: string | null
-          is_available?: boolean | null
           name?: string
           setting_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "product_group_types_option_id_fkey"
+            foreignKeyName: "product_option_setting_types_setting_id_fkey"
             columns: ["setting_id"]
             isOneToOne: false
             referencedRelation: "product_option_settings"
@@ -717,37 +819,31 @@ export type Database = {
       product_option_settings: {
         Row: {
           created_at: string | null
-          description: string | null
           display_order: number | null
           id: string
-          is_required: boolean | null
           name: string
           option_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
           display_order?: number | null
           id?: string
-          is_required?: boolean | null
           name: string
           option_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
           display_order?: number | null
           id?: string
-          is_required?: boolean | null
           name?: string
           option_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "product_group_options_group_id_fkey"
+            foreignKeyName: "product_option_settings_option_id_fkey"
             columns: ["option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
@@ -759,14 +855,12 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string | null
-          description: string | null
           detail_images: Json | null
           display_order: number | null
           id: string
           image_url: string | null
           is_new_badge: boolean | null
           is_sale_badge: boolean | null
-          is_visible: boolean | null
           name: string
           price: number
           product_id: string | null
@@ -779,14 +873,12 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string | null
-          description?: string | null
           detail_images?: Json | null
           display_order?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
           is_sale_badge?: boolean | null
-          is_visible?: boolean | null
           name: string
           price: number
           product_id?: string | null
@@ -799,14 +891,12 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string | null
-          description?: string | null
           detail_images?: Json | null
           display_order?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
           is_sale_badge?: boolean | null
-          is_visible?: boolean | null
           name?: string
           price?: number
           product_id?: string | null
@@ -818,14 +908,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "product_groups_product_id_fkey"
+            foreignKeyName: "product_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "coupon_applicable_products"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "product_groups_product_id_fkey"
+            foreignKeyName: "product_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -1333,12 +1423,6 @@ export type Database = {
         }[]
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
-      expire_pending_orders: {
-        Args: never
-        Returns: {
-          expired_count: number
-        }[]
-      }
       generate_product_slug: { Args: never; Returns: string }
       get_group_price: { Args: { p_group_id: string }; Returns: number }
       get_group_use_options: {
@@ -1356,6 +1440,11 @@ export type Database = {
           phone: string
           verified: boolean
         }[]
+      }
+      get_option_price: { Args: { p_option_id: string }; Returns: number }
+      get_option_use_settings: {
+        Args: { p_option_id: string; p_visit_type: string }
+        Returns: boolean
       }
       get_user_by_phone: {
         Args: { p_phone: string }
