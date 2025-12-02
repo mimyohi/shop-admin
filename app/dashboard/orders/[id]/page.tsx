@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -255,6 +255,7 @@ const SHIPPING_PHASE_STATUSES: ConsultationStatus[] = [
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const orderId = params.id as string;
   const [selectedAssignedAdmin, setSelectedAssignedAdmin] =
@@ -660,6 +661,7 @@ export default function OrderDetailPage() {
           : "메모가 삭제되었습니다.",
       });
 
+      await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
       refetchOrder();
     } catch (error) {
       console.error("Error updating order memo:", error);
@@ -2148,7 +2150,7 @@ export default function OrderDetailPage() {
                   value={orderMemo}
                   onChange={(e) => setOrderMemo(e.target.value)}
                   placeholder="주문 처리 중 남겨둘 메모를 입력하세요."
-                  className="min-h-[120px]"
+                  className="min-h-[200px] text-sm"
                 />
                 <Button
                   onClick={handleSaveMemo}
