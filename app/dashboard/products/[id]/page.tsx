@@ -92,7 +92,7 @@ export default function ProductEditPage({
           product.discount_rate !== null && product.discount_rate !== undefined
             ? product.discount_rate.toString()
             : "0",
-        category: product.category,
+        category: product.category || "",
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],
         sale_start_at: product.sale_start_at

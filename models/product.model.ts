@@ -5,20 +5,20 @@ export interface Product {
   id: string;
   slug?: string | null;
   name: string;
-  description: string;
+  description?: string | null;
   price: number;
-  image_url: string;
-  detail_images?: string[];
-  category: string;
-  is_visible_on_main?: boolean;
-  is_out_of_stock?: boolean;
-  is_new_badge?: boolean;
-  is_sale_badge?: boolean;
+  image_url?: string | null;
+  detail_images?: string[] | null;
+  category?: string | null;
+  is_visible_on_main?: boolean | null;
+  is_out_of_stock?: boolean | null;
+  is_new_badge?: boolean | null;
+  is_sale_badge?: boolean | null;
   sale_start_at?: string | null;
   sale_end_at?: string | null;
-  created_at: string;
-  updated_at: string;
-  discount_rate: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  discount_rate?: number | null;
 }
 
 /**

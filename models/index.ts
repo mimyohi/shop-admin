@@ -28,3 +28,6 @@ export * from './auth.model'
 
 // Banner models
 export * from './banner.model'
+
+// Home Product models
+export * from './home-product.model'

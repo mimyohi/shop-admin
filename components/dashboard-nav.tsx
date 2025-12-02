@@ -19,6 +19,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Image,
+  Home,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +39,12 @@ const navItems = [
     title: "배너 관리",
     href: "/dashboard/banners",
     icon: Image,
+    masterOnly: true,
+  },
+  {
+    title: "홈 상품 설정",
+    href: "/dashboard/home-products",
+    icon: Home,
     masterOnly: true,
   },
   {

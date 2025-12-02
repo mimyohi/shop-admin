@@ -212,6 +212,38 @@ export type Database = {
         }
         Relationships: []
       }
+      home_products: {
+        Row: {
+          id: string
+          product_id: string
+          display_order: number
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          display_order?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          display_order?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       main_banners: {
         Row: {
           created_at: string | null
