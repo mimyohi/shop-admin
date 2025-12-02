@@ -23,6 +23,9 @@ import {
   User,
   XCircle,
   AlertTriangle,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +46,7 @@ import {
   setHandlerAdmin,
   setShippingInfo,
   updateOrderItemOptionSettings,
+  updateShippingAddress,
 } from "@/lib/actions/orders";
 import { VisitType, SelectedOptionSetting } from "@/models";
 import OptionSettingsSelector from "@/components/OptionSettingsSelector";
@@ -186,23 +190,34 @@ const CONSULTATION_STATUS_FLOW: Partial<
     nextLabel: "상담 필요로 이동",
   },
   consultation_required: {
-    prev: "chatting_required",
-    prevLabel: "접수 필요로 이동",
     next: "consultation_completed",
-    nextLabel: "배송필요(상담완료)로 이동",
+    nextLabel: "배송필요(상담완료)",
     extraActions: [
       {
         target: "on_hold",
         label: "보류로 이동",
         variant: "outline",
       },
+      {
+        target: "shipping_on_hold",
+        label: "배송 보류",
+        variant: "outline",
+      },
+      {
+        target: "chatting_required",
+        label: "접수 필요로 이동",
+        variant: "outline",
+      },
     ],
   },
   on_hold: {
+    next: "consultation_completed",
+    nextLabel: "배송필요(상담완료)",
     extraActions: [
       {
-        target: "consultation_required",
-        label: "상담 재개",
+        target: "shipping_on_hold",
+        label: "배송보류",
+        variant: "outline",
       },
     ],
   },
@@ -258,6 +273,15 @@ export default function OrderDetailPage() {
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItem | null>(
     null
   );
+
+  // 배송지 정보 수정 상태
+  const [isEditingShipping, setIsEditingShipping] = useState(false);
+  const [isSavingShipping, setIsSavingShipping] = useState(false);
+  const [editShippingName, setEditShippingName] = useState("");
+  const [editShippingPhone, setEditShippingPhone] = useState("");
+  const [editShippingPostalCode, setEditShippingPostalCode] = useState("");
+  const [editShippingAddress, setEditShippingAddress] = useState("");
+  const [editShippingAddressDetail, setEditShippingAddressDetail] = useState("");
 
   const {
     data: order,
@@ -646,6 +670,55 @@ export default function OrderDetailPage() {
       });
     } finally {
       setIsSavingMemo(false);
+    }
+  };
+
+  const handleStartEditShipping = () => {
+    if (order) {
+      setEditShippingName(order.shipping_name || "");
+      setEditShippingPhone(order.shipping_phone || "");
+      setEditShippingPostalCode(order.shipping_postal_code || "");
+      setEditShippingAddress(order.shipping_address || "");
+      setEditShippingAddressDetail(order.shipping_address_detail || "");
+      setIsEditingShipping(true);
+    }
+  };
+
+  const handleCancelEditShipping = () => {
+    setIsEditingShipping(false);
+  };
+
+  const handleSaveShipping = async () => {
+    try {
+      setIsSavingShipping(true);
+      const result = await updateShippingAddress(orderId, {
+        shipping_name: editShippingName || null,
+        shipping_phone: editShippingPhone || null,
+        shipping_postal_code: editShippingPostalCode || null,
+        shipping_address: editShippingAddress || null,
+        shipping_address_detail: editShippingAddressDetail || null,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "배송지 정보 저장 실패");
+      }
+
+      toast({
+        title: "성공",
+        description: "배송지 정보가 저장되었습니다.",
+      });
+
+      setIsEditingShipping(false);
+      refetchOrder();
+    } catch (error) {
+      console.error("Error updating shipping info:", error);
+      toast({
+        title: "오류",
+        description: "배송지 정보 저장에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingShipping(false);
     }
   };
 
@@ -1846,42 +1919,140 @@ export default function OrderDetailPage() {
               </div>
 
               {/* 배송지 정보 */}
-              {(order.shipping_name || order.shipping_address) && (
-                <>
-                  <Separator />
-                  <div>
-                    <span className="text-gray-500 block mb-3">
-                      배송지 정보
-                    </span>
-                    <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
-                      <div>
-                        <span className="text-gray-600">받는 분:</span>
-                        <span className="ml-2 font-medium">
-                          {order.shipping_name}
-                        </span>
-                      </div>
-                      {order.shipping_phone && (
-                        <div>
-                          <span className="text-gray-600">연락처:</span>
-                          <span className="ml-2 font-medium">
-                            {order.shipping_phone}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-gray-600">주소:</span>
-                        <div className="mt-1 font-medium text-gray-700">
-                          {order.shipping_postal_code &&
-                            `[${order.shipping_postal_code}] `}
-                          {order.shipping_address}
-                          {order.shipping_address_detail &&
-                            `, ${order.shipping_address_detail}`}
-                        </div>
+              <Separator />
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-gray-500">배송지 정보</span>
+                  {!isEditingShipping ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStartEditShipping}
+                      className="h-7 px-2 text-gray-500 hover:text-gray-700"
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      수정
+                    </Button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelEditShipping}
+                        disabled={isSavingShipping}
+                        className="h-7 px-2 text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        취소
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleSaveShipping}
+                        disabled={isSavingShipping}
+                        className="h-7 px-2"
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" />
+                        {isSavingShipping ? "저장 중..." : "저장"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {isEditingShipping ? (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
+                    <div>
+                      <Label htmlFor="edit-shipping-name" className="text-xs text-gray-600">
+                        받는 분
+                      </Label>
+                      <Input
+                        id="edit-shipping-name"
+                        value={editShippingName}
+                        onChange={(e) => setEditShippingName(e.target.value)}
+                        placeholder="받는 분 이름"
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-shipping-phone" className="text-xs text-gray-600">
+                        연락처
+                      </Label>
+                      <Input
+                        id="edit-shipping-phone"
+                        value={editShippingPhone}
+                        onChange={(e) => setEditShippingPhone(e.target.value)}
+                        placeholder="연락처"
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-shipping-postal" className="text-xs text-gray-600">
+                        우편번호
+                      </Label>
+                      <Input
+                        id="edit-shipping-postal"
+                        value={editShippingPostalCode}
+                        onChange={(e) => setEditShippingPostalCode(e.target.value)}
+                        placeholder="우편번호"
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-shipping-address" className="text-xs text-gray-600">
+                        주소
+                      </Label>
+                      <Input
+                        id="edit-shipping-address"
+                        value={editShippingAddress}
+                        onChange={(e) => setEditShippingAddress(e.target.value)}
+                        placeholder="주소"
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-shipping-detail" className="text-xs text-gray-600">
+                        상세주소
+                      </Label>
+                      <Input
+                        id="edit-shipping-detail"
+                        value={editShippingAddressDetail}
+                        onChange={(e) => setEditShippingAddressDetail(e.target.value)}
+                        placeholder="상세주소"
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                  </div>
+                ) : (order.shipping_name || order.shipping_address) ? (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
+                    <div>
+                      <span className="text-gray-600">받는 분:</span>
+                      <span className="ml-2 font-medium">
+                        {order.shipping_name || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">연락처:</span>
+                      <span className="ml-2 font-medium">
+                        {order.shipping_phone || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">주소:</span>
+                      <div className="mt-1 font-medium text-gray-700">
+                        {order.shipping_postal_code &&
+                          `[${order.shipping_postal_code}] `}
+                        {order.shipping_address || "-"}
+                        {order.shipping_address_detail &&
+                          `, ${order.shipping_address_detail}`}
                       </div>
                     </div>
                   </div>
-                </>
-              )}
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-500 text-center">
+                    배송지 정보가 없습니다. 수정 버튼을 눌러 입력하세요.
+                  </div>
+                )}
+              </div>
 
               {/* {SHIPPING_PHASE_STATUSES.includes(
                 order.consultation_status as ConsultationStatus

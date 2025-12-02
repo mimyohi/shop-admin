@@ -42,6 +42,36 @@ export async function updateShippingInfo(orderId: string, data: any) {
   return result
 }
 
+export async function updateShippingAddress(orderId: string, data: {
+  shipping_name?: string | null;
+  shipping_phone?: string | null;
+  shipping_postal_code?: string | null;
+  shipping_address?: string | null;
+  shipping_address_detail?: string | null;
+}) {
+  try {
+    const { error } = await supabaseServer
+      .from('orders')
+      .update({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId)
+
+    if (error) {
+      console.error('Error updating shipping address:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/dashboard/orders')
+    revalidatePath(`/dashboard/orders/${orderId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating shipping address:', error)
+    return { success: false, error: '배송지 정보 업데이트에 실패했습니다.' }
+  }
+}
+
 export async function assignOrderToAdmin(orderId: string, adminId: string) {
   const result = await ordersRepository.assignToAdmin(orderId, adminId)
   revalidatePath('/dashboard/orders')

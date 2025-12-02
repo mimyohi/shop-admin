@@ -77,43 +77,59 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     value: "chatting_required",
     label: "접수 필요",
     nextStatus: "consultation_required",
-    nextLabel: "선택 상담 필요로 이동",
+    nextLabel: "상담 필요로 이동",
+    extraActions: [
+      {
+        targetStatus: "consultation_completed",
+        label: "배송필요로 이동",
+      },
+    ],
   },
   {
     value: "consultation_required",
     label: "상담 필요",
     nextStatus: "consultation_completed",
-    nextLabel: "선택 배송필요(상담완료) 이동",
+    nextLabel: "배송필요(상담완료)",
     extraActions: [
       {
-        targetStatus: "chatting_required",
-        label: "선택 접수 필요로 이동",
+        targetStatus: "on_hold",
+        label: "보류로 이동",
       },
       {
-        targetStatus: "on_hold",
-        label: "선택 보류로 이동",
+        targetStatus: "shipping_on_hold",
+        label: "배송 보류",
+      },
+      {
+        targetStatus: "chatting_required",
+        label: "접수 필요로 이동",
       },
     ],
   },
   {
     value: "on_hold",
     label: "보류",
-    nextStatus: "consultation_required",
-    nextLabel: "선택 상담 재개",
+    nextStatus: "consultation_completed",
+    nextLabel: "배송필요(상담완료)",
+    extraActions: [
+      {
+        targetStatus: "shipping_on_hold",
+        label: "배송보류",
+      },
+    ],
   },
   {
     value: "consultation_completed",
     label: "배송필요(상담완료)",
     nextStatus: "shipped",
-    nextLabel: "선택 배송처리",
+    nextLabel: "배송처리",
     extraActions: [
       {
         targetStatus: "consultation_required",
-        label: "선택 상담 필요로 이동",
+        label: "상담 필요로 이동",
       },
       {
         targetStatus: "shipping_on_hold",
-        label: "선택 배송보류로 이동",
+        label: "배송보류로 이동",
       },
     ],
   },
@@ -121,11 +137,11 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     value: "shipping_on_hold",
     label: "배송보류",
     nextStatus: "shipped",
-    nextLabel: "선택 배송처리",
+    nextLabel: "배송처리",
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "선택 배송필요 단계로 복귀",
+        label: "배송필요 단계로 복귀",
       },
     ],
   },
@@ -135,7 +151,7 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "선택 배송필요 단계로 복귀",
+        label: "배송필요 단계로 복귀",
       },
     ],
   },
@@ -689,10 +705,10 @@ export default function OrdersPage() {
               <TableHead>주문자</TableHead>
               <TableHead>초진/재진</TableHead>
               <TableHead>주문일시</TableHead>
-              <TableHead>금액</TableHead>
               <TableHead>연락처</TableHead>
               <TableHead>상담 담당자</TableHead>
               <TableHead>처리일시</TableHead>
+              <TableHead>관리자 메모</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -760,9 +776,6 @@ export default function OrdersPage() {
                     minute: "2-digit",
                   })}
                 </TableCell>
-                <TableCell className="font-semibold">
-                  {formatCurrency(order.total_amount)}
-                </TableCell>
                 <TableCell className="text-sm">
                   {order.user_phone || "-"}
                 </TableCell>
@@ -794,6 +807,18 @@ export default function OrdersPage() {
                         day: "2-digit",
                       })
                     : "-"}
+                </TableCell>
+                <TableCell className="text-sm max-w-[200px]">
+                  {order.admin_memo ? (
+                    <span
+                      className="block truncate text-gray-600"
+                      title={order.admin_memo}
+                    >
+                      {order.admin_memo}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
