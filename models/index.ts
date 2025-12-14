@@ -31,3 +31,9 @@ export * from './banner.model'
 
 // Home Product models
 export * from './home-product.model'
+
+// Instagram Image models
+export * from './instagram-image.model'
+
+// FAQ models
+export * from './faq.model'

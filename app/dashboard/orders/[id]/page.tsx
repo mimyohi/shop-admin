@@ -282,7 +282,8 @@ export default function OrderDetailPage() {
   const [editShippingPhone, setEditShippingPhone] = useState("");
   const [editShippingPostalCode, setEditShippingPostalCode] = useState("");
   const [editShippingAddress, setEditShippingAddress] = useState("");
-  const [editShippingAddressDetail, setEditShippingAddressDetail] = useState("");
+  const [editShippingAddressDetail, setEditShippingAddressDetail] =
+    useState("");
 
   const {
     data: order,
@@ -877,7 +878,7 @@ export default function OrderDetailPage() {
   )}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(
     formattedCouponDiscount
   )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
-
+  console.log(order);
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -1964,7 +1965,10 @@ export default function OrderDetailPage() {
                 {isEditingShipping ? (
                   <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
                     <div>
-                      <Label htmlFor="edit-shipping-name" className="text-xs text-gray-600">
+                      <Label
+                        htmlFor="edit-shipping-name"
+                        className="text-xs text-gray-600"
+                      >
                         받는 분
                       </Label>
                       <Input
@@ -1976,7 +1980,10 @@ export default function OrderDetailPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-shipping-phone" className="text-xs text-gray-600">
+                      <Label
+                        htmlFor="edit-shipping-phone"
+                        className="text-xs text-gray-600"
+                      >
                         연락처
                       </Label>
                       <Input
@@ -1988,19 +1995,27 @@ export default function OrderDetailPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-shipping-postal" className="text-xs text-gray-600">
+                      <Label
+                        htmlFor="edit-shipping-postal"
+                        className="text-xs text-gray-600"
+                      >
                         우편번호
                       </Label>
                       <Input
                         id="edit-shipping-postal"
                         value={editShippingPostalCode}
-                        onChange={(e) => setEditShippingPostalCode(e.target.value)}
+                        onChange={(e) =>
+                          setEditShippingPostalCode(e.target.value)
+                        }
                         placeholder="우편번호"
                         className="mt-1 h-8"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-shipping-address" className="text-xs text-gray-600">
+                      <Label
+                        htmlFor="edit-shipping-address"
+                        className="text-xs text-gray-600"
+                      >
                         주소
                       </Label>
                       <Input
@@ -2012,19 +2027,24 @@ export default function OrderDetailPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-shipping-detail" className="text-xs text-gray-600">
+                      <Label
+                        htmlFor="edit-shipping-detail"
+                        className="text-xs text-gray-600"
+                      >
                         상세주소
                       </Label>
                       <Input
                         id="edit-shipping-detail"
                         value={editShippingAddressDetail}
-                        onChange={(e) => setEditShippingAddressDetail(e.target.value)}
+                        onChange={(e) =>
+                          setEditShippingAddressDetail(e.target.value)
+                        }
                         placeholder="상세주소"
                         className="mt-1 h-8"
                       />
                     </div>
                   </div>
-                ) : (order.shipping_name || order.shipping_address) ? (
+                ) : order.shipping_name || order.shipping_address ? (
                   <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
                     <div>
                       <span className="text-gray-600">받는 분:</span>

@@ -244,6 +244,69 @@ export type Database = {
           },
         ]
       }
+      instagram_images: {
+        Row: {
+          id: string
+          image_url: string
+          link_url: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          link_url?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          link_url?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      faqs: {
+        Row: {
+          id: string
+          question: string
+          answer: string
+          category: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          question: string
+          answer: string
+          category?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          question?: string
+          answer?: string
+          category?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       main_banners: {
         Row: {
           created_at: string | null

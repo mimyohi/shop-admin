@@ -9,7 +9,7 @@ interface BannerImageUploadProps {
   onUploadComplete: (url: string) => void
   currentImageUrl?: string
   label?: string
-  aspectRatio?: 'wide' | 'mobile'
+  aspectRatio?: 'wide' | 'mobile' | 'square'
 }
 
 export default function BannerImageUpload({
@@ -75,6 +75,8 @@ export default function BannerImageUpload({
 
   const dimensions = aspectRatio === 'wide'
     ? { width: 'w-full max-w-xl', height: 'h-40' }
+    : aspectRatio === 'square'
+    ? { width: 'w-48', height: 'h-48' }
     : { width: 'w-48', height: 'h-80' }
 
   return (

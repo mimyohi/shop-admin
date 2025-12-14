@@ -20,6 +20,8 @@ import {
   ChevronsRight,
   Image,
   Home,
+  Instagram,
+  HelpCircle,
 } from "lucide-react";
 
 const navItems = [
@@ -45,6 +47,18 @@ const navItems = [
     title: "홈 상품 설정",
     href: "/dashboard/home-products",
     icon: Home,
+    masterOnly: true,
+  },
+  {
+    title: "인스타그램 이미지",
+    href: "/dashboard/instagram-images",
+    icon: Instagram,
+    masterOnly: true,
+  },
+  {
+    title: "FAQ 관리",
+    href: "/dashboard/faqs",
+    icon: HelpCircle,
     masterOnly: true,
   },
   {
