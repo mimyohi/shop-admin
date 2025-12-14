@@ -4,13 +4,79 @@ import { useState, useRef, useEffect } from 'react'
 import { uploadImage } from '@/lib/actions/upload'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
-import { X, Upload, Info } from 'lucide-react'
+import { X, Upload, Info, AlertCircle } from 'lucide-react'
 import { processMultipleImages } from '@/lib/image-splitter'
 
 interface MultiImageUploadProps {
   onImagesChange: (urls: string[]) => void
   currentImages?: string[]
   maxImages?: number
+}
+
+// 재시도 로직이 포함된 업로드 함수
+async function uploadWithRetry(
+  file: File,
+  maxRetries: number = 2
+): Promise<{ url?: string; error?: string; fileName: string }> {
+  let lastError = ''
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const result = await uploadImage(formData)
+
+      if (result.url) {
+        return { url: result.url, fileName: file.name }
+      }
+
+      lastError = result.error || 'Unknown error'
+
+      // 마지막 시도가 아니면 잠시 대기 후 재시도
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'Upload failed'
+
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+      }
+    }
+  }
+
+  return { error: lastError, fileName: file.name }
+}
+
+// 청크 단위 병렬 업로드 (동시에 3개씩)
+async function uploadInChunks(
+  files: File[],
+  chunkSize: number = 3,
+  onProgress: (completed: number, total: number) => void
+): Promise<{ urls: string[]; failedFiles: string[] }> {
+  const urls: string[] = []
+  const failedFiles: string[] = []
+  let completed = 0
+
+  for (let i = 0; i < files.length; i += chunkSize) {
+    const chunk = files.slice(i, i + chunkSize)
+
+    const results = await Promise.all(
+      chunk.map(file => uploadWithRetry(file))
+    )
+
+    for (const result of results) {
+      if (result.url) {
+        urls.push(result.url)
+      } else {
+        failedFiles.push(result.fileName)
+      }
+      completed++
+      onProgress(completed, files.length)
+    }
+  }
+
+  return { urls, failedFiles }
 }
 
 export default function MultiImageUpload({
@@ -22,6 +88,7 @@ export default function MultiImageUpload({
   const [uploading, setUploading] = useState(false)
   const [splitMessages, setSplitMessages] = useState<string[]>([])
   const [uploadProgress, setUploadProgress] = useState<string>('')
+  const [failedUploads, setFailedUploads] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -34,8 +101,8 @@ export default function MultiImageUpload({
 
     setUploading(true)
     setSplitMessages([])
+    setFailedUploads([])
     setUploadProgress('이미지 분석 중...')
-    const uploadedUrls: string[] = []
     const messages: string[] = []
 
     try {
@@ -72,38 +139,32 @@ export default function MultiImageUpload({
         return
       }
 
-      // Step 3: Upload processed files using server action
-      for (let i = 0; i < processedFiles.length; i++) {
-        const processedFile = processedFiles[i]
-        setUploadProgress(`이미지 업로드 중... (${i + 1}/${processedFiles.length})`)
-
-        // Upload using server action
-        const formData = new FormData()
-        formData.append('file', processedFile)
-        const result = await uploadImage(formData)
-
-        if (result.error) {
-          console.error('Upload error:', result.error)
-          continue
+      // Step 3: Upload processed files using parallel upload with retry
+      const { urls: uploadedUrls, failedFiles } = await uploadInChunks(
+        processedFiles,
+        3, // 동시에 3개씩 업로드
+        (completed, total) => {
+          setUploadProgress(`이미지 업로드 중... (${completed}/${total})`)
         }
-
-        if (result.url) {
-          uploadedUrls.push(result.url)
-        }
-      }
+      )
 
       // Step 4: Update state
       const newImages = [...images, ...uploadedUrls]
       setImages(newImages)
       onImagesChange(newImages)
       setSplitMessages(messages)
+      setFailedUploads(failedFiles)
 
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
 
-      setUploadProgress('업로드 완료!')
-      setTimeout(() => setUploadProgress(''), 2000)
+      if (failedFiles.length > 0) {
+        setUploadProgress(`업로드 완료 (${failedFiles.length}개 실패)`)
+      } else {
+        setUploadProgress('업로드 완료!')
+        setTimeout(() => setUploadProgress(''), 2000)
+      }
     } catch (error) {
       console.error('Upload error:', error)
       alert('이미지 업로드에 실패했습니다.')
@@ -169,6 +230,26 @@ export default function MultiImageUpload({
               {splitMessages.map((message, idx) => (
                 <p key={idx} className="text-sm text-green-700">• {message}</p>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Failed uploads */}
+      {failedUploads.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 mb-1">
+                {failedUploads.length}개 이미지 업로드 실패 (재시도 후에도 실패)
+              </p>
+              {failedUploads.slice(0, 5).map((fileName, idx) => (
+                <p key={idx} className="text-sm text-red-700">• {fileName}</p>
+              ))}
+              {failedUploads.length > 5 && (
+                <p className="text-sm text-red-700">... 외 {failedUploads.length - 5}개</p>
+              )}
             </div>
           </div>
         </div>

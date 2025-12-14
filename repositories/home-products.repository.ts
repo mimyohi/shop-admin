@@ -4,14 +4,16 @@ import { HomeProductWithProduct, Product } from '@/models'
 export const homeProductsRepository = {
   /**
    * 홈 상품 목록 조회 (상품 정보 포함)
+   * 삭제된 상품(deleted_at이 설정된 상품)은 제외
    */
   async findAll(): Promise<HomeProductWithProduct[]> {
     const { data, error } = await supabase
       .from('home_products')
       .select(`
         *,
-        product:products (*)
+        product:products!inner (*)
       `)
+      .is('product.deleted_at', null)
       .order('display_order', { ascending: true })
 
     if (error) {
@@ -24,11 +26,13 @@ export const homeProductsRepository = {
 
   /**
    * 모든 상품 목록 조회 (선택용)
+   * 삭제된 상품(deleted_at이 설정된 상품)은 제외
    */
   async getAllProducts(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .is('deleted_at', null)
       .order('name', { ascending: true })
 
     if (error) {

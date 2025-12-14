@@ -26,6 +26,9 @@ export const productsRepository = {
 
     let query = supabase.from('products').select('*', { count: 'exact' })
 
+    // Soft delete된 상품 제외
+    query = query.is('deleted_at', null)
+
     if (search) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
@@ -77,6 +80,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
 
     if (error) {
@@ -128,10 +132,13 @@ export const productsRepository = {
   },
 
   /**
-   * 상품 삭제
+   * 상품 삭제 (Soft Delete)
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('products').delete().eq('id', id)
+    const { error } = await supabase
+      .from('products')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
 
     if (error) {
       console.error('Error deleting product:', error)
@@ -147,6 +154,7 @@ export const productsRepository = {
       .from('products')
       .select('category')
       .not('category', 'is', null)
+      .is('deleted_at', null)
 
     if (error) {
       console.error('Error fetching categories:', error)
