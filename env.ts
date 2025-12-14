@@ -44,7 +44,6 @@ export const NEXT_PUBLIC_SUPABASE_ANON_KEY = getRequiredEnvVar(
 export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const PORTONE_API_SECRET = getServerRequiredEnvVar("PORTONE_API_SECRET");
-export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export const NODE_ENV = process.env.NODE_ENV ?? "development";
 
@@ -60,7 +59,6 @@ type Env = {
   readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
   readonly PORTONE_API_SECRET: string;
-  readonly RESEND_API_KEY?: string;
   readonly NODE_ENV: string;
 };
 
@@ -76,6 +74,5 @@ export const env: Env = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY,
   PORTONE_API_SECRET,
-  RESEND_API_KEY,
   NODE_ENV,
 };
