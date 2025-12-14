@@ -310,50 +310,32 @@ export type Database = {
       main_banners: {
         Row: {
           created_at: string | null
-          description: string | null
           device_type: string
           display_order: number | null
-          end_at: string | null
           id: string
           image_url: string
           is_active: boolean | null
-          link_target: string | null
-          link_url: string | null
           mobile_image_url: string | null
-          start_at: string | null
-          title: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
           device_type: string
           display_order?: number | null
-          end_at?: string | null
           id?: string
           image_url: string
           is_active?: boolean | null
-          link_target?: string | null
-          link_url?: string | null
           mobile_image_url?: string | null
-          start_at?: string | null
-          title: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
           device_type?: string
           display_order?: number | null
-          end_at?: string | null
           id?: string
           image_url?: string
           is_active?: boolean | null
-          link_target?: string | null
-          link_url?: string | null
           mobile_image_url?: string | null
-          start_at?: string | null
-          title?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -828,7 +810,6 @@ export type Database = {
       product_banners: {
         Row: {
           created_at: string | null
-          description: string | null
           device_type: string
           display_order: number | null
           end_at: string | null
@@ -839,12 +820,10 @@ export type Database = {
           link_url: string | null
           mobile_image_url: string | null
           start_at: string | null
-          title: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
           device_type: string
           display_order?: number | null
           end_at?: string | null
@@ -855,12 +834,10 @@ export type Database = {
           link_url?: string | null
           mobile_image_url?: string | null
           start_at?: string | null
-          title: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
           device_type?: string
           display_order?: number | null
           end_at?: string | null
@@ -871,7 +848,6 @@ export type Database = {
           link_url?: string | null
           mobile_image_url?: string | null
           start_at?: string | null
-          title?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -1022,6 +998,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           detail_images: Json | null
           discount_rate: number | null
@@ -1041,6 +1018,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           detail_images?: Json | null
           discount_rate?: number | null
@@ -1060,6 +1038,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           detail_images?: Json | null
           discount_rate?: number | null

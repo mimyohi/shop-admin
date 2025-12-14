@@ -31,6 +31,7 @@ import {
   Sparkles,
   Tag,
   Copy,
+  ExternalLink,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -61,6 +62,7 @@ interface Product {
 }
 
 const ITEMS_PER_PAGE = 10;
+const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "http://localhost:3000";
 
 type VisibilityFilterOption = "all" | "visible" | "hidden";
 
@@ -410,8 +412,20 @@ export default function ProductsPage() {
                         "-"
                       )}
                     </TableCell>
-                    <TableCell className="text-xs font-mono">
-                      {product.slug || "생성중"}
+                    <TableCell className="text-xs">
+                      {product.slug ? (
+                        <a
+                          href={`${SHOP_URL}/products/${product.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          <span className="font-mono">{product.slug}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">생성중</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

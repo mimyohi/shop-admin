@@ -73,11 +73,19 @@ export default function BannerImageUpload({
     }
   }
 
-  const dimensions = aspectRatio === 'wide'
-    ? { width: 'w-full max-w-xl', height: 'h-40' }
-    : aspectRatio === 'square'
-    ? { width: 'w-48', height: 'h-48' }
-    : { width: 'w-48', height: 'h-80' }
+  // PC 배너: 1440x501, 모바일 배너: 393x153
+  const getAspectRatioClass = () => {
+    switch (aspectRatio) {
+      case 'wide': // PC: 1440x501
+        return 'w-full max-w-xl aspect-[1440/501]'
+      case 'mobile': // 모바일: 393x153
+        return 'w-full max-w-xs aspect-[393/153]'
+      case 'square':
+        return 'w-48 aspect-square'
+      default:
+        return 'w-full max-w-xl aspect-[1440/501]'
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -117,7 +125,7 @@ export default function BannerImageUpload({
       </div>
 
       {preview && (
-        <div className={`relative ${dimensions.width} ${dimensions.height} border rounded-lg overflow-hidden bg-gray-100`}>
+        <div className={`relative ${getAspectRatioClass()} border rounded-lg overflow-hidden bg-gray-100`}>
           <Image
             src={preview}
             alt="Preview"

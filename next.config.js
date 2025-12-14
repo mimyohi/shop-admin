@@ -24,6 +24,12 @@ const nextConfig = {
       },
     ],
   },
+  // Server Action 바디 크기 제한 증가 (기본 1MB → 15MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "15mb",
+    },
+  },
 };
 
 module.exports = nextConfig;

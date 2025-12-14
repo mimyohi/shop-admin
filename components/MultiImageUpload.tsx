@@ -256,54 +256,54 @@ export default function MultiImageUpload({
       )}
 
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="space-y-3">
           {images.map((url, index) => (
-            <div key={index} className="relative group">
-              <div className="relative w-full h-40 border rounded-lg overflow-hidden bg-gray-100">
-                <Image
-                  src={url}
-                  alt={`Detail image ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
+            <div key={index} className="relative group border rounded-lg overflow-hidden bg-gray-100 max-w-md">
+              {/* 이미지를 적당한 크기로 표시 */}
+              <Image
+                src={url}
+                alt={`Detail image ${index + 1}`}
+                width={400}
+                height={400}
+                className="w-full h-auto"
+              />
 
-                {/* Remove button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+              {/* Remove button */}
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(index)}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
 
-                {/* Order badge */}
-                <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
-                  {index + 1}
-                </div>
+              {/* Order badge */}
+              <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                {index + 1}
               </div>
 
               {/* Move buttons */}
-              <div className="flex gap-1 mt-2">
+              <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 {index > 0 && (
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => handleMoveImage(index, index - 1)}
                     className="flex-1 text-xs"
                   >
-                    ←
+                    ↑ 위로
                   </Button>
                 )}
                 {index < images.length - 1 && (
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => handleMoveImage(index, index + 1)}
                     className="flex-1 text-xs"
                   >
-                    →
+                    ↓ 아래로
                   </Button>
                 )}
               </div>
