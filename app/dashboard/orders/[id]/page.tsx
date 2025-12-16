@@ -191,11 +191,11 @@ const CONSULTATION_STATUS_FLOW: Partial<
   },
   consultation_required: {
     next: "consultation_completed",
-    nextLabel: "배송필요(상담완료)",
+    nextLabel: "배송준비(상담완료)",
     extraActions: [
       {
         target: "on_hold",
-        label: "보류로 이동",
+        label: "부재중로 이동",
         variant: "outline",
       },
       {
@@ -212,7 +212,7 @@ const CONSULTATION_STATUS_FLOW: Partial<
   },
   on_hold: {
     next: "consultation_completed",
-    nextLabel: "배송필요(상담완료)",
+    nextLabel: "배송준비(상담완료)",
     extraActions: [
       {
         target: "shipping_on_hold",
@@ -236,13 +236,13 @@ const CONSULTATION_STATUS_FLOW: Partial<
   },
   shipping_on_hold: {
     prev: "consultation_completed",
-    prevLabel: "배송필요(상담완료)로 이동",
+    prevLabel: "배송준비(상담완료)로 이동",
     next: "shipped",
     nextLabel: "배송처리",
   },
   shipped: {
     prev: "consultation_completed",
-    prevLabel: "배송필요(상담완료)로 이동",
+    prevLabel: "배송준비(상담완료)로 이동",
   },
 };
 
@@ -787,8 +787,8 @@ export default function OrderDetailPage() {
     const statusMap: Record<string, string> = {
       chatting_required: "접수 필요",
       consultation_required: "상담 필요",
-      on_hold: "보류",
-      consultation_completed: "배송필요(상담완료)",
+      on_hold: "부재중",
+      consultation_completed: "배송준비(상담완료)",
       shipping_on_hold: "배송보류",
       shipped: "배송처리",
       cancelled: "취소건",

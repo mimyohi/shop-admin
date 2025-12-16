@@ -81,7 +81,7 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "배송필요로 이동",
+        label: "배송준비로 이동",
       },
     ],
   },
@@ -89,11 +89,11 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     value: "consultation_required",
     label: "상담 필요",
     nextStatus: "consultation_completed",
-    nextLabel: "배송필요(상담완료)",
+    nextLabel: "배송준비(상담완료)",
     extraActions: [
       {
         targetStatus: "on_hold",
-        label: "보류로 이동",
+        label: "부재중로 이동",
       },
       {
         targetStatus: "shipping_on_hold",
@@ -107,9 +107,9 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
   },
   {
     value: "on_hold",
-    label: "보류",
+    label: "부재중",
     nextStatus: "consultation_completed",
-    nextLabel: "배송필요(상담완료)",
+    nextLabel: "배송준비(상담완료)",
     extraActions: [
       {
         targetStatus: "shipping_on_hold",
@@ -118,8 +118,20 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
+    value: "shipping_on_hold",
+    label: "배송보류",
+    nextStatus: "shipped",
+    nextLabel: "배송처리",
+    extraActions: [
+      {
+        targetStatus: "consultation_completed",
+        label: "배송준비 단계로 복귀",
+      },
+    ],
+  },
+  {
     value: "consultation_completed",
-    label: "배송필요(상담완료)",
+    label: "배송준비(상담완료)",
     nextStatus: "shipped",
     nextLabel: "배송처리",
     extraActions: [
@@ -134,24 +146,12 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     ],
   },
   {
-    value: "shipping_on_hold",
-    label: "배송보류",
-    nextStatus: "shipped",
-    nextLabel: "배송처리",
-    extraActions: [
-      {
-        targetStatus: "consultation_completed",
-        label: "배송필요 단계로 복귀",
-      },
-    ],
-  },
-  {
     value: "shipped",
     label: "배송처리",
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "배송필요 단계로 복귀",
+        label: "배송준비 단계로 복귀",
       },
     ],
   },
@@ -340,10 +340,7 @@ export default function OrdersPage() {
     });
   }, [orderList, activeTab]);
 
-  const {
-    data: statusCountsData,
-    refetch: refetchStatusCounts,
-  } = useQuery(
+  const { data: statusCountsData, refetch: refetchStatusCounts } = useQuery(
     ordersQueries.consultationStatusCounts(CONSULTATION_TAB_VALUES)
   );
   const statusCounts = statusCountsData || {};
@@ -562,7 +559,7 @@ export default function OrdersPage() {
         ...prev,
         consultation_completed: [],
       }));
-      // 모든 주문 목록 쿼리 무효화 (배송필요 -> 배송중 이동)
+      // 모든 주문 목록 쿼리 무효화 (배송준비 -> 배송중 이동)
       await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
       await refetchStatusCounts();
     } catch (error) {
@@ -675,9 +672,7 @@ export default function OrdersPage() {
                 size="sm"
                 variant="secondary"
                 disabled={
-                  currentSelected.length === 0 ||
-                  isExporting ||
-                  ordersLoading
+                  currentSelected.length === 0 || isExporting || ordersLoading
                 }
                 onClick={handleExportExcel}
                 className="bg-green-600 hover:bg-green-700 text-white"

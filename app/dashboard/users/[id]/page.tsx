@@ -78,8 +78,8 @@ const paymentStatusLabels: Record<string, string> = {
 const consultationStatusLabels: Record<string, string> = {
   chatting_required: "접수 필요",
   consultation_required: "상담 필요",
-  on_hold: "보류",
-  consultation_completed: "배송필요(상담완료)",
+  on_hold: "부재중",
+  consultation_completed: "배송준비(상담완료)",
   shipping_on_hold: "배송 보류",
   shipped: "배송처리",
   cancelled: "취소",
@@ -252,342 +252,358 @@ export default function UserDetailPage() {
     <PermissionGuard requireMaster>
       <div className="p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-0 h-auto text-gray-500 hover:text-gray-900"
+                onClick={() => router.push("/dashboard/users")}
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                유저 목록으로
+              </Button>
+              <span>•</span>
+              <span>{user.user_id}</span>
+            </div>
+            <h1 className="text-3xl font-bold mt-2">
+              {user.display_name || "이름 없음"}
+            </h1>
+            <p className="text-gray-600">{user.email}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="ghost"
-              size="sm"
-              className="px-0 h-auto text-gray-500 hover:text-gray-900"
-              onClick={() => router.push("/dashboard/users")}
+              variant="outline"
+              className="gap-2"
+              onClick={loadUserDetail}
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              유저 목록으로
+              <RefreshCw className="h-4 w-4" />
+              새로고침
             </Button>
-            <span>•</span>
-            <span>{user.user_id}</span>
           </div>
-          <h1 className="text-3xl font-bold mt-2">
-            {user.display_name || "이름 없음"}
-          </h1>
-          <p className="text-gray-600">{user.email}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={loadUserDetail}>
-            <RefreshCw className="h-4 w-4" />
-            새로고침
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>기본 정보</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-start gap-3">
-              <User className="h-5 w-5 text-gray-400 mt-0.5" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>기본 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-start gap-3">
+                <User className="h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">이름</p>
+                  <p className="text-lg font-semibold">
+                    {user.display_name || "이름 없음"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">이메일</p>
+                  <p className="font-medium break-all">{user.email}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">전화번호</p>
+                  <p className="font-medium">
+                    {user.phone || "-"}
+                    {user.phone_verified && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 bg-emerald-100 text-emerald-800 border border-emerald-200"
+                      >
+                        인증 완료
+                      </Badge>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">가입일</p>
+                  <p className="font-medium">
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleString("ko-KR")
+                      : "-"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    최종 업데이트:{" "}
+                    {user.updated_at
+                      ? new Date(user.updated_at).toLocaleString("ko-KR")
+                      : "-"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>포인트 & 액션</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-500">이름</p>
+                <p className="text-sm text-gray-500">보유 포인트</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {user.points.toLocaleString()}P
+                </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  <span className="text-green-600 font-semibold">
+                    +{user.total_earned.toLocaleString()}P
+                  </span>{" "}
+                  적립 /{" "}
+                  <span className="text-red-600 font-semibold">
+                    -{user.total_used.toLocaleString()}P
+                  </span>{" "}
+                  사용
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="default"
+                  className="gap-1"
+                  onClick={() => {
+                    setPointDialogType("add");
+                    setIsPointDialogOpen(true);
+                  }}
+                  disabled={!userPointPayload}
+                >
+                  <Coins className="h-4 w-4" />
+                  지급
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => {
+                    setPointDialogType("subtract");
+                    setIsPointDialogOpen(true);
+                  }}
+                  disabled={!userPointPayload}
+                >
+                  <Coins className="h-4 w-4" />
+                  차감
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="col-span-2 justify-start gap-2"
+                  onClick={() => setIsHistoryDialogOpen(true)}
+                  disabled={!userPointPayload}
+                >
+                  <ListChecks className="h-4 w-4" />
+                  포인트 내역 보기
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="col-span-2 justify-start gap-2"
+                  onClick={() => setIsCouponDialogOpen(true)}
+                  disabled={!couponUserPayload}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  쿠폰 발급
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500">
+                총 주문 수
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-3">
+              <Package className="h-10 w-10 text-blue-500" />
+              <div>
+                <p className="text-3xl font-bold">{orderStats.totalOrders}</p>
+                <p className="text-sm text-gray-500">등록된 모든 주문</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500">
+                총 구매 금액
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-3">
+              <Coins className="h-10 w-10 text-amber-500" />
+              <div>
+                <p className="text-3xl font-bold">
+                  {orderStats.totalSpent.toLocaleString()}원
+                </p>
+                <p className="text-sm text-gray-500">모든 주문의 합계</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500">최근 주문</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-3">
+              <Calendar className="h-10 w-10 text-emerald-500" />
+              <div>
                 <p className="text-lg font-semibold">
-                  {user.display_name || "이름 없음"}
+                  {orderStats.lastOrderDate
+                    ? new Date(orderStats.lastOrderDate).toLocaleString("ko-KR")
+                    : "주문 내역 없음"}
                 </p>
+                <p className="text-sm text-gray-500">최신 주문 일시 기준</p>
               </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">이메일</p>
-                <p className="font-medium break-all">{user.email}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">전화번호</p>
-                <p className="font-medium">
-                  {user.phone || "-"}
-                  {user.phone_verified && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 bg-emerald-100 text-emerald-800 border border-emerald-200"
-                    >
-                      인증 완료
-                    </Badge>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">가입일</p>
-                <p className="font-medium">
-                  {user.created_at ? new Date(user.created_at).toLocaleString("ko-KR") : "-"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  최종 업데이트:{" "}
-                  {user.updated_at ? new Date(user.updated_at).toLocaleString("ko-KR") : "-"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>포인트 & 액션</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-500">보유 포인트</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {user.points.toLocaleString()}P
-              </p>
-              <div className="mt-2 text-sm text-gray-600">
-                <span className="text-green-600 font-semibold">
-                  +{user.total_earned.toLocaleString()}P
-                </span>{" "}
-                적립 /{" "}
-                <span className="text-red-600 font-semibold">
-                  -{user.total_used.toLocaleString()}P
-                </span>{" "}
-                사용
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>주문 히스토리</CardTitle>
+                <p className="text-sm text-gray-500">
+                  유저가 진행한 모든 주문을 확인할 수 있습니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(orderStats.consultationCounts).map(
+                  ([status, count]) => (
+                    <Badge
+                      key={status}
+                      variant="outline"
+                      className={`gap-1 ${
+                        consultationBadgeClasses[status] || ""
+                      }`}
+                    >
+                      {consultationStatusLabels[status] || status}
+                      <span className="font-semibold">{count}</span>
+                    </Badge>
+                  )
+                )}
+                {orders.length === 0 && (
+                  <Badge variant="outline" className="text-gray-500">
+                    주문 내역 없음
+                  </Badge>
+                )}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="default"
-                className="gap-1"
-                onClick={() => {
-                  setPointDialogType("add");
-                  setIsPointDialogOpen(true);
-                }}
-                disabled={!userPointPayload}
-              >
-                <Coins className="h-4 w-4" />
-                지급
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-1"
-                onClick={() => {
-                  setPointDialogType("subtract");
-                  setIsPointDialogOpen(true);
-                }}
-                disabled={!userPointPayload}
-              >
-                <Coins className="h-4 w-4" />
-                차감
-              </Button>
-              <Button
-                variant="ghost"
-                className="col-span-2 justify-start gap-2"
-                onClick={() => setIsHistoryDialogOpen(true)}
-                disabled={!userPointPayload}
-              >
-                <ListChecks className="h-4 w-4" />
-                포인트 내역 보기
-              </Button>
-              <Button
-                variant="ghost"
-                className="col-span-2 justify-start gap-2"
-                onClick={() => setIsCouponDialogOpen(true)}
-                disabled={!couponUserPayload}
-              >
-                <ShoppingBag className="h-4 w-4" />
-                쿠폰 발급
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">총 주문 수</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center gap-3">
-            <Package className="h-10 w-10 text-blue-500" />
-            <div>
-              <p className="text-3xl font-bold">{orderStats.totalOrders}</p>
-              <p className="text-sm text-gray-500">등록된 모든 주문</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">
-              총 구매 금액
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-3">
-            <Coins className="h-10 w-10 text-amber-500" />
-            <div>
-              <p className="text-3xl font-bold">
-                {orderStats.totalSpent.toLocaleString()}원
-              </p>
-              <p className="text-sm text-gray-500">모든 주문의 합계</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">최근 주문</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-3">
-            <Calendar className="h-10 w-10 text-emerald-500" />
-            <div>
-              <p className="text-lg font-semibold">
-                {orderStats.lastOrderDate
-                  ? new Date(orderStats.lastOrderDate).toLocaleString("ko-KR")
-                  : "주문 내역 없음"}
-              </p>
-              <p className="text-sm text-gray-500">최신 주문 일시 기준</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle>주문 히스토리</CardTitle>
-              <p className="text-sm text-gray-500">
-                유저가 진행한 모든 주문을 확인할 수 있습니다.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(orderStats.consultationCounts).map(
-                ([status, count]) => (
-                  <Badge
-                    key={status}
-                    variant="outline"
-                    className={`gap-1 ${
-                      consultationBadgeClasses[status] || ""
-                    }`}
-                  >
-                    {consultationStatusLabels[status] || status}
-                    <span className="font-semibold">{count}</span>
-                  </Badge>
-                )
-              )}
-              {orders.length === 0 && (
-                <Badge variant="outline" className="text-gray-500">
-                  주문 내역 없음
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {orders.length === 0 ? (
-            <div className="py-16 text-center text-gray-500">
-              주문 내역이 없습니다.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>주문번호</TableHead>
-                    <TableHead>주문일시</TableHead>
-                    <TableHead>상담 상태</TableHead>
-                    <TableHead>결제 상태</TableHead>
-                    <TableHead className="text-right">결제금액</TableHead>
-                    <TableHead>상품</TableHead>
-                    <TableHead className="text-right">관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono text-sm">
-                        {order.order_id}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {order.created_at ? new Date(order.created_at).toLocaleString("ko-KR") : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            consultationBadgeClasses[
-                              order.consultation_status
-                            ] || ""
-                          }
-                        >
-                          {consultationStatusLabels[
-                            order.consultation_status
-                          ] || order.consultation_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            statusBadgeClasses[order.status] || "text-gray-600"
-                          }
-                        >
-                          {paymentStatusLabels[order.status] || order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {order.total_amount.toLocaleString()}원
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {order.order_items && order.order_items.length > 0 ? (
-                          order.order_items
-                            .map(
-                              (item) => `${item.product_name} x${item.quantity}`
-                            )
-                            .join(", ")
-                        ) : (
-                          <span className="text-gray-400">상품 정보 없음</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/dashboard/orders/${order.id}`)
-                          }
-                        >
-                          상세
-                        </Button>
-                      </TableCell>
+          <CardContent>
+            {orders.length === 0 ? (
+              <div className="py-16 text-center text-gray-500">
+                주문 내역이 없습니다.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>주문번호</TableHead>
+                      <TableHead>주문일시</TableHead>
+                      <TableHead>상담 상태</TableHead>
+                      <TableHead>결제 상태</TableHead>
+                      <TableHead className="text-right">결제금액</TableHead>
+                      <TableHead>상품</TableHead>
+                      <TableHead className="text-right">관리</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-sm">
+                          {order.order_id}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {order.created_at
+                            ? new Date(order.created_at).toLocaleString("ko-KR")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              consultationBadgeClasses[
+                                order.consultation_status
+                              ] || ""
+                            }
+                          >
+                            {consultationStatusLabels[
+                              order.consultation_status
+                            ] || order.consultation_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              statusBadgeClasses[order.status] ||
+                              "text-gray-600"
+                            }
+                          >
+                            {paymentStatusLabels[order.status] || order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {order.total_amount.toLocaleString()}원
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {order.order_items && order.order_items.length > 0 ? (
+                            order.order_items
+                              .map(
+                                (item) =>
+                                  `${item.product_name} x${item.quantity}`
+                              )
+                              .join(", ")
+                          ) : (
+                            <span className="text-gray-400">
+                              상품 정보 없음
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              router.push(`/dashboard/orders/${order.id}`)
+                            }
+                          >
+                            상세
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <PointAdjustDialog
-        open={isPointDialogOpen}
-        onOpenChange={setIsPointDialogOpen}
-        userPoint={userPointPayload}
-        type={pointDialogType}
-        onSuccess={loadUserDetail}
-      />
+        <PointAdjustDialog
+          open={isPointDialogOpen}
+          onOpenChange={setIsPointDialogOpen}
+          userPoint={userPointPayload}
+          type={pointDialogType}
+          onSuccess={loadUserDetail}
+        />
 
-      <PointHistoryDialog
-        open={isHistoryDialogOpen}
-        onOpenChange={setIsHistoryDialogOpen}
-        userPoint={userPointPayload}
-      />
+        <PointHistoryDialog
+          open={isHistoryDialogOpen}
+          onOpenChange={setIsHistoryDialogOpen}
+          userPoint={userPointPayload}
+        />
 
-      <IssueCouponToUserDialog
-        open={isCouponDialogOpen}
-        onOpenChange={setIsCouponDialogOpen}
-        user={couponUserPayload}
-      />
+        <IssueCouponToUserDialog
+          open={isCouponDialogOpen}
+          onOpenChange={setIsCouponDialogOpen}
+          user={couponUserPayload}
+        />
       </div>
     </PermissionGuard>
   );
