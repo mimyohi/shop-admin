@@ -62,7 +62,7 @@ interface Product {
 }
 
 const ITEMS_PER_PAGE = 10;
-const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "http://localhost:3000";
+const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "http://mimyohi.com";
 
 type VisibilityFilterOption = "all" | "visible" | "hidden";
 
@@ -267,231 +267,236 @@ export default function ProductsPage() {
           </div>
         )}
         <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">상품 관리</h1>
-          <p className="text-gray-500">상품을 등록하고 관리하세요</p>
-        </div>
-        <Button onClick={() => router.push("/dashboard/products/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          상품 등록
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>상품 목록</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1">
-              <Label className="text-sm font-semibold">검색</Label>
-              <Input
-                placeholder="상품명 혹은 설명"
-                value={searchFilter}
-                onChange={(event) => setSearchFilter(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-semibold">카테고리</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="카테고리" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체 카테고리</SelectItem>
-                  {categoryOptions.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-semibold">메인 노출</Label>
-              <Select
-                value={visibilityFilter}
-                onValueChange={(value) =>
-                  setVisibilityFilter(value as VisibilityFilterOption)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="노출 여부" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="visible">노출</SelectItem>
-                  <SelectItem value="hidden">숨김</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold">상품 관리</h1>
+            <p className="text-gray-500">상품을 등록하고 관리하세요</p>
           </div>
+          <Button onClick={() => router.push("/dashboard/products/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            상품 등록
+          </Button>
+        </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">로딩중...</div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              등록된 상품이 없습니다.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>상품명</TableHead>
-                  <TableHead>카테고리</TableHead>
-                  <TableHead>가격</TableHead>
-                  <TableHead>메인노출</TableHead>
-                  <TableHead>뱃지</TableHead>
-                  <TableHead>품절상태</TableHead>
-                  <TableHead>판매기간</TableHead>
-                  <TableHead>링크</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">
-                      {product.name}
-                    </TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>{product.price.toLocaleString()}원</TableCell>
-                    <TableCell>
-                      {product.is_visible_on_main ? (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          노출
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                          숨김
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {product.is_new_badge && (
-                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                            NEW
-                          </span>
-                        )}
-                        {product.is_sale_badge && (
-                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                            SALE
-                          </span>
-                        )}
-                        {!product.is_new_badge && !product.is_sale_badge && (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {product.is_out_of_stock ? (
-                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                          품절
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          판매중
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {product.sale_start_at && product.sale_end_at ? (
-                        <>
-                          <div>
-                            {new Date(
-                              product.sale_start_at
-                            ).toLocaleDateString()}
-                          </div>
-                          <div>
-                            ~{" "}
-                            {new Date(product.sale_end_at).toLocaleDateString()}
-                          </div>
-                        </>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {product.slug ? (
-                        <a
-                          href={`${SHOP_URL}/products/${product.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          <span className="font-mono">{product.slug}</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">생성중</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            handleDuplicate(product.id, product.name)
-                          }
-                          title="상품 복제"
-                        >
-                          복제
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            router.push(`/dashboard/products/${product.id}`)
-                          }
-                          title="상품 수정"
-                        >
-                          수정
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-
-          {!isLoading && (
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-              <p>
-                총 {totalCount.toLocaleString()}개 · {displayedPage}/
-                {totalPages}페이지
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handlePreviousPage}
-                  disabled={isFirstPage}
+        <Card>
+          <CardHeader>
+            <CardTitle>상품 목록</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold">검색</Label>
+                <Input
+                  placeholder="상품명 혹은 설명"
+                  value={searchFilter}
+                  onChange={(event) => setSearchFilter(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold">카테고리</Label>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
                 >
-                  이전
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleNextPage}
-                  disabled={isLastPage}
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="카테고리" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 카테고리</SelectItem>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold">메인 노출</Label>
+                <Select
+                  value={visibilityFilter}
+                  onValueChange={(value) =>
+                    setVisibilityFilter(value as VisibilityFilterOption)
+                  }
                 >
-                  다음
-                </Button>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="노출 여부" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="visible">노출</SelectItem>
+                    <SelectItem value="hidden">숨김</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {isLoading ? (
+              <div className="text-center py-8">로딩중...</div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                등록된 상품이 없습니다.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>상품명</TableHead>
+                    <TableHead>카테고리</TableHead>
+                    <TableHead>가격</TableHead>
+                    <TableHead>메인노출</TableHead>
+                    <TableHead>뱃지</TableHead>
+                    <TableHead>품절상태</TableHead>
+                    <TableHead>판매기간</TableHead>
+                    <TableHead>링크</TableHead>
+                    <TableHead className="text-right">관리</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        {product.name}
+                      </TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell>{product.price.toLocaleString()}원</TableCell>
+                      <TableCell>
+                        {product.is_visible_on_main ? (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            노출
+                          </span>
+                        ) : (
+                          <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                            숨김
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {product.is_new_badge && (
+                            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                              NEW
+                            </span>
+                          )}
+                          {product.is_sale_badge && (
+                            <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                              SALE
+                            </span>
+                          )}
+                          {!product.is_new_badge && !product.is_sale_badge && (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {product.is_out_of_stock ? (
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                            품절
+                          </span>
+                        ) : (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            판매중
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {product.sale_start_at && product.sale_end_at ? (
+                          <>
+                            <div>
+                              {new Date(
+                                product.sale_start_at
+                              ).toLocaleDateString()}
+                            </div>
+                            <div>
+                              ~{" "}
+                              {new Date(
+                                product.sale_end_at
+                              ).toLocaleDateString()}
+                            </div>
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {product.slug ? (
+                          <a
+                            href={`${SHOP_URL}/products/${product.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            <span className="font-mono">{product.slug}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">생성중</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleDuplicate(product.id, product.name)
+                            }
+                            title="상품 복제"
+                          >
+                            복제
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              router.push(`/dashboard/products/${product.id}`)
+                            }
+                            title="상품 수정"
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            {!isLoading && (
+              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                <p>
+                  총 {totalCount.toLocaleString()}개 · {displayedPage}/
+                  {totalPages}페이지
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePreviousPage}
+                    disabled={isFirstPage}
+                  >
+                    이전
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={isLastPage}
+                  >
+                    다음
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </PermissionGuard>
   );
