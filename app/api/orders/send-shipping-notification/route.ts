@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
-import { sendShippingNotificationAlimtalk } from "@/lib/kakao/alimtalk";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,22 +41,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "수신자 전화번호가 없습니다." },
         { status: 400 }
-      );
-    }
-
-    // 알림톡 발송
-    const result = await sendShippingNotificationAlimtalk(phone, {
-      orderId: order.order_id,
-      customerName: order.user_name || order.shipping_name || "고객",
-      shippingCompany: order.shipping_company,
-      trackingNumber: order.tracking_number,
-    });
-
-    if (!result.success) {
-      console.error("알림톡 발송 실패:", result.error);
-      return NextResponse.json(
-        { error: "알림톡 발송에 실패했습니다." },
-        { status: 500 }
       );
     }
 

@@ -12,7 +12,7 @@
  * 환경 변수 설정:
  * SOLAPI_API_KEY=your_api_key
  * SOLAPI_API_SECRET=your_api_secret
- * KAKAO_SENDER_KEY=your_kakao_sender_key (카카오톡 채널의 발신 프로필 키)
+ * KAKAO_PF_ID=your_kakao_pf_id (카카오톡 채널의 발신 프로필 ID)
  */
 
 import crypto from "crypto";
@@ -64,22 +64,23 @@ function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
 }
 
 /**
- * 전화번호 포맷팅 (E.164 형식으로 변환)
+ * 전화번호 포맷팅 (010으로 시작하는 한국 형식으로 변환)
  */
 function formatPhone(phone: string): string {
   const cleanPhone = phone.replace(/[^0-9]/g, "");
 
-  // 이미 82로 시작하면 그대로 반환
+  // 82로 시작하면 0으로 변환 (8210... -> 010...)
   if (cleanPhone.startsWith("82")) {
+    return `0${cleanPhone.substring(2)}`;
+  }
+
+  // 이미 0으로 시작하면 그대로 반환
+  if (cleanPhone.startsWith("0")) {
     return cleanPhone;
   }
 
-  // 010으로 시작하면 0 제거하고 82 추가
-  if (cleanPhone.startsWith("0")) {
-    return `82${cleanPhone.substring(1)}`;
-  }
-
-  return `82${cleanPhone}`;
+  // 10으로 시작하면 앞에 0 추가
+  return `0${cleanPhone}`;
 }
 
 function hasRequiredAlimtalkConfig(): boolean {
@@ -90,7 +91,7 @@ function hasRequiredAlimtalkConfig(): boolean {
     return false;
   }
 
-  return Boolean(env.KAKAO_SENDER_KEY);
+  return Boolean(env.KAKAO_PF_ID);
 }
 
 type TemplateVariables = Record<string, string>;
@@ -141,19 +142,19 @@ function normalizeSolapiError(message?: string): string {
 
 async function sendAlimtalkMessage({
   phone,
-  templateCode,
+  templateId,
   variables,
 }: {
   phone: string;
-  templateCode: string;
+  templateId: string;
   variables: TemplateVariables;
 }): Promise<AlimtalkResult> {
-  const senderKey = env.KAKAO_SENDER_KEY;
+  const pfId = env.KAKAO_PF_ID;
 
-  if (!senderKey) {
+  if (!pfId) {
     return {
       success: false,
-      error: "카카오톡 발신 프로필이 설정되지 않았습니다.",
+      error: "카카오톡 발신 프로필(pfId)이 설정되지 않았습니다.",
     };
   }
 
@@ -169,8 +170,8 @@ async function sendAlimtalkMessage({
             to: formattedPhone,
             type: "ATA",
             kakaoOptions: {
-              senderKey,
-              templateCode,
+              pfId,
+              templateId,
               disableSms: true,
               variables,
             },
@@ -232,79 +233,6 @@ async function sendAlimtalkMessage({
 }
 
 /**
- * OTP 인증번호 알림톡 발송
- * @param phone 수신자 전화번호
- * @param otp 6자리 OTP
- * @returns 알림톡 발송 결과
- */
-export async function sendOTPAlimtalk(
-  phone: string,
-  otp: string
-): Promise<AlimtalkResult> {
-  const templateCode = env.KAKAO_TEMPLATE_OTP || "otp_auth";
-
-  return sendAlimtalkMessage({
-    phone,
-    templateCode,
-    variables: {
-      "#{OTP}": otp,
-    },
-  });
-}
-
-/**
- * 주문 확인 알림톡 발송
- */
-export async function sendOrderConfirmationAlimtalk(
-  phone: string,
-  orderData: {
-    orderId: string;
-    customerName: string;
-    totalAmount: number;
-    productNames: string; // 예: "상품A 외 2건"
-  }
-): Promise<AlimtalkResult> {
-  const templateCode = env.KAKAO_TEMPLATE_ORDER_CONFIRM || "order_confirmation";
-
-  return sendAlimtalkMessage({
-    phone,
-    templateCode,
-    variables: {
-      "#{고객명}": orderData.customerName,
-      "#{주문번호}": orderData.orderId,
-      "#{상품명}": orderData.productNames,
-      "#{결제금액}": `${orderData.totalAmount.toLocaleString()}원`,
-    },
-  });
-}
-
-/**
- * 배송 시작 알림톡 발송
- */
-export async function sendShippingNotificationAlimtalk(
-  phone: string,
-  orderData: {
-    orderId: string;
-    customerName: string;
-    shippingCompany: string;
-    trackingNumber: string;
-  }
-): Promise<AlimtalkResult> {
-  const templateCode = env.KAKAO_TEMPLATE_SHIPPING || "shipping_notification";
-
-  return sendAlimtalkMessage({
-    phone,
-    templateCode,
-    variables: {
-      "#{고객명}": orderData.customerName,
-      "#{주문번호}": orderData.orderId,
-      "#{택배사}": orderData.shippingCompany,
-      "#{송장번호}": orderData.trackingNumber,
-    },
-  });
-}
-
-/**
  * 주문 취소 알림톡 발송
  */
 export async function sendPaymentCancellationAlimtalk(
@@ -316,16 +244,74 @@ export async function sendPaymentCancellationAlimtalk(
     cancelReason?: string;
   }
 ): Promise<AlimtalkResult> {
-  const templateCode = env.KAKAO_TEMPLATE_CANCEL || "order_cancellation";
+  const templateId = env.KAKAO_TEMPLATE_CANCEL || "order_cancellation";
+
+  const now = new Date();
+  const refundDateTime = now.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  });
 
   return sendAlimtalkMessage({
     phone,
-    templateCode,
+    templateId,
     variables: {
-      "#{고객명}": orderData.customerName,
       "#{주문번호}": orderData.orderId,
       "#{환불금액}": `${orderData.totalAmount.toLocaleString()}원`,
-      "#{취소사유}": orderData.cancelReason || "관리자 요청",
+      "#{환불일시}": refundDateTime,
+    },
+  });
+}
+
+/**
+ * 배송 알림톡 발송
+ */
+export async function sendShippingNotificationAlimtalk(
+  phone: string,
+  shippingData: {
+    orderId: string;
+    customerName: string;
+    shippingCompany: string;
+    trackingNumber: string;
+  }
+): Promise<AlimtalkResult> {
+  const templateId = env.KAKAO_TEMPLATE_SHIPPING || "shipping_notification";
+
+  return sendAlimtalkMessage({
+    phone,
+    templateId,
+    variables: {
+      "#{고객명}": shippingData.customerName,
+      "#{주문번호}": shippingData.orderId,
+      "#{택배사}": shippingData.shippingCompany,
+      "#{운송장번호}": shippingData.trackingNumber,
+    },
+  });
+}
+
+/**
+ * OTP 인증번호 알림톡 발송
+ * @param phone 수신자 전화번호
+ * @param otp 6자리 OTP
+ * @returns 알림톡 발송 결과
+ */
+export async function sendOTPAlimtalk(
+  phone: string,
+  otp: string,
+  validMinutes: number = 5
+): Promise<AlimtalkResult> {
+  const templateId = env.KAKAO_TEMPLATE_OTP || "otp_auth";
+
+  return sendAlimtalkMessage({
+    phone,
+    templateId,
+    variables: {
+      "#{인증번호}": otp,
+      "#{유효시간}": String(validMinutes),
     },
   });
 }
