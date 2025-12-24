@@ -261,7 +261,7 @@ export async function sendPaymentCancellationAlimtalk(
     templateId,
     variables: {
       "#{주문번호}": orderData.orderId,
-      "#{환불금액}": `${orderData.totalAmount.toLocaleString()}원`,
+      "#{환불금액}": `${orderData.totalAmount.toLocaleString()}`,
       "#{환불일시}": refundDateTime,
     },
   });
