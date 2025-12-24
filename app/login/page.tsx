@@ -1,63 +1,69 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { useAdminStore } from "@/store/admin-store"
-import { loginAdmin } from "@/lib/actions/auth"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useAdminStore } from "@/store/admin-store";
+import { loginAdmin } from "@/lib/actions/auth";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const adminUser = useAdminStore((state) => state.adminUser)
-  const hasHydrated = useAdminStore((state) => state.hasHydrated)
-  const setAdminUser = useAdminStore((state) => state.setAdminUser)
-  const { toast } = useToast()
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const adminUser = useAdminStore((state) => state.adminUser);
+  const hasHydrated = useAdminStore((state) => state.hasHydrated);
+  const setAdminUser = useAdminStore((state) => state.setAdminUser);
+  const { toast } = useToast();
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (hasHydrated && adminUser) {
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
-  }, [adminUser, hasHydrated, router])
+  }, [adminUser, hasHydrated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const user = await loginAdmin(username, password)
+      const user = await loginAdmin(username, password);
 
       if (user) {
-        setAdminUser(user)
+        setAdminUser(user);
         toast({
           title: "로그인 성공",
           description: `${user.full_name || user.username}님 환영합니다.`,
-        })
-        router.push("/dashboard")
+        });
+        router.push("/dashboard");
       } else {
         toast({
           title: "로그인 실패",
           description: "아이디 또는 비밀번호가 올바르지 않습니다.",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
       toast({
         title: "오류 발생",
         description: "로그인 중 오류가 발생했습니다.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Show loading while hydrating
   if (!hasHydrated) {
@@ -68,12 +74,12 @@ export default function LoginPage() {
           <p className="mt-4 text-gray-600">로딩 중...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Don't show login form if already logged in (will redirect)
   if (adminUser) {
-    return null
+    return null;
   }
 
   return (
@@ -81,9 +87,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">관리자 로그인</CardTitle>
-          <CardDescription>
-            Shop Admin Dashboard에 로그인하세요
-          </CardDescription>
+          <CardDescription>어드민에 로그인하세요</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -109,16 +113,12 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "로그인 중..." : "로그인"}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

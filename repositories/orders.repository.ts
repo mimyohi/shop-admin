@@ -8,7 +8,6 @@ export const ordersRepository = {
   async findMany(filters: OrderFilters = {}) {
     const {
       consultationStatus,
-      paymentStatus,
       assignedAdminId,
       handlerAdminId,
       productId,
@@ -43,10 +42,6 @@ export const ordersRepository = {
 
     if (consultationStatus) {
       query = query.eq("consultation_status", consultationStatus);
-    }
-
-    if (paymentStatus) {
-      query = query.eq("status", paymentStatus);
     }
 
     if (assignedAdminId) {
@@ -138,7 +133,8 @@ export const ordersRepository = {
         const { count } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
-          .eq("consultation_status", status);
+          .eq("consultation_status", status)
+          .neq("status", "payment_pending"); // 입금 대기 제외
 
         return [status, count ?? 0] as const;
       })
@@ -349,15 +345,17 @@ export const ordersRepository = {
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString();
 
-    // 총 주문 수
+    // 총 주문 수 (입금 대기 제외)
     const { count: totalOrders } = await supabase
       .from("orders")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .neq("status", "payment_pending");
 
-    // 오늘 주문 수
+    // 오늘 주문 수 (입금 대기 제외)
     const { count: todayOrders } = await supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
+      .neq("status", "payment_pending")
       .gte("created_at", todayStart);
 
     // 총 매출
@@ -383,7 +381,7 @@ export const ordersRepository = {
       0
     );
 
-    // 대기중인 주문 수
+    // 대기중인 주문 수 (입금 대기가 아닌 pending)
     const { count: pendingOrders } = await supabase
       .from("orders")
       .select("*", { count: "exact", head: true })

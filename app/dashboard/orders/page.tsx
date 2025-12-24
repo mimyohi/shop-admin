@@ -55,14 +55,12 @@ type ConsultationTabConfig = {
   }>;
 };
 
-type PaymentStatusFilter = "all" | "paid" | "pending" | "cancelled";
 type SortOption = "latest" | "oldest" | "amount_high" | "amount_low";
 
 const DEFAULT_TAB: ConsultationStatus = "chatting_required";
 const PAGE_SIZE = 20;
 const DEFAULT_FILTERS = {
   search: "",
-  paymentStatus: "all" as PaymentStatusFilter,
   sortBy: "latest" as SortOption,
   startDate: "",
   endDate: "",
@@ -215,15 +213,6 @@ export default function OrdersPage() {
     "search",
     parseAsString.withDefault(DEFAULT_FILTERS.search)
   );
-  const [paymentStatus, setPaymentStatus] = useQueryState(
-    "payment",
-    parseAsStringEnum([
-      "all",
-      "paid",
-      "pending",
-      "cancelled",
-    ] as const).withDefault(DEFAULT_FILTERS.paymentStatus)
-  );
   const [sortBy, setSortBy] = useQueryState(
     "sort",
     parseAsStringEnum([
@@ -262,10 +251,6 @@ export default function OrdersPage() {
     const filters = {
       consultationStatus: activeTab,
       search: searchTerm || undefined,
-      paymentStatus:
-        paymentStatus !== DEFAULT_FILTERS.paymentStatus
-          ? paymentStatus
-          : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       assignedAdminId:
@@ -287,7 +272,6 @@ export default function OrdersPage() {
   }, [
     activeTab,
     searchTerm,
-    paymentStatus,
     startDate,
     endDate,
     assignedAdminFilter,
@@ -347,7 +331,6 @@ export default function OrdersPage() {
 
   const resetFilters = () => {
     void setSearchTerm(DEFAULT_FILTERS.search);
-    void setPaymentStatus(DEFAULT_FILTERS.paymentStatus);
     void setSortBy(DEFAULT_FILTERS.sortBy);
     void setStartDate(DEFAULT_FILTERS.startDate);
     void setEndDate(DEFAULT_FILTERS.endDate);
@@ -904,29 +887,6 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* 결제 상태 */}
-            <div className="space-y-2">
-              <Label htmlFor="payment-status" className="text-sm font-medium">
-                결제 상태
-              </Label>
-              <Select
-                value={paymentStatus}
-                onValueChange={(value) => {
-                  setPaymentStatus(value as PaymentStatusFilter);
-                }}
-              >
-                <SelectTrigger id="payment-status">
-                  <SelectValue placeholder="전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="paid">결제완료</SelectItem>
-                  <SelectItem value="pending">대기중</SelectItem>
-                  <SelectItem value="cancelled">취소됨</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* 상품명 필터 */}
             <div className="space-y-2">
               <Label htmlFor="product-filter" className="text-sm font-medium">
@@ -1064,7 +1024,6 @@ export default function OrdersPage() {
             <span className="font-medium">검색 결과:</span>
             <span className="font-semibold text-blue-600">{totalCount}건</span>
             {(searchTerm ||
-              paymentStatus !== "all" ||
               assignedAdminFilter !== "all" ||
               handlerAdminFilter !== "all" ||
               productFilter !== "all" ||

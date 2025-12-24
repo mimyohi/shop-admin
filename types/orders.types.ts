@@ -14,7 +14,6 @@ export type OrderSortOption =
 
 export interface OrderFilters {
   consultationStatus?: string;
-  paymentStatus?: string;
   assignedAdminId?: string;
   handlerAdminId?: string;
   productId?: string;
