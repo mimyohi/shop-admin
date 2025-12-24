@@ -18,7 +18,7 @@ const MAX_ORDER_AMOUNT = 10_000_000_000;
  * 숫자를 안전하게 검증하고 반환합니다
  */
 function validateNumber(value: unknown, defaultValue = 0): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     return defaultValue;
   }
   return value;
@@ -92,7 +92,9 @@ export function calculateOrderItemPrice(item: OrderItemForCalculation): number {
 /**
  * 여러 주문 항목의 총 상품 금액을 계산합니다
  */
-export function calculateProductAmount(items: OrderItemForCalculation[]): number {
+export function calculateProductAmount(
+  items: OrderItemForCalculation[]
+): number {
   if (!Array.isArray(items)) return 0;
 
   const total = items.reduce((acc, item) => {
@@ -119,7 +121,10 @@ export function calculateFinalAmount(
 
   // 할인 금액이 상품 금액 + 배송비를 초과할 수 없음
   const maxDiscount = validProductAmount + validShippingFee;
-  const totalDiscount = Math.min(validCouponDiscount + validPointsUsed, maxDiscount);
+  const totalDiscount = Math.min(
+    validCouponDiscount + validPointsUsed,
+    maxDiscount
+  );
 
   const finalAmount = validProductAmount + validShippingFee - totalDiscount;
   return roundToInteger(Math.max(0, finalAmount));
@@ -135,5 +140,10 @@ export function calculateFinalAmountFromItems(
   pointsUsed: number
 ): number {
   const productAmount = calculateProductAmount(items);
-  return calculateFinalAmount(productAmount, shippingFee, couponDiscount, pointsUsed);
+  return calculateFinalAmount(
+    productAmount,
+    shippingFee,
+    couponDiscount,
+    pointsUsed
+  );
 }

@@ -89,6 +89,13 @@ interface AdminUser {
   full_name: string | null;
 }
 
+interface SelectedAddon {
+  addon_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface OrderItem {
   id: string;
   product_id?: string | null;
@@ -100,6 +107,7 @@ interface OrderItem {
   option_name?: string | null;
   visit_type?: VisitType | null;
   selected_option_settings?: SelectedOptionSetting[] | null;
+  selected_addons?: SelectedAddon[] | null;
 }
 
 // 상품별로 그룹화된 주문 아이템 타입
@@ -852,10 +860,31 @@ export default function OrderDetailPage() {
   }
 
   const healthConsultation = order.order_health_consultation;
-  // order_items에서 상품 금액을 동적으로 계산
-  const formattedProductAmount = order.order_items
-    ? calculateProductAmount(order.order_items)
-    : 0;
+
+  // 상품 금액과 추가 상품 금액을 분리해서 계산
+  const calculateAmounts = () => {
+    if (!order.order_items) return { productOnly: 0, addonsOnly: 0, total: 0 };
+
+    let productOnly = 0;
+    let addonsOnly = 0;
+
+    order.order_items.forEach((item) => {
+      // 상품 금액 (상품 가격 * 수량)
+      productOnly += item.product_price * item.quantity;
+
+      // 추가 상품 금액
+      if (item.selected_addons && Array.isArray(item.selected_addons)) {
+        item.selected_addons.forEach((addon: any) => {
+          addonsOnly += (addon.price || 0) * (addon.quantity || 1);
+        });
+      }
+    });
+
+    return { productOnly, addonsOnly, total: productOnly + addonsOnly };
+  };
+
+  const amounts = calculateAmounts();
+  const formattedProductAmount = amounts.total; // 총 상품 금액 (기존 호환)
   const formattedShippingFee = order.shipping_fee ?? 0;
   const formattedCouponDiscount = order.coupon_discount ?? 0;
   const formattedUsedPoints = order.used_points ?? 0;
@@ -873,11 +902,9 @@ export default function OrderDetailPage() {
     if (Number.isNaN(numericValue)) return "-";
     return `${numericValue.toLocaleString("ko-KR")}원`;
   };
-  const totalExplanation = `상품 금액 (${formatWon(
-    formattedProductAmount
-  )}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(
-    formattedCouponDiscount
-  )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
+  const totalExplanation = amounts.addonsOnly > 0
+    ? `상품 금액 (${formatWon(amounts.productOnly)}) + 추가 상품 (${formatWon(amounts.addonsOnly)}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(formattedCouponDiscount)}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`
+    : `상품 금액 (${formatWon(amounts.productOnly)}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(formattedCouponDiscount)}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
   console.log(order);
   return (
     <div className="p-8">
@@ -1661,9 +1688,17 @@ export default function OrderDetailPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">상품 금액</span>
                     <span className="font-medium">
-                      {formatWon(formattedProductAmount)}
+                      {formatWon(amounts.productOnly)}
                     </span>
                   </div>
+                  {amounts.addonsOnly > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">추가 상품</span>
+                      <span className="font-medium">
+                        +{formatWon(amounts.addonsOnly)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">배송비</span>
                     {order.shipping_fee !== undefined &&
@@ -1874,6 +1909,44 @@ export default function OrderDetailPage() {
                                           {formatWon(item.product_price)} ×{" "}
                                           {item.quantity}개
                                         </div>
+                                        {/* 추가 상품 */}
+                                        {item.selected_addons &&
+                                          item.selected_addons.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-gray-200">
+                                              <span className="text-xs text-gray-500 block mb-1">
+                                                추가 상품
+                                              </span>
+                                              <div className="space-y-1">
+                                                {item.selected_addons.map(
+                                                  (addon, idx) => (
+                                                    <div
+                                                      key={idx}
+                                                      className="flex justify-between text-xs"
+                                                    >
+                                                      <div className="flex items-center gap-1">
+                                                        <span className="text-gray-700">
+                                                          {addon.name}
+                                                        </span>
+                                                        {(addon.quantity || 1) > 1 && (
+                                                          <span className="text-gray-500">
+                                                            x{addon.quantity}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                      <span className="text-gray-600">
+                                                        +
+                                                        {formatWon(
+                                                          addon.price *
+                                                            (addon.quantity ||
+                                                              1)
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">
