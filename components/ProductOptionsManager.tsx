@@ -18,12 +18,14 @@ interface Props {
   initialOptions?: ProductOption[];
   onOptionsChange?: (options: ProductOption[]) => void;
   basePrice?: number;
+  discountRate?: number;
 }
 
 export default function ProductOptionsManager({
   initialOptions = [],
   onOptionsChange,
   basePrice = 0,
+  discountRate = 0,
 }: Props) {
   const options = initialOptions;
 
@@ -137,9 +139,8 @@ export default function ProductOptionsManager({
     onOptionsChange?.(updatedOptions);
   };
 
-  // 가격 변경 (실제 가격 입력 → 추가가격 계산)
-  const updateOptionPrice = (optionId: string, actualPrice: number) => {
-    const additionalPrice = actualPrice - basePrice;
+  // 추가가격 직접 변경
+  const updateOptionAdditionalPrice = (optionId: string, additionalPrice: number) => {
     const updatedOptions = options.map((opt) =>
       opt.id === optionId ? { ...opt, price: additionalPrice } : opt
     );
@@ -176,6 +177,14 @@ export default function ProductOptionsManager({
   // 실제 가격 계산 (추가가격 + 기본가격)
   const getActualPrice = (option: ProductOption): number => {
     return basePrice + option.price;
+  };
+
+  // 할인 적용된 가격 계산 (할인된 기본가격 + 추가가격)
+  const getDiscountedPrice = (option: ProductOption): number => {
+    const discountedBasePrice = discountRate > 0
+      ? Math.floor(basePrice * (1 - discountRate / 100))
+      : basePrice;
+    return discountedBasePrice + option.price;
   };
 
   return (
@@ -239,24 +248,29 @@ export default function ProductOptionsManager({
                 </p>
               )}
 
-              {/* 가격 */}
+              {/* 추가가격 */}
               <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                <Label>가격</Label>
+                <Label>추가가격</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
-                    value={getActualPrice(option)}
+                    value={option.price}
                     onChange={(e) =>
-                      updateOptionPrice(
+                      updateOptionAdditionalPrice(
                         option.id,
                         parseInt(e.target.value) || 0
                       )
                     }
-                    placeholder="실제 판매 가격"
+                    placeholder="기본가격에 추가될 금액"
                   />
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    (추가가격: {option.price >= 0 ? "+" : ""}
-                    {option.price.toLocaleString()}원)
+                    (실제가격: {getActualPrice(option).toLocaleString()}원
+                    {discountRate > 0 && (
+                      <span className="text-red-500 ml-1">
+                        → 할인적용: {getDiscountedPrice(option).toLocaleString()}원
+                      </span>
+                    )}
+                    )
                   </span>
                 </div>
               </div>

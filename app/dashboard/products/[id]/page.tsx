@@ -439,6 +439,7 @@ export default function ProductEditPage({
           initialOptions={options}
           onOptionsChange={setOptions}
           basePrice={parseInt(formData.price) || 0}
+          discountRate={parseInt(formData.discount_rate) || 0}
         />
 
         {/* 추가상품 관리 */}
