@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "dotenv -e .env -- next dev -p 3001",
+    "dev:live": "dotenv -e .env.live -- next dev -p 3001",
     "build": "next build --webpack",
     "start": "next start -p 3001",
     "lint": "next lint",
@@ -47,6 +48,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "autoprefixer": "^10.4.21",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
     "knip": "^5.70.0",
