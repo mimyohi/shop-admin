@@ -43,6 +43,7 @@ import {
   useDuplicateProduct,
 } from "@/queries/products.queries";
 import { PermissionGuard } from "@/components/permission-guard";
+import { format } from "date-fns";
 
 interface Product {
   id: string;
@@ -156,75 +157,6 @@ export default function ProductsPage() {
     }
   };
 
-  const handleToggleOutOfStock = async (id: string, currentStatus: boolean) => {
-    try {
-      await toggleOutOfStockMutation.mutateAsync({
-        id,
-        isOutOfStock: !currentStatus,
-      });
-
-      toast({
-        title: "성공",
-        description: !currentStatus
-          ? "상품이 품절 처리되었습니다."
-          : "상품이 판매중으로 변경되었습니다.",
-      });
-    } catch (error) {
-      console.error("Error toggling out of stock:", error);
-      toast({
-        title: "오류",
-        description: "품절 상태 변경에 실패했습니다.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleNewBadge = async (id: string, currentStatus: boolean) => {
-    try {
-      await toggleNewBadgeMutation.mutateAsync({
-        id,
-        isNewBadge: !currentStatus,
-      });
-
-      toast({
-        title: "성공",
-        description: !currentStatus
-          ? "NEW 뱃지가 활성화되었습니다."
-          : "NEW 뱃지가 비활성화되었습니다.",
-      });
-    } catch (error) {
-      console.error("Error toggling new badge:", error);
-      toast({
-        title: "오류",
-        description: "NEW 뱃지 변경에 실패했습니다.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleSaleBadge = async (id: string, currentStatus: boolean) => {
-    try {
-      await toggleSaleBadgeMutation.mutateAsync({
-        id,
-        isSaleBadge: !currentStatus,
-      });
-
-      toast({
-        title: "성공",
-        description: !currentStatus
-          ? "SALE 뱃지가 활성화되었습니다."
-          : "SALE 뱃지가 비활성화되었습니다.",
-      });
-    } catch (error) {
-      console.error("Error toggling sale badge:", error);
-      toast({
-        title: "오류",
-        description: "SALE 뱃지 변경에 실패했습니다.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDuplicate = async (id: string, name: string) => {
     if (!confirm(`"${name}" 상품을 복제하시겠습니까?`)) return;
 
@@ -252,7 +184,7 @@ export default function ProductsPage() {
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
-
+  console.log("product:", products);
   return (
     <PermissionGuard requireMaster>
       <div className="p-8">
@@ -402,15 +334,17 @@ export default function ProductsPage() {
                         {product.sale_start_at && product.sale_end_at ? (
                           <>
                             <div>
-                              {new Date(
-                                product.sale_start_at
-                              ).toLocaleDateString()}
+                              {format(
+                                new Date(product.sale_start_at),
+                                "yyyy.MM.dd"
+                              )}
                             </div>
                             <div>
                               ~{" "}
-                              {new Date(
-                                product.sale_end_at
-                              ).toLocaleDateString()}
+                              {format(
+                                new Date(product.sale_end_at),
+                                "yyyy.MM.dd"
+                              )}
                             </div>
                           </>
                         ) : (
