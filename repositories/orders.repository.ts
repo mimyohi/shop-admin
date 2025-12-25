@@ -40,6 +40,9 @@ export const ordersRepository = {
       }
     );
 
+    // 결제 대기(payment_pending) 상태 주문 제외
+    query = query.neq("status", "payment_pending");
+
     if (consultationStatus) {
       query = query.eq("consultation_status", consultationStatus);
     }
