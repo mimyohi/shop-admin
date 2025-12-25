@@ -174,7 +174,23 @@ interface Order {
   shipping_fee?: number | null;
   coupon_discount?: number | null;
   used_points?: number | null;
+  payment_method?: string | null;
 }
+
+// 결제 방법 라벨
+const getPaymentMethodLabel = (method?: string | null): string => {
+  if (!method) return "-";
+  switch (method) {
+    case "CARD":
+      return "신용/체크카드";
+    case "VIRTUAL_ACCOUNT":
+      return "가상계좌";
+    case "TRANSFER":
+      return "실시간 계좌이체";
+    default:
+      return method;
+  }
+};
 
 type ConsultationStatus = Order["consultation_status"];
 
@@ -1056,6 +1072,20 @@ export default function OrderDetailPage() {
                 <div>
                   <span className="text-gray-500 block mb-1">결제 상태</span>
                   <span className="font-medium">{order.status}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block mb-1">결제 방법</span>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                    order.payment_method === "CARD"
+                      ? "bg-blue-100 text-blue-800"
+                      : order.payment_method === "TRANSFER"
+                      ? "bg-green-100 text-green-800"
+                      : order.payment_method === "VIRTUAL_ACCOUNT"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {getPaymentMethodLabel(order.payment_method)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-500 block mb-1">주문일시</span>

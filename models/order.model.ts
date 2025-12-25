@@ -13,6 +13,14 @@ export type ConsultationStatus =
   | "shipped" // 배송됨
   | "cancelled"; // 취소됨
 
+/**
+ * 결제 방법
+ * - CARD: 카드 결제
+ * - VIRTUAL_ACCOUNT: 가상계좌 (무통장입금)
+ * - TRANSFER: 실시간 계좌이체
+ */
+export type PaymentMethod = "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER";
+
 export interface Order {
   id: string;
   user_email: string;
@@ -25,6 +33,7 @@ export interface Order {
   status: string;
   consultation_status: ConsultationStatus;
   payment_key?: string;
+  payment_method?: PaymentMethod | null;
   order_id: string;
   admin_memo?: string;
   created_at: string;
