@@ -184,7 +184,7 @@ export default function ProductsPage() {
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
-  console.log("product:", products);
+
   return (
     <PermissionGuard requireMaster>
       <div className="p-8">

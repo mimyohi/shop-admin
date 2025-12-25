@@ -18,6 +18,7 @@ import { createProductWithOptions } from "@/lib/actions/products";
 import { productsQueries } from "@/queries/products.queries";
 import { PermissionGuard } from "@/components/permission-guard";
 import { ProductOption } from "@/models";
+import { datetimeLocalToKST } from "@/lib/utils";
 
 interface ProductAddon {
   id: string;
@@ -78,8 +79,8 @@ export default function NewProductPage() {
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
-        sale_start_at: formData.sale_start_at || null,
-        sale_end_at: formData.sale_end_at || null,
+        sale_start_at: datetimeLocalToKST(formData.sale_start_at),
+        sale_end_at: datetimeLocalToKST(formData.sale_end_at),
         is_visible_on_main: formData.is_visible_on_main,
         is_new_badge: formData.is_new_badge,
         is_sale_badge: formData.is_sale_badge,

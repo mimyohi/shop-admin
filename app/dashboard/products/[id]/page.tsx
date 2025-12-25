@@ -25,6 +25,7 @@ import { productsQueries, useUpdateProduct } from "@/queries/products.queries";
 import { PermissionGuard } from "@/components/permission-guard";
 import { fetchProductOptions, fetchProductAddons, updateProductWithOptions } from "@/lib/actions/products";
 import { ProductOption } from "@/models";
+import { utcToDatetimeLocal, datetimeLocalToKST } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -95,12 +96,8 @@ export default function ProductEditPage({
         category: product.category || "",
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],
-        sale_start_at: product.sale_start_at
-          ? product.sale_start_at.slice(0, 16)
-          : "",
-        sale_end_at: product.sale_end_at
-          ? product.sale_end_at.slice(0, 16)
-          : "",
+        sale_start_at: utcToDatetimeLocal(product.sale_start_at),
+        sale_end_at: utcToDatetimeLocal(product.sale_end_at),
         is_visible_on_main: product.is_visible_on_main ?? true,
         is_out_of_stock: product.is_out_of_stock ?? false,
         is_new_badge: product.is_new_badge ?? false,
@@ -148,8 +145,8 @@ export default function ProductEditPage({
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
-        sale_start_at: formData.sale_start_at || null,
-        sale_end_at: formData.sale_end_at || null,
+        sale_start_at: datetimeLocalToKST(formData.sale_start_at),
+        sale_end_at: datetimeLocalToKST(formData.sale_end_at),
         is_visible_on_main: formData.is_visible_on_main,
         is_out_of_stock: formData.is_out_of_stock,
         is_new_badge: formData.is_new_badge,
