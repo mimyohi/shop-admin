@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, ShoppingCart, Users, DollarSign } from "lucide-react"
-import { dashboardQueries } from "@/queries/dashboard.queries"
-import { PermissionGuard } from "@/components/permission-guard"
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Package, ShoppingCart, Users, DollarSign } from "lucide-react";
+import { dashboardQueries } from "@/queries/dashboard.queries";
+import { PermissionGuard } from "@/components/permission-guard";
 
 export default function DashboardPage() {
-  const { data: summary, isLoading } = useQuery(dashboardQueries.summary())
+  const { data: summary, isLoading } = useQuery(dashboardQueries.summary());
 
   const stats = useMemo(
     () => ({
@@ -18,7 +18,7 @@ export default function DashboardPage() {
       pendingOrders: summary?.pendingOrders ?? 0,
     }),
     [summary]
-  )
+  );
 
   return (
     <PermissionGuard requireMaster>
@@ -38,7 +38,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? '-' : stats.totalProducts}
+                {isLoading ? "-" : stats.totalProducts}
               </div>
               <p className="text-xs text-gray-500">등록된 상품 수</p>
             </CardContent>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? '-' : stats.totalOrders}
+                {isLoading ? "-" : stats.totalOrders}
               </div>
               <p className="text-xs text-gray-500">총 주문 건수</p>
             </CardContent>
@@ -68,28 +68,13 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? '-' : `${stats.totalRevenue.toLocaleString()}원`}
+                {isLoading ? "-" : `${stats.totalRevenue.toLocaleString()}원`}
               </div>
               <p className="text-xs text-gray-500">전체 매출액</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                대기중 주문
-              </CardTitle>
-              <Users className="h-4 w-4 text-gray-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? '-' : stats.pendingOrders}
-              </div>
-              <p className="text-xs text-gray-500">처리 대기중인 주문</p>
             </CardContent>
           </Card>
         </div>
       </div>
     </PermissionGuard>
-  )
+  );
 }

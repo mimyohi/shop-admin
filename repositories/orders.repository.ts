@@ -40,8 +40,8 @@ export const ordersRepository = {
       }
     );
 
-    // 결제 대기(payment_pending) 상태 주문 제외
-    query = query.neq("status", "payment_pending");
+    // 결제 대기(payment_pending) 및 처리 대기(pending) 상태 주문 제외
+    query = query.not("status", "in", "(payment_pending,pending)");
 
     if (consultationStatus) {
       query = query.eq("consultation_status", consultationStatus);
@@ -137,7 +137,7 @@ export const ordersRepository = {
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("consultation_status", status)
-          .neq("status", "payment_pending"); // 입금 대기 제외
+          .not("status", "in", "(payment_pending,pending)"); // 결제/처리 대기 제외
 
         return [status, count ?? 0] as const;
       })
@@ -348,17 +348,17 @@ export const ordersRepository = {
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString();
 
-    // 총 주문 수 (입금 대기 제외)
+    // 총 주문 수 (결제/처리 대기 제외)
     const { count: totalOrders } = await supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .neq("status", "payment_pending");
+      .not("status", "in", "(payment_pending,pending)");
 
-    // 오늘 주문 수 (입금 대기 제외)
+    // 오늘 주문 수 (결제/처리 대기 제외)
     const { count: todayOrders } = await supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .neq("status", "payment_pending")
+      .not("status", "in", "(payment_pending,pending)")
       .gte("created_at", todayStart);
 
     // 총 매출
@@ -384,18 +384,11 @@ export const ordersRepository = {
       0
     );
 
-    // 대기중인 주문 수 (입금 대기가 아닌 pending)
-    const { count: pendingOrders } = await supabase
-      .from("orders")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
-
     return {
       totalOrders: totalOrders || 0,
       todayOrders: todayOrders || 0,
       totalRevenue: totalRevenue || 0,
       todayRevenue: todayRevenue || 0,
-      pendingOrders: pendingOrders || 0,
     };
   },
 };

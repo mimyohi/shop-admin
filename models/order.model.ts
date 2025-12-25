@@ -14,6 +14,15 @@ export type ConsultationStatus =
   | "cancelled"; // 취소됨
 
 /**
+ * 주문 상태
+ * - payment_pending: 결제 대기 (입금 전)
+ * - pending: 주문 처리 대기 (결제 완료 후)
+ * - completed: 주문 완료
+ * - cancelled: 주문 취소
+ */
+export type OrderStatus = "payment_pending" | "pending" | "completed" | "cancelled";
+
+/**
  * 결제 방법
  * - CARD: 카드 결제
  * - VIRTUAL_ACCOUNT: 가상계좌 (무통장입금)
@@ -30,7 +39,7 @@ export interface Order {
   shipping_fee?: number;
   coupon_discount?: number;
   used_points?: number;
-  status: string;
+  status: OrderStatus;
   consultation_status: ConsultationStatus;
   payment_key?: string;
   payment_method?: PaymentMethod | null;
