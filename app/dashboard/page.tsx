@@ -15,7 +15,6 @@ export default function DashboardPage() {
       totalProducts: summary?.totalProducts ?? 0,
       totalOrders: summary?.totalOrders ?? 0,
       totalRevenue: summary?.totalRevenue ?? 0,
-      pendingOrders: summary?.pendingOrders ?? 0,
     }),
     [summary]
   );
