@@ -22,6 +22,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "yunshsmpcwtbkggujsem.supabase.co",
       },
+      {
+        protocol: "https",
+        hostname: "cddnlaekxujeuujifcgy.supabase.co",
+      },
     ],
   },
   // Server Action 바디 크기 제한 증가 (기본 1MB → 15MB)
