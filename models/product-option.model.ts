@@ -22,6 +22,8 @@ export interface ProductOption {
 
   // 가격 (Option 단위)
   price: number
+  discount_rate: number // 할인율 (0-100)
+  is_representative: boolean // 대표 옵션 여부
 
   // 방문 타입별 설정 사용 여부
   use_settings_on_first: boolean
@@ -97,7 +99,6 @@ export interface ProductWithOptions {
   slug?: string
   name: string
   description: string
-  price: number
   image_url: string
   category: string
   created_at: string

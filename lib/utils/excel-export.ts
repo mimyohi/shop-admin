@@ -78,6 +78,7 @@ export function convertOrdersToShippingExcel(
           }
         }
 
+        // 본 상품 행 추가
         rows.push({
           주문일: orderDate,
           주문자: order.user_name || "",
@@ -95,6 +96,29 @@ export function convertOrdersToShippingExcel(
           주문번호: order.order_id || "",
           주문상세번호: item.id || "",
         });
+
+        // 추가 상품(addons)이 있는 경우 각각 별도 행으로 추가
+        if (item.selected_addons && item.selected_addons.length > 0) {
+          for (const addon of item.selected_addons) {
+            rows.push({
+              주문일: orderDate,
+              주문자: order.user_name || "",
+              주문자연락처: order.user_phone || "",
+              수령자: order.shipping_name || "",
+              수령자연락처: order.shipping_phone || "",
+              우편번호: order.shipping_postal_code || "",
+              통합주소: fullAddress,
+              배송메세지: order.shipping_message || "",
+              상품명: `[추가] ${addon.name}`,
+              옵션: "",
+              내품수량: addon.quantity || 1,
+              비고: "",
+              발송방식: "택배",
+              주문번호: order.order_id || "",
+              주문상세번호: item.id || "",
+            });
+          }
+        }
       }
     }
   }

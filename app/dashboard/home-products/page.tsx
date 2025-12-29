@@ -227,7 +227,9 @@ export default function HomeProductsPage() {
                         {homeProduct.product?.category || "카테고리 없음"}
                       </p>
                       <p className="text-sm font-semibold text-blue-600">
-                        {formatPrice(homeProduct.product?.price || 0)}원
+                        {homeProduct.product?.representative_option
+                          ? `${formatPrice(homeProduct.product.representative_option.discounted_price)}원`
+                          : "-"}
                       </p>
                     </div>
 
@@ -308,7 +310,9 @@ export default function HomeProductsPage() {
                           </h4>
                           <p className="text-xs text-gray-500">{product.category}</p>
                           <p className="text-xs font-semibold text-blue-600">
-                            {formatPrice(product.price)}원
+                            {product.representative_option
+                              ? `${formatPrice(product.representative_option.discounted_price)}원`
+                              : "-"}
                           </p>
                         </div>
 

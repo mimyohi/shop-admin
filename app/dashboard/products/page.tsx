@@ -45,12 +45,19 @@ import {
 import { PermissionGuard } from "@/components/permission-guard";
 import { format } from "date-fns";
 
+interface RepresentativeOption {
+  id: string;
+  name: string;
+  price: number;
+  discount_rate: number;
+  discounted_price: number;
+}
+
 interface Product {
   id: string;
   slug: string;
   name: string;
   description: string;
-  price: number;
   category: string;
   image_url: string;
   is_visible_on_main: boolean;
@@ -60,6 +67,7 @@ interface Product {
   sale_start_at: string | null;
   sale_end_at: string | null;
   created_at: string;
+  representative_option?: RepresentativeOption;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -290,7 +298,20 @@ export default function ProductsPage() {
                         {product.name}
                       </TableCell>
                       <TableCell>{product.category}</TableCell>
-                      <TableCell>{product.price.toLocaleString()}원</TableCell>
+                      <TableCell>
+                        {product.representative_option ? (
+                          <>
+                            {product.representative_option.discounted_price.toLocaleString()}원
+                            {product.representative_option.discount_rate > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({product.representative_option.discount_rate}%↓)
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {product.is_visible_on_main ? (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">

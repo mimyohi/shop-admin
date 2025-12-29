@@ -927,10 +927,12 @@ export type Database = {
           category: string | null
           created_at: string | null
           detail_images: Json | null
+          discount_rate: number | null
           display_order: number | null
           id: string
           image_url: string | null
           is_new_badge: boolean | null
+          is_representative: boolean | null
           is_sale_badge: boolean | null
           name: string
           price: number
@@ -945,10 +947,12 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           detail_images?: Json | null
+          discount_rate?: number | null
           display_order?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
+          is_representative?: boolean | null
           is_sale_badge?: boolean | null
           name: string
           price: number
@@ -963,10 +967,12 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           detail_images?: Json | null
+          discount_rate?: number | null
           display_order?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
+          is_representative?: boolean | null
           is_sale_badge?: boolean | null
           name?: string
           price?: number
@@ -1001,7 +1007,6 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           detail_images: Json | null
-          discount_rate: number | null
           id: string
           image_url: string | null
           is_new_badge: boolean | null
@@ -1009,7 +1014,6 @@ export type Database = {
           is_sale_badge: boolean | null
           is_visible_on_main: boolean | null
           name: string
-          price: number
           sale_end_at: string | null
           sale_start_at: string | null
           slug: string | null
@@ -1021,7 +1025,6 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           detail_images?: Json | null
-          discount_rate?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
@@ -1029,7 +1032,6 @@ export type Database = {
           is_sale_badge?: boolean | null
           is_visible_on_main?: boolean | null
           name: string
-          price: number
           sale_end_at?: string | null
           sale_start_at?: string | null
           slug?: string | null
@@ -1041,7 +1043,6 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           detail_images?: Json | null
-          discount_rate?: number | null
           id?: string
           image_url?: string | null
           is_new_badge?: boolean | null
@@ -1049,7 +1050,6 @@ export type Database = {
           is_sale_badge?: boolean | null
           is_visible_on_main?: boolean | null
           name?: string
-          price?: number
           sale_end_at?: string | null
           sale_start_at?: string | null
           slug?: string | null
@@ -1469,7 +1469,6 @@ export type Database = {
           coupon_id: string | null
           coupon_name: string | null
           image_url: string | null
-          price: number | null
           product_id: string | null
           product_name: string | null
         }

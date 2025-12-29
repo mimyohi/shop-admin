@@ -17,15 +17,11 @@ import { ProductOption, ProductOptionSetting } from "@/models";
 interface Props {
   initialOptions?: ProductOption[];
   onOptionsChange?: (options: ProductOption[]) => void;
-  basePrice?: number;
-  discountRate?: number;
 }
 
 export default function ProductOptionsManager({
   initialOptions = [],
   onOptionsChange,
-  basePrice = 0,
-  discountRate = 0,
 }: Props) {
   const options = initialOptions;
 
@@ -35,6 +31,9 @@ export default function ProductOptionsManager({
     count: number,
     hasTypes: boolean
   ): ProductOptionSetting[] => {
+    // count가 0이면 빈 배열 반환 (설정 없음)
+    if (count === 0) return [];
+
     const settingNames = ["1개월", "2개월", "3개월"];
     const typeNames = ["1단계", "2단계", "3단계"];
 
@@ -62,6 +61,11 @@ export default function ProductOptionsManager({
     });
   };
 
+  // 옵션에 설정(개월수)이 있는지 확인
+  const hasSettings = (option: ProductOption): boolean => {
+    return (option.settings?.length ?? 0) > 0;
+  };
+
   // 옵션의 타입 존재 여부 확인
   const hasTypes = (option: ProductOption): boolean => {
     return (
@@ -79,12 +83,13 @@ export default function ProductOptionsManager({
     onOptionsChange?.(updatedOptions);
   };
 
-  // 개월 개수 변경
+  // 개월 개수 변경 (0 = 설정 없음)
   const updateSettingsCount = (optionId: string, count: number) => {
     const option = options.find((o) => o.id === optionId);
     if (!option) return;
 
-    const currentHasTypes = hasTypes(option);
+    // count가 0이면 설정 없음 (types도 없음)
+    const currentHasTypes = count === 0 ? false : hasTypes(option);
     const newSettings = generateSettings(optionId, count, currentHasTypes);
 
     const updatedOptions = options.map((opt) =>
@@ -139,12 +144,38 @@ export default function ProductOptionsManager({
     onOptionsChange?.(updatedOptions);
   };
 
-  // 추가가격 직접 변경
-  const updateOptionAdditionalPrice = (optionId: string, additionalPrice: number) => {
+  // 옵션 가격 변경
+  const updateOptionPrice = (optionId: string, price: number) => {
     const updatedOptions = options.map((opt) =>
-      opt.id === optionId ? { ...opt, price: additionalPrice } : opt
+      opt.id === optionId ? { ...opt, price } : opt
     );
     onOptionsChange?.(updatedOptions);
+  };
+
+  // 옵션 할인율 변경
+  const updateOptionDiscountRate = (optionId: string, discountRate: number) => {
+    const updatedOptions = options.map((opt) =>
+      opt.id === optionId ? { ...opt, discount_rate: discountRate } : opt
+    );
+    onOptionsChange?.(updatedOptions);
+  };
+
+  // 대표 옵션 설정
+  const setRepresentativeOption = (optionId: string) => {
+    const updatedOptions = options.map((opt) => ({
+      ...opt,
+      is_representative: opt.id === optionId,
+    }));
+    onOptionsChange?.(updatedOptions);
+  };
+
+  // 옵션 할인가 계산
+  const getDiscountedPrice = (option: ProductOption): number => {
+    const discountRate = option.discount_rate || 0;
+    if (discountRate > 0) {
+      return Math.floor(option.price * (1 - discountRate / 100));
+    }
+    return option.price;
   };
 
   // 옵션 삭제
@@ -156,35 +187,25 @@ export default function ProductOptionsManager({
   // 새 옵션 추가
   const addNewOption = () => {
     const optionId = `temp-${Date.now()}`;
+    const isFirstOption = options.length === 0;
     const newOption: ProductOption = {
       id: optionId,
       product_id: "",
       name: "",
       price: 0,
+      discount_rate: 0,
+      is_representative: isFirstOption, // 첫 번째 옵션은 자동으로 대표로 설정
       use_settings_on_first: false,
       use_settings_on_revisit_with_consult: true,
       use_settings_on_revisit_no_consult: true,
       display_order: options.length,
-      settings: generateSettings(optionId, 1, true), // 기본 1개월, 단계 있음
+      settings: [], // 기본: 설정 없음 (개월수/단계 불필요)
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     const updatedOptions = [...options, newOption];
     onOptionsChange?.(updatedOptions);
-  };
-
-  // 실제 가격 계산 (추가가격 + 기본가격)
-  const getActualPrice = (option: ProductOption): number => {
-    return basePrice + option.price;
-  };
-
-  // 할인 적용된 가격 계산 (할인된 기본가격 + 추가가격)
-  const getDiscountedPrice = (option: ProductOption): number => {
-    const discountedBasePrice = discountRate > 0
-      ? Math.floor(basePrice * (1 - discountRate / 100))
-      : basePrice;
-    return discountedBasePrice + option.price;
   };
 
   return (
@@ -209,68 +230,112 @@ export default function ProductOptionsManager({
               {/* 개월 개수 */}
               <div className="grid grid-cols-[120px_1fr] items-center gap-4">
                 <Label>개월수</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={3}
-                  value={option.settings?.length || 1}
-                  onChange={(e) => {
-                    const count = Math.min(
-                      3,
-                      Math.max(1, parseInt(e.target.value) || 1)
-                    );
-                    updateSettingsCount(option.id, count);
-                  }}
-                />
-              </div>
-
-              {/* 단계여부 */}
-              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                <Label>단계여부</Label>
                 <Select
-                  value={hasTypes(option) ? "존재" : "없음"}
+                  value={String(option.settings?.length ?? 0)}
                   onValueChange={(value) =>
-                    updateHasTypes(option.id, value === "존재")
+                    updateSettingsCount(option.id, parseInt(value))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="존재">존재</SelectItem>
-                    <SelectItem value="없음">없음</SelectItem>
+                    <SelectItem value="0">없음</SelectItem>
+                    <SelectItem value="1">1개월</SelectItem>
+                    <SelectItem value="2">2개월</SelectItem>
+                    <SelectItem value="3">3개월</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {hasTypes(option) && (
-                <p className="text-sm text-gray-500 ml-[136px]">
-                  단계는 재진인 사람에게만 노출됩니다.
-                </p>
+
+              {/* 단계여부 - 개월수가 있을 때만 표시 */}
+              {hasSettings(option) && (
+                <>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <Label>단계여부</Label>
+                    <Select
+                      value={hasTypes(option) ? "존재" : "없음"}
+                      onValueChange={(value) =>
+                        updateHasTypes(option.id, value === "존재")
+                      }
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="존재">존재</SelectItem>
+                        <SelectItem value="없음">없음</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {hasTypes(option) && (
+                    <p className="text-sm text-gray-500 ml-[136px]">
+                      단계는 재진인 사람에게만 노출됩니다.
+                    </p>
+                  )}
+                </>
               )}
 
-              {/* 추가가격 */}
+              {/* 대표 옵션 */}
               <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                <Label>추가가격</Label>
+                <Label>대표 옵션</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="representative"
+                    checked={option.is_representative || false}
+                    onChange={() => setRepresentativeOption(option.id)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-500">
+                    {option.is_representative ? "✓ 상품 목록에 이 옵션의 가격이 표시됩니다" : "선택하면 대표 옵션으로 설정됩니다"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 가격 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>가격</Label>
+                <Input
+                  type="number"
+                  value={option.price}
+                  onChange={(e) =>
+                    updateOptionPrice(
+                      option.id,
+                      parseInt(e.target.value) || 0
+                    )
+                  }
+                  placeholder="옵션 가격"
+                />
+              </div>
+
+              {/* 할인율 */}
+              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                <Label>할인율 (%)</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
-                    value={option.price}
+                    min={0}
+                    max={100}
+                    value={option.discount_rate || 0}
                     onChange={(e) =>
-                      updateOptionAdditionalPrice(
+                      updateOptionDiscountRate(
                         option.id,
-                        parseInt(e.target.value) || 0
+                        Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
                       )
                     }
-                    placeholder="기본가격에 추가될 금액"
+                    placeholder="0"
+                    className="w-32"
                   />
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    (실제가격: {getActualPrice(option).toLocaleString()}원
-                    {discountRate > 0 && (
-                      <span className="text-red-500 ml-1">
-                        → 할인적용: {getDiscountedPrice(option).toLocaleString()}원
-                      </span>
+                    {(option.discount_rate || 0) > 0 ? (
+                      <>
+                        할인가: <span className="font-semibold text-red-500">{getDiscountedPrice(option).toLocaleString()}원</span>
+                        <span className="text-gray-400 ml-1 line-through">{option.price.toLocaleString()}원</span>
+                      </>
+                    ) : (
+                      `판매가: ${option.price.toLocaleString()}원`
                     )}
-                    )
                   </span>
                 </div>
               </div>

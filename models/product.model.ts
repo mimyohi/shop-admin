@@ -1,12 +1,23 @@
 /**
+ * 대표 옵션 정보 (상품 목록 표시용)
+ */
+export interface RepresentativeOption {
+  id: string;
+  name: string;
+  price: number;
+  discount_rate: number;
+  discounted_price: number;
+}
+
+/**
  * Product 테이블 모델
+ * 가격/할인율은 옵션(product_options)에서 관리
  */
 export interface Product {
   id: string;
   slug?: string | null;
   name: string;
   description?: string | null;
-  price: number;
   image_url?: string | null;
   detail_images?: string[] | null;
   category?: string | null;
@@ -18,7 +29,9 @@ export interface Product {
   sale_end_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  discount_rate?: number | null;
+
+  // 대표 옵션 정보 (조회 시 join)
+  representative_option?: RepresentativeOption | null;
 }
 
 /**

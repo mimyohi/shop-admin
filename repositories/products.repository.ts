@@ -1,10 +1,53 @@
 import { supabaseServer as supabase } from "@/lib/supabase-server";
-import { Product } from "@/models";
+import { Product, RepresentativeOption } from "@/models";
 import {
   ProductFilters,
   CreateProductData,
   UpdateProductData,
 } from "@/types/products.types";
+
+/**
+ * 상품 ID 목록에 대한 대표 옵션 조회
+ */
+async function fetchRepresentativeOptions(
+  productIds: string[]
+): Promise<Map<string, RepresentativeOption>> {
+  if (productIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from("product_options")
+    .select("id, product_id, name, price, discount_rate")
+    .in("product_id", productIds)
+    .eq("is_representative", true);
+
+  if (error) {
+    console.error("Error fetching representative options:", error);
+    return new Map();
+  }
+
+  const map = new Map<string, RepresentativeOption>();
+  data?.forEach((option) => {
+    if (option.product_id) {
+      const discountRate = option.discount_rate || 0;
+      const discountedPrice =
+        discountRate > 0
+          ? Math.floor(option.price * (1 - discountRate / 100))
+          : option.price;
+
+      map.set(option.product_id, {
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        discount_rate: discountRate,
+        discounted_price: discountedPrice,
+      });
+    }
+  });
+
+  return map;
+}
 
 export const productsRepository = {
   /**
@@ -51,6 +94,18 @@ export const productsRepository = {
       throw new Error("Failed to fetch products");
     }
 
+    const products = data || [];
+    const productIds = products.map((p: any) => p.id);
+
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions(productIds);
+
+    // 상품에 대표 옵션 정보 매핑
+    const mappedProducts = products.map((p: any) => ({
+      ...p,
+      representative_option: representativeOptions.get(p.id),
+    }));
+
     const totalCount =
       shouldPaginate && typeof count === "number"
         ? count
@@ -60,7 +115,7 @@ export const productsRepository = {
       shouldPaginate && numericLimit ? Math.ceil(totalCount / numericLimit) : 1;
 
     return {
-      products: data || [],
+      products: mappedProducts,
       totalCount,
       totalPages: Math.max(1, calculatedPages),
       currentPage: shouldPaginate ? page : 1,

@@ -32,7 +32,6 @@ interface Product {
   slug: string;
   name: string;
   description: string;
-  price: number;
   category: string;
   image_url: string;
   detail_images?: string[];
@@ -42,7 +41,6 @@ interface Product {
   is_out_of_stock?: boolean;
   is_new_badge?: boolean;
   is_sale_badge?: boolean;
-  discount_rate?: number;
   created_at: string;
 }
 
@@ -60,8 +58,6 @@ export default function ProductEditPage({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
-    discount_rate: "",
     category: "",
     image_url: "",
     detail_images: [] as string[],
@@ -88,11 +84,6 @@ export default function ProductEditPage({
       setFormData({
         name: product.name,
         description: product.description || "",
-        price: product.price.toString(),
-        discount_rate:
-          product.discount_rate !== null && product.discount_rate !== undefined
-            ? product.discount_rate.toString()
-            : "0",
         category: product.category || "",
         image_url: product.image_url || "",
         detail_images: product.detail_images || [],
@@ -123,10 +114,29 @@ export default function ProductEditPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.price || !formData.category) {
+    if (!formData.name || !formData.category) {
       toast({
         title: "오류",
         description: "필수 항목을 모두 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (options.length === 0) {
+      toast({
+        title: "오류",
+        description: "최소 1개 이상의 옵션을 등록해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const hasRepresentative = options.some(opt => opt.is_representative);
+    if (!hasRepresentative) {
+      toast({
+        title: "오류",
+        description: "대표 옵션을 1개 선택해주세요.",
         variant: "destructive",
       });
       return;
@@ -138,10 +148,6 @@ export default function ProductEditPage({
       const productData = {
         name: formData.name,
         description: formData.description,
-        price: parseInt(formData.price),
-        discount_rate: formData.discount_rate
-          ? parseInt(formData.discount_rate)
-          : 0,
         category: formData.category,
         image_url: formData.image_url,
         detail_images: formData.detail_images,
@@ -259,38 +265,10 @@ export default function ProductEditPage({
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">
-                  가격 <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount_rate">할인률 (%)</Label>
-                <Input
-                  id="discount_rate"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.discount_rate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, discount_rate: e.target.value })
-                  }
-                  placeholder="0"
-                />
-                <p className="text-sm text-gray-500">
-                  할인률을 0-100 사이의 숫자로 입력하세요 (0이면 할인 없음)
-                </p>
-              </div>
             </div>
+            <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+              💡 가격과 할인율은 아래 &quot;상품 옵션&quot; 섹션에서 옵션별로 설정합니다. 대표 옵션의 가격이 상품 목록에 표시됩니다.
+            </p>
 
             <div className="space-y-2">
               <Label htmlFor="description">상품 설명</Label>
@@ -435,8 +413,6 @@ export default function ProductEditPage({
         <ProductOptionsManager
           initialOptions={options}
           onOptionsChange={setOptions}
-          basePrice={parseInt(formData.price) || 0}
-          discountRate={parseInt(formData.discount_rate) || 0}
         />
 
         {/* 추가상품 관리 */}
