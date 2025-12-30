@@ -251,7 +251,7 @@ export default function ProductsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-sm font-semibold">메인 노출</Label>
+                <Label className="text-sm font-semibold">상품 목록 노출</Label>
                 <Select
                   value={visibilityFilter}
                   onValueChange={(value) =>
@@ -283,7 +283,7 @@ export default function ProductsPage() {
                     <TableHead>상품명</TableHead>
                     <TableHead>카테고리</TableHead>
                     <TableHead>가격</TableHead>
-                    <TableHead>메인노출</TableHead>
+                    <TableHead>상품 목록 노출</TableHead>
                     <TableHead>뱃지</TableHead>
                     <TableHead>품절상태</TableHead>
                     <TableHead>판매기간</TableHead>
@@ -301,10 +301,13 @@ export default function ProductsPage() {
                       <TableCell>
                         {product.representative_option ? (
                           <>
-                            {product.representative_option.discounted_price.toLocaleString()}원
-                            {product.representative_option.discount_rate > 0 && (
+                            {product.representative_option.discounted_price.toLocaleString()}
+                            원
+                            {product.representative_option.discount_rate >
+                              0 && (
                               <span className="text-xs text-gray-400 ml-1">
-                                ({product.representative_option.discount_rate}%↓)
+                                ({product.representative_option.discount_rate}
+                                %↓)
                               </span>
                             )}
                           </>

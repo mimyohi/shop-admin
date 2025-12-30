@@ -73,7 +73,7 @@ export default function NewProductPage() {
       return;
     }
 
-    const hasRepresentative = options.some(opt => opt.is_representative);
+    const hasRepresentative = options.some((opt) => opt.is_representative);
     if (!hasRepresentative) {
       toast({
         title: "오류",
@@ -183,7 +183,8 @@ export default function NewProductPage() {
                 </div>
               </div>
               <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-                💡 가격과 할인율은 아래 &quot;상품 옵션&quot; 섹션에서 옵션별로 설정합니다. 대표 옵션의 가격이 상품 목록에 표시됩니다.
+                💡 가격과 할인율은 아래 &quot;상품 옵션&quot; 섹션에서 옵션별로
+                설정합니다. 대표 옵션의 가격이 상품 목록에 표시됩니다.
               </p>
 
               <div className="space-y-2">
@@ -213,7 +214,7 @@ export default function NewProductPage() {
                     htmlFor="is_visible_on_main"
                     className="cursor-pointer"
                   >
-                    메인 페이지에 노출
+                    상품 목록 페이지에 노출
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
