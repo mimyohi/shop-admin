@@ -123,7 +123,7 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "배송준비 단계로 복귀",
+        label: "배송준비로 이동",
       },
     ],
   },
@@ -149,7 +149,7 @@ const CONSULTATION_TABS: ConsultationTabConfig[] = [
     extraActions: [
       {
         targetStatus: "consultation_completed",
-        label: "배송준비 단계로 복귀",
+        label: "배송준비로 이동",
       },
     ],
   },
