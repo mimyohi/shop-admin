@@ -1230,10 +1230,10 @@ export default function OrderDetailPage() {
                   </div>
                 )}
 
-                {/* 1. 기본 정보 (개인정보) */}
+                {/* 기본 정보 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    기본 정보 (개인정보)
+                    기본 정보
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm space-y-1">
@@ -1282,10 +1282,10 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* 2. 기본 신체 정보 */}
+                {/* 신체 정보 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    2) 기본 신체 정보
+                    신체 정보
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm space-y-1">
@@ -1402,10 +1402,10 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* 3. 다이어트 경험 (moved from 이전 치료 이력) */}
+                {/* 이전 치료/복용 경험 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    3) 다이어트 경험
+                    이전 치료/복용 경험
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm space-y-1">
@@ -1458,10 +1458,10 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* 4. 생활 패턴 (merged with 식습관) */}
+                {/* 직업/생활 정보 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    4) 생활 패턴
+                    직업/생활 정보
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm space-y-1">
@@ -1511,24 +1511,6 @@ export default function OrderDetailPage() {
                         className={copyableRowClass}
                         onClick={() =>
                           copyHealthField(
-                            "수면 시간",
-                            `${healthConsultation.wake_up_time || "-"} ~ ${
-                              healthConsultation.bedtime || "-"
-                            }`
-                          )
-                        }
-                        title="클릭하여 복사"
-                      >
-                        <span className="text-gray-500">수면 시간:</span>
-                        <span className="ml-2 font-medium">
-                          {healthConsultation.wake_up_time || "-"} ~{" "}
-                          {healthConsultation.bedtime || "-"}
-                        </span>
-                      </div>
-                      <div
-                        className={copyableRowClass}
-                        onClick={() =>
-                          copyHealthField(
                             "주간 졸림",
                             healthConsultation.has_daytime_sleepiness
                               ? "있음"
@@ -1546,6 +1528,47 @@ export default function OrderDetailPage() {
                       </div>
                       <div
                         className={copyableRowClass}
+                        onClick={() =>
+                          copyHealthField(
+                            "기상 시간",
+                            healthConsultation.wake_up_time
+                          )
+                        }
+                        title="클릭하여 복사"
+                      >
+                        <span className="text-gray-500">기상 시간:</span>
+                        <span className="ml-2 font-medium">
+                          {healthConsultation.wake_up_time || "-"}
+                        </span>
+                      </div>
+                      <div
+                        className={copyableRowClass}
+                        onClick={() =>
+                          copyHealthField(
+                            "취침 시간",
+                            healthConsultation.bedtime
+                          )
+                        }
+                        title="클릭하여 복사"
+                      >
+                        <span className="text-gray-500">취침 시간:</span>
+                        <span className="ml-2 font-medium">
+                          {healthConsultation.bedtime || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 식습관/생활습관 */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                    식습관/생활습관
+                  </h4>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="text-sm space-y-1">
+                      <div
+                        className={copyableRowClass}
                         onClick={() => {
                           const value =
                             (
@@ -1557,11 +1580,11 @@ export default function OrderDetailPage() {
                               } as Record<string, string>
                             )[healthConsultation.meal_pattern ?? ""] ||
                             healthConsultation.meal_pattern;
-                          copyHealthField("하루 식사", value);
+                          copyHealthField("식사 패턴", value);
                         }}
                         title="클릭하여 복사"
                       >
-                        <span className="text-gray-500">하루 식사:</span>
+                        <span className="text-gray-500">식사 패턴:</span>
                         <span className="ml-2 font-medium">
                           {{
                             "1meals": "1끼",
@@ -1607,11 +1630,11 @@ export default function OrderDetailPage() {
                               } as Record<string, string>
                             )[healthConsultation.water_intake ?? ""] ||
                             healthConsultation.water_intake;
-                          copyHealthField("하루 수분 섭취", value);
+                          copyHealthField("수분 섭취량", value);
                         }}
                         title="클릭하여 복사"
                       >
-                        <span className="text-gray-500">하루 수분 섭취:</span>
+                        <span className="text-gray-500">수분 섭취량:</span>
                         <span className="ml-2 font-medium">
                           {{
                             "1L_or_less": "1L 이하",
@@ -1624,10 +1647,10 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* 5. 원하는 다이어트 방향 */}
+                {/* 다이어트 선호 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    5) 원하는 다이어트 방향
+                    다이어트 선호
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm space-y-1">
@@ -1637,47 +1660,58 @@ export default function OrderDetailPage() {
                           const value =
                             (
                               {
-                                sustainable: "지속 가능한 방식",
-                                fast: "빠른 방식",
+                                sustainable: "몸에 부담 없이, 무리 없는 지속 감량",
+                                fast: "두근거림·항진감이 확실한 빠른 감량",
                               } as Record<string, string>
                             )[healthConsultation.diet_approach ?? ""] ||
                             healthConsultation.diet_approach;
-                          copyHealthField("접근법", value);
+                          copyHealthField("다이어트 접근법", value);
                         }}
                         title="클릭하여 복사"
                       >
-                        <span className="text-gray-500">접근법:</span>
+                        <span className="text-gray-500">다이어트 접근법:</span>
                         <span className="ml-2 font-medium">
                           {{
-                            sustainable: "지속 가능한 방식",
-                            fast: "빠른 방식",
+                            sustainable: "몸에 부담 없이, 무리 없는 지속 감량",
+                            fast: "두근거림·항진감이 확실한 빠른 감량",
                           }[healthConsultation.diet_approach] ||
                             healthConsultation.diet_approach}
                         </span>
                       </div>
                       <div
                         className={copyableRowClass}
-                        onClick={() =>
-                          copyHealthField(
-                            "선호 단계",
-                            healthConsultation.preferred_stage
-                          )
-                        }
+                        onClick={() => {
+                          const value =
+                            (
+                              {
+                                stage1: "1단계: 처음 복용 / 카페인 민감",
+                                stage2: "2단계: 복용 6개월 이하 / 카페인 민감",
+                                stage3: "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
+                              } as Record<string, string>
+                            )[healthConsultation.preferred_stage ?? ""] ||
+                            healthConsultation.preferred_stage;
+                          copyHealthField("선호 단계", value);
+                        }}
                         title="클릭하여 복사"
                       >
                         <span className="text-gray-500">선호 단계:</span>
                         <span className="ml-2 font-medium">
-                          {healthConsultation.preferred_stage}
+                          {{
+                            stage1: "1단계: 처음 복용 / 카페인 민감",
+                            stage2: "2단계: 복용 6개월 이하 / 카페인 민감",
+                            stage3: "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
+                          }[healthConsultation.preferred_stage] ||
+                            healthConsultation.preferred_stage}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 6. 과거 병력 및 복용 약 */}
+                {/* 병력/복용약 */}
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-blue-600">
-                    6) 과거 병력 및 복용 약
+                    병력/복용약
                   </h4>
                   <div
                     className={`bg-gray-50 p-3 rounded-lg ${copyableRowClass}`}
