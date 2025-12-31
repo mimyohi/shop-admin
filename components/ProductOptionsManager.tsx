@@ -139,7 +139,13 @@ export default function ProductOptionsManager({
     }));
 
     const updatedOptions = options.map((opt) =>
-      opt.id === optionId ? { ...opt, settings: updatedSettings } : opt
+      opt.id === optionId ? {
+        ...opt,
+        settings: updatedSettings,
+        // 단계가 존재하면 재진 시 설정 사용하도록 자동 설정
+        use_settings_on_revisit_with_consult: newHasTypes,
+        use_settings_on_revisit_no_consult: newHasTypes,
+      } : opt
     );
     onOptionsChange?.(updatedOptions);
   };
