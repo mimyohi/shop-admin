@@ -336,6 +336,7 @@ export const productsRepository = {
         const {
           id: optionId,
           product_id: _,
+          slug: __,  // ← slug도 제외하여 자동 생성되도록 함
           created_at: ___,
           updated_at: ____,
           ...optionData
@@ -346,6 +347,13 @@ export const productsRepository = {
           .insert({ ...optionData, product_id: newProduct.id })
           .select()
           .single();
+
+        // 에러 발생 시 즉시 중단 및 롤백
+        if (newOptionError) {
+          console.error("Error duplicating option:", newOptionError);
+          await supabase.from("products").delete().eq("id", newProduct.id);
+          throw new Error(`Failed to duplicate option: ${newOptionError.message}`);
+        }
 
         if (!newOptionError && newOption) {
           // 4. 옵션 Settings 복사
@@ -371,6 +379,13 @@ export const productsRepository = {
                   .select()
                   .single();
 
+              // Settings 복사 실패 시 롤백
+              if (newSettingError) {
+                console.error("Error duplicating setting:", newSettingError);
+                await supabase.from("products").delete().eq("id", newProduct.id);
+                throw new Error(`Failed to duplicate setting: ${newSettingError.message}`);
+              }
+
               if (!newSettingError && newSetting) {
                 // 5. Setting Types 복사
                 const { data: types, error: typesError } = await supabase
@@ -392,9 +407,16 @@ export const productsRepository = {
                     })
                   );
 
-                  await supabase
+                  const { error: typesInsertError } = await supabase
                     .from("product_option_setting_types")
                     .insert(newTypes);
+
+                  // Types 복사 실패 시 롤백
+                  if (typesInsertError) {
+                    console.error("Error duplicating types:", typesInsertError);
+                    await supabase.from("products").delete().eq("id", newProduct.id);
+                    throw new Error(`Failed to duplicate types: ${typesInsertError.message}`);
+                  }
                 }
               }
             }
@@ -423,7 +445,16 @@ export const productsRepository = {
         })
       );
 
-      await supabase.from("product_addons").insert(newAddons);
+      const { error: addonsInsertError } = await supabase
+        .from("product_addons")
+        .insert(newAddons);
+
+      // Addons 복사 실패 시 롤백
+      if (addonsInsertError) {
+        console.error("Error duplicating addons:", addonsInsertError);
+        await supabase.from("products").delete().eq("id", newProduct.id);
+        throw new Error(`Failed to duplicate addons: ${addonsInsertError.message}`);
+      }
     }
 
     return newProduct as any;
