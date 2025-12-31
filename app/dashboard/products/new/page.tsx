@@ -45,6 +45,7 @@ export default function NewProductPage() {
     sale_start_at: "",
     sale_end_at: "",
     is_visible_on_main: true,
+    is_out_of_stock: false,
     is_new_badge: false,
     is_sale_badge: false,
   });
@@ -95,6 +96,7 @@ export default function NewProductPage() {
         sale_start_at: datetimeLocalToKST(formData.sale_start_at),
         sale_end_at: datetimeLocalToKST(formData.sale_end_at),
         is_visible_on_main: formData.is_visible_on_main,
+        is_out_of_stock: formData.is_out_of_stock,
         is_new_badge: formData.is_new_badge,
         is_sale_badge: formData.is_sale_badge,
       };
@@ -215,6 +217,21 @@ export default function NewProductPage() {
                     className="cursor-pointer"
                   >
                     상품 목록 페이지에 노출
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_out_of_stock"
+                    checked={formData.is_out_of_stock}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        is_out_of_stock: checked as boolean,
+                      })
+                    }
+                  />
+                  <Label htmlFor="is_out_of_stock" className="cursor-pointer">
+                    품절 상태로 설정
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
