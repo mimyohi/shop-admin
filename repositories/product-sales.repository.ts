@@ -29,7 +29,7 @@ export const productSalesRepository = {
           created_at
         )
       `)
-      .neq("orders.status", "cancelled"); // 취소된 주문 제외
+      .eq("orders.status", "completed"); // 완료된 주문만 포함
 
     if (startDate) {
       query = query.gte("orders.created_at", startDate);

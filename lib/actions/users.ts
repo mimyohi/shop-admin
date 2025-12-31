@@ -52,6 +52,7 @@ export async function fetchUserOrderHistory(email: string) {
     `
     )
     .eq('user_email', email)
+    .not('status', 'in', '(pending,payment_pending)')
     .order('created_at', { ascending: false })
 
   if (error) {
