@@ -54,13 +54,17 @@ export const usersRepository = {
 
         // 포인트
         let points = 0
+        let total_earned = 0
+        let total_used = 0
         if (user.user_id) {
           const { data: pointsData } = await supabase
             .from('user_points')
-            .select('points')
+            .select('points, total_earned, total_used')
             .eq('user_id', user.user_id)
             .single()
           points = pointsData?.points || 0
+          total_earned = pointsData?.total_earned || 0
+          total_used = pointsData?.total_used || 0
         }
 
         return {
@@ -68,6 +72,8 @@ export const usersRepository = {
           order_count: orderCount,
           total_spent: totalSpent,
           points,
+          total_earned,
+          total_used,
         } as UserWithStats
       })
     )
@@ -115,13 +121,17 @@ export const usersRepository = {
 
     // 포인트
     let points = 0
+    let total_earned = 0
+    let total_used = 0
     if (user.user_id) {
       const { data: pointsData } = await supabase
         .from('user_points')
-        .select('points')
+        .select('points, total_earned, total_used')
         .eq('user_id', user.user_id)
         .single()
       points = pointsData?.points || 0
+      total_earned = pointsData?.total_earned || 0
+      total_used = pointsData?.total_used || 0
     }
 
     return {
@@ -129,6 +139,8 @@ export const usersRepository = {
       order_count: orderCount,
       total_spent: totalSpent,
       points,
+      total_earned,
+      total_used,
     } as UserWithStats
   },
 

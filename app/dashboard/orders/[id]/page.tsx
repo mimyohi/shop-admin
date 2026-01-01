@@ -79,6 +79,7 @@ interface HealthConsultation {
   diet_approach?: string | null;
   preferred_stage?: string | null;
   medical_history: string;
+  consultation_available_time?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -389,7 +390,8 @@ export default function OrderDetailPage() {
     if (hc.name) result += `[이름]: ${hc.name}\n`;
     if (hc.resident_number) result += `[주민등록번호]: ${hc.resident_number}\n`;
     if (hc.phone) result += `[연락처]: ${hc.phone}\n`;
-    if (hc.name || hc.resident_number || hc.phone) result += "\n";
+    if (hc.consultation_available_time) result += `[상담 가능 시간]: ${hc.consultation_available_time}\n`;
+    if (hc.name || hc.resident_number || hc.phone || hc.consultation_available_time) result += "\n";
 
     // 신체 정보
     if (hc.current_height) result += `[현재 키]: ${hc.current_height}cm\n`;
@@ -1278,6 +1280,24 @@ export default function OrderDetailPage() {
                           {healthConsultation.phone}
                         </span>
                       </div>
+
+                      {healthConsultation.consultation_available_time && (
+                        <div
+                          className={copyableRowClass}
+                          onClick={() =>
+                            copyHealthField(
+                              "상담 가능 시간",
+                              healthConsultation.consultation_available_time
+                            )
+                          }
+                          title="클릭하여 복사"
+                        >
+                          <span className="text-gray-500">상담 가능 시간:</span>
+                          <span className="ml-2 font-medium">
+                            {healthConsultation.consultation_available_time}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
