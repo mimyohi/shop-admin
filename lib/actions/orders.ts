@@ -223,6 +223,30 @@ export async function updateOrderItemOptionSettings(orderItemId: string, orderId
   return { success: true }
 }
 
+export async function updateOrderVisitType(orderId: string, visitType: string) {
+  try {
+    // 주문의 모든 order_items의 visit_type을 업데이트
+    const { error } = await supabaseServer
+      .from('order_items')
+      .update({
+        visit_type: visitType,
+      })
+      .eq('order_id', orderId)
+
+    if (error) {
+      console.error('Update visit type error:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/dashboard/orders')
+    revalidatePath(`/dashboard/orders/${orderId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Update visit type error:', error)
+    return { success: false, error: '초진/재진 여부 업데이트에 실패했습니다.' }
+  }
+}
+
 export async function exportShippingExcel(orderIds: string[]) {
   if (!orderIds.length) {
     return { success: false, error: '선택된 주문이 없습니다.' }

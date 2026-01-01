@@ -45,6 +45,7 @@ import {
   setHandlerAdmin,
   setShippingInfo,
   updateShippingAddress,
+  updateOrderVisitType,
 } from "@/lib/actions/orders";
 import { VisitType, SelectedOptionSetting } from "@/models";
 import OptionSettingsSelector from "@/components/OptionSettingsSelector";
@@ -308,6 +309,11 @@ export default function OrderDetailPage() {
   const [editShippingAddress, setEditShippingAddress] = useState("");
   const [editShippingAddressDetail, setEditShippingAddressDetail] =
     useState("");
+
+  // 초진/재진 수정 상태
+  const [isEditingVisitType, setIsEditingVisitType] = useState(false);
+  const [isSavingVisitType, setIsSavingVisitType] = useState(false);
+  const [editVisitType, setEditVisitType] = useState<VisitType | "">("");
 
   const {
     data: order,
@@ -758,6 +764,54 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleStartEditVisitType = () => {
+    const currentVisitType = getOrderVisitType();
+    setEditVisitType(currentVisitType || "");
+    setIsEditingVisitType(true);
+  };
+
+  const handleCancelEditVisitType = () => {
+    setIsEditingVisitType(false);
+    setEditVisitType("");
+  };
+
+  const handleSaveVisitType = async () => {
+    if (!editVisitType) {
+      toast({
+        title: "입력 오류",
+        description: "초진/재진 여부를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSavingVisitType(true);
+      const result = await updateOrderVisitType(orderId, editVisitType);
+
+      if (!result.success) {
+        throw new Error(result.error || "초진/재진 여부 저장 실패");
+      }
+
+      toast({
+        title: "성공",
+        description: "초진/재진 여부가 저장되었습니다.",
+      });
+
+      setIsEditingVisitType(false);
+      refetchOrder();
+    } catch (error) {
+      console.error("Error updating visit type:", error);
+      toast({
+        title: "오류",
+        description: "초진/재진 여부 저장에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingVisitType(false);
+    }
+  };
+
   const cancelOrder = async () => {
     if (!order?.payment_key) {
       toast({
@@ -1019,10 +1073,62 @@ export default function OrderDetailPage() {
               <h3 className="font-semibold mb-3">주문 상태</h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <span className="text-gray-500 block mb-1">
-                    초진/재진 여부
-                  </span>
-                  {getOrderVisitType() ? (
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-gray-500">초진/재진 여부</span>
+                    {!isEditingVisitType ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleStartEditVisitType}
+                        className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        수정
+                      </Button>
+                    ) : (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCancelEditVisitType}
+                          disabled={isSavingVisitType}
+                          className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          취소
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleSaveVisitType}
+                          disabled={isSavingVisitType}
+                          className="h-6 px-2 text-xs"
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          {isSavingVisitType ? "저장 중..." : "저장"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {isEditingVisitType ? (
+                    <Select
+                      value={editVisitType}
+                      onValueChange={(value) => setEditVisitType(value as VisitType)}
+                    >
+                      <SelectTrigger className="text-xs h-8">
+                        <SelectValue placeholder="초진/재진 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="first">초진</SelectItem>
+                        <SelectItem value="revisit_with_consult">
+                          재진(상담)
+                        </SelectItem>
+                        <SelectItem value="revisit_no_consult">
+                          재진(상담X)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : getOrderVisitType() ? (
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                         getOrderVisitType() === "first"
