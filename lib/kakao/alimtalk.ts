@@ -18,6 +18,7 @@
 import crypto from "crypto";
 
 import { env } from "@/env";
+import { formatPhoneNumber } from "@/lib/utils/phone";
 
 /**
  * 알림톡 발송 결과
@@ -63,25 +64,6 @@ function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
   return `HMAC-SHA256 apiKey=${apiKey}, date=${dateTime}, salt=${salt}, signature=${signature}`;
 }
 
-/**
- * 전화번호 포맷팅 (010으로 시작하는 한국 형식으로 변환)
- */
-function formatPhone(phone: string): string {
-  const cleanPhone = phone.replace(/[^0-9]/g, "");
-
-  // 82로 시작하면 0으로 변환 (8210... -> 010...)
-  if (cleanPhone.startsWith("82")) {
-    return `0${cleanPhone.substring(2)}`;
-  }
-
-  // 이미 0으로 시작하면 그대로 반환
-  if (cleanPhone.startsWith("0")) {
-    return cleanPhone;
-  }
-
-  // 10으로 시작하면 앞에 0 추가
-  return `0${cleanPhone}`;
-}
 
 function hasRequiredAlimtalkConfig(): boolean {
   try {
@@ -158,7 +140,7 @@ async function sendAlimtalkMessage({
     };
   }
 
-  const formattedPhone = formatPhone(phone);
+  const formattedPhone = formatPhoneNumber(phone);
 
   try {
     const response = await fetch(SOLAPI_SEND_MANY_ENDPOINT, {

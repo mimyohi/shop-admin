@@ -1394,10 +1394,13 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           email: string
+          email_consent: boolean | null
           id: string
+          marketing_consent: boolean | null
           phone: string | null
           phone_verified: boolean | null
           phone_verified_at: string | null
+          sms_consent: boolean | null
           updated_at: string | null
           user_id: string | null
         }
@@ -1405,10 +1408,13 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email: string
+          email_consent?: boolean | null
           id?: string
+          marketing_consent?: boolean | null
           phone?: string | null
           phone_verified?: boolean | null
           phone_verified_at?: string | null
+          sms_consent?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1416,10 +1422,13 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email?: string
+          email_consent?: boolean | null
           id?: string
+          marketing_consent?: boolean | null
           phone?: string | null
           phone_verified?: boolean | null
           phone_verified_at?: string | null
+          sms_consent?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }

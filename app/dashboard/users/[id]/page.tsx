@@ -34,6 +34,7 @@ import {
   fetchUserOrderHistory,
   fetchUserProfileWithPoints,
 } from "@/lib/actions/users";
+import { formatPhoneNumberWithHyphen } from "@/lib/utils/phone";
 
 interface UserDetail {
   id: string;
@@ -310,7 +311,7 @@ export default function UserDetailPage() {
                 <div>
                   <p className="text-sm text-gray-500">전화번호</p>
                   <p className="font-medium">
-                    {user.phone || "-"}
+                    {formatPhoneNumberWithHyphen(user.phone)}
                     {user.phone_verified && (
                       <Badge
                         variant="secondary"

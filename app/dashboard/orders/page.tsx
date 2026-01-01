@@ -25,7 +25,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Filter, X, FileSpreadsheet } from "lucide-react";
+import { Search, Filter, X, FileSpreadsheet, Settings } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
 import { productsQueries } from "@/queries/products.queries";
@@ -43,6 +51,7 @@ import {
 } from "@/lib/actions/orders";
 import { OrderWithDetails } from "@/types/orders.types";
 import { ConsultationStatus } from "@/models/order.model";
+import { formatPhoneNumberWithHyphen } from "@/lib/utils/phone";
 
 type ConsultationTabConfig = {
   value: ConsultationStatus;
@@ -163,11 +172,64 @@ const CONSULTATION_TAB_VALUES = CONSULTATION_TABS.map(
   (tab) => tab.value
 ) as ConsultationStatus[];
 
+// 컬럼 설정 타입
+type ColumnKey =
+  | "orderNumber"
+  | "assignedAdmin"
+  | "userName"
+  | "visitType"
+  | "createdAt"
+  | "phone"
+  | "handlerAdmin"
+  | "handledAt"
+  | "adminMemo"
+  | "finalPrice";
+
+type ColumnSettings = Record<ColumnKey, boolean>;
+
+const DEFAULT_COLUMN_SETTINGS: ColumnSettings = {
+  orderNumber: true,
+  assignedAdmin: true,
+  userName: true,
+  visitType: true,
+  createdAt: true,
+  phone: true,
+  handlerAdmin: true,
+  handledAt: true,
+  adminMemo: true,
+  finalPrice: true,
+};
+
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+  orderNumber: "주문번호",
+  assignedAdmin: "접수 담당자",
+  userName: "주문자",
+  visitType: "초진/재진",
+  createdAt: "주문일시",
+  phone: "연락처",
+  handlerAdmin: "상담 담당자",
+  handledAt: "처리일시",
+  adminMemo: "관리자 메모",
+  finalPrice: "최종 결제 가격",
+};
+
+const COLUMN_STORAGE_KEY = "orders-table-columns";
+
 const formatCurrency = (amount?: number | null) => {
   if (amount === null || amount === undefined) return "-";
   const numericAmount = Number(amount);
   if (Number.isNaN(numericAmount)) return "-";
   return `${numericAmount.toLocaleString("ko-KR")}원`;
+};
+
+// 최종 결제 가격 계산 함수
+const calculateFinalPrice = (order: OrderWithDetails): number => {
+  const totalAmount = order.total_amount || 0;
+  const shippingFee = order.shipping_fee || 0;
+  const couponDiscount = order.coupon_discount || 0;
+  const usedPoints = order.used_points || 0;
+
+  return totalAmount + shippingFee - couponDiscount - usedPoints;
 };
 
 const getVisitTypeLabel = (visitType?: string | null) => {
@@ -207,6 +269,32 @@ export default function OrdersPage() {
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
+
+  // 컬럼 설정 상태 (localStorage)
+  const [columnSettings, setColumnSettings] = useState<ColumnSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_COLUMN_SETTINGS;
+    try {
+      const saved = localStorage.getItem(COLUMN_STORAGE_KEY);
+      if (saved) {
+        return { ...DEFAULT_COLUMN_SETTINGS, ...JSON.parse(saved) };
+      }
+    } catch (error) {
+      console.error("Failed to load column settings:", error);
+    }
+    return DEFAULT_COLUMN_SETTINGS;
+  });
+
+  // 컬럼 설정 저장
+  const saveColumnSettings = (settings: ColumnSettings) => {
+    setColumnSettings(settings);
+    try {
+      localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.error("Failed to save column settings:", error);
+    }
+  };
+
+  const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
 
   // 필터 상태
   const [searchTerm, setSearchTerm] = useQueryState(
@@ -678,15 +766,16 @@ export default function OrdersPage() {
                   aria-label="전체 선택"
                 />
               </TableHead>
-              <TableHead>주문번호</TableHead>
-              <TableHead>접수 담당자</TableHead>
-              <TableHead>주문자</TableHead>
-              <TableHead>초진/재진</TableHead>
-              <TableHead>주문일시</TableHead>
-              <TableHead>연락처</TableHead>
-              <TableHead>상담 담당자</TableHead>
-              <TableHead>처리일시</TableHead>
-              <TableHead>관리자 메모</TableHead>
+              {columnSettings.orderNumber && <TableHead>주문번호</TableHead>}
+              {columnSettings.assignedAdmin && <TableHead>접수 담당자</TableHead>}
+              {columnSettings.userName && <TableHead>주문자</TableHead>}
+              {columnSettings.visitType && <TableHead>초진/재진</TableHead>}
+              {columnSettings.createdAt && <TableHead>주문일시</TableHead>}
+              {columnSettings.phone && <TableHead>연락처</TableHead>}
+              {columnSettings.handlerAdmin && <TableHead>상담 담당자</TableHead>}
+              {columnSettings.handledAt && <TableHead>처리일시</TableHead>}
+              {columnSettings.adminMemo && <TableHead>관리자 메모</TableHead>}
+              {columnSettings.finalPrice && <TableHead>최종 결제 가격</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -706,98 +795,121 @@ export default function OrdersPage() {
                     aria-label="주문 선택"
                   />
                 </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {order.order_id}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={order.assigned_admin_id || "none"}
-                    onValueChange={(value) =>
-                      handleAssignedAdminChange(order.id, value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-[140px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">미배정</SelectItem>
-                      {admins.map((admin) => (
-                        <SelectItem key={admin.id} value={admin.id}>
-                          {admin.full_name || admin.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="font-medium">{order.user_name}</TableCell>
-                <TableCell className="text-sm">
-                  <span
-                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                      getOrderVisitType(order) === "first"
-                        ? "bg-green-100 text-green-800"
-                        : getOrderVisitType(order) === "revisit_with_consult"
-                        ? "bg-blue-100 text-blue-800"
-                        : getOrderVisitType(order) === "revisit_no_consult"
-                        ? "bg-gray-100 text-gray-800"
-                        : "bg-gray-50 text-gray-500"
-                    }`}
-                  >
-                    {getVisitTypeLabel(getOrderVisitType(order))}
-                  </span>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {new Date(order.created_at).toLocaleDateString("ko-KR", {
-                    year: "2-digit",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {order.user_phone || "-"}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={order.handler_admin_id || "none"}
-                    onValueChange={(value) =>
-                      handleHandlerAdminChange(order.id, value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-[140px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">미배정</SelectItem>
-                      {admins.map((admin) => (
-                        <SelectItem key={admin.id} value={admin.id}>
-                          {admin.full_name || admin.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {order.handled_at
-                    ? new Date(order.handled_at).toLocaleDateString("ko-KR", {
-                        year: "2-digit",
-                        month: "2-digit",
-                        day: "2-digit",
-                      })
-                    : "-"}
-                </TableCell>
-                <TableCell className="text-sm max-w-[200px]">
-                  {order.admin_memo ? (
-                    <span
-                      className="block truncate text-gray-600"
-                      title={order.admin_memo}
+                {columnSettings.orderNumber && (
+                  <TableCell className="font-mono text-xs">
+                    {order.order_id}
+                  </TableCell>
+                )}
+                {columnSettings.assignedAdmin && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={order.assigned_admin_id || "none"}
+                      onValueChange={(value) =>
+                        handleAssignedAdminChange(order.id, value)
+                      }
                     >
-                      {order.admin_memo}
+                      <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">미배정</SelectItem>
+                        {admins.map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>
+                            {admin.full_name || admin.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                )}
+                {columnSettings.userName && (
+                  <TableCell className="font-medium">{order.user_name}</TableCell>
+                )}
+                {columnSettings.visitType && (
+                  <TableCell className="text-sm">
+                    <span
+                      className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                        getOrderVisitType(order) === "first"
+                          ? "bg-green-100 text-green-800"
+                          : getOrderVisitType(order) === "revisit_with_consult"
+                          ? "bg-blue-100 text-blue-800"
+                          : getOrderVisitType(order) === "revisit_no_consult"
+                          ? "bg-gray-100 text-gray-800"
+                          : "bg-gray-50 text-gray-500"
+                      }`}
+                    >
+                      {getVisitTypeLabel(getOrderVisitType(order))}
                     </span>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
-                </TableCell>
+                  </TableCell>
+                )}
+                {columnSettings.createdAt && (
+                  <TableCell className="text-sm">
+                    {new Date(order.created_at).toLocaleDateString("ko-KR", {
+                      year: "2-digit",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                )}
+                {columnSettings.phone && (
+                  <TableCell className="text-sm">
+                    {formatPhoneNumberWithHyphen(order.user_phone)}
+                  </TableCell>
+                )}
+                {columnSettings.handlerAdmin && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={order.handler_admin_id || "none"}
+                      onValueChange={(value) =>
+                        handleHandlerAdminChange(order.id, value)
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">미배정</SelectItem>
+                        {admins.map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>
+                            {admin.full_name || admin.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                )}
+                {columnSettings.handledAt && (
+                  <TableCell className="text-sm">
+                    {order.handled_at
+                      ? new Date(order.handled_at).toLocaleDateString("ko-KR", {
+                          year: "2-digit",
+                          month: "2-digit",
+                          day: "2-digit",
+                        })
+                      : "-"}
+                  </TableCell>
+                )}
+                {columnSettings.adminMemo && (
+                  <TableCell className="text-sm max-w-[200px]">
+                    {order.admin_memo ? (
+                      <span
+                        className="block truncate text-gray-600"
+                        title={order.admin_memo}
+                      >
+                        {order.admin_memo}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                )}
+                {columnSettings.finalPrice && (
+                  <TableCell className="text-sm font-semibold text-blue-600">
+                    {formatCurrency(calculateFinalPrice(order))}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -1039,7 +1151,64 @@ export default function OrdersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>주문 목록</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>주문 목록</CardTitle>
+            <Dialog open={isColumnSettingsOpen} onOpenChange={setIsColumnSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  컬럼 설정
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>테이블 컬럼 설정</DialogTitle>
+                  <DialogDescription>
+                    표시할 컬럼을 선택하세요. 설정은 브라우저에 저장됩니다.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {(Object.keys(COLUMN_LABELS) as ColumnKey[]).map((key) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`column-${key}`}
+                        checked={columnSettings[key]}
+                        onCheckedChange={(checked) => {
+                          saveColumnSettings({
+                            ...columnSettings,
+                            [key]: checked === true,
+                          });
+                        }}
+                      />
+                      <Label
+                        htmlFor={`column-${key}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {COLUMN_LABELS[key]}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      saveColumnSettings(DEFAULT_COLUMN_SETTINGS);
+                    }}
+                  >
+                    초기화
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsColumnSettingsOpen(false)}
+                  >
+                    완료
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs

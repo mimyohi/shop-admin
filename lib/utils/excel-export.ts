@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { Order, OrderItem } from "@/models/order.model";
+import { formatPhoneNumberWithHyphen } from "./phone";
 
 export interface ShippingExcelRow {
   주문일: string;
@@ -50,9 +51,9 @@ export function convertOrdersToShippingExcel(
       rows.push({
         주문일: orderDate,
         주문자: order.user_name || "",
-        주문자연락처: order.user_phone || "",
+        주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
         수령자: order.shipping_name || "",
-        수령자연락처: order.shipping_phone || "",
+        수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
         우편번호: order.shipping_postal_code || "",
         통합주소: fullAddress,
         배송메세지: order.shipping_message || "",
@@ -82,9 +83,9 @@ export function convertOrdersToShippingExcel(
         rows.push({
           주문일: orderDate,
           주문자: order.user_name || "",
-          주문자연락처: order.user_phone || "",
+          주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
           수령자: order.shipping_name || "",
-          수령자연락처: order.shipping_phone || "",
+          수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
           우편번호: order.shipping_postal_code || "",
           통합주소: fullAddress,
           배송메세지: order.shipping_message || "",
@@ -103,9 +104,9 @@ export function convertOrdersToShippingExcel(
             rows.push({
               주문일: orderDate,
               주문자: order.user_name || "",
-              주문자연락처: order.user_phone || "",
+              주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
               수령자: order.shipping_name || "",
-              수령자연락처: order.shipping_phone || "",
+              수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
               우편번호: order.shipping_postal_code || "",
               통합주소: fullAddress,
               배송메세지: order.shipping_message || "",

@@ -38,18 +38,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ordersQueries } from "@/queries/orders.queries";
 import { adminUsersQueries } from "@/queries/admin-users.queries";
-import { calculateProductAmount } from "@/lib/utils/price-calculation";
 import {
   setAdminMemo,
   setAssignedAdmin,
   setConsultationStatus,
   setHandlerAdmin,
   setShippingInfo,
-  updateOrderItemOptionSettings,
   updateShippingAddress,
 } from "@/lib/actions/orders";
 import { VisitType, SelectedOptionSetting } from "@/models";
 import OptionSettingsSelector from "@/components/OptionSettingsSelector";
+import { formatPhoneNumberWithHyphen } from "@/lib/utils/phone";
 
 interface HealthConsultation {
   id: string;
@@ -389,9 +388,17 @@ export default function OrderDetailPage() {
     // 기본 정보
     if (hc.name) result += `[이름]: ${hc.name}\n`;
     if (hc.resident_number) result += `[주민등록번호]: ${hc.resident_number}\n`;
-    if (hc.phone) result += `[연락처]: ${hc.phone}\n`;
-    if (hc.consultation_available_time) result += `[상담 가능 시간]: ${hc.consultation_available_time}\n`;
-    if (hc.name || hc.resident_number || hc.phone || hc.consultation_available_time) result += "\n";
+    if (hc.phone)
+      result += `[연락처]: ${formatPhoneNumberWithHyphen(hc.phone)}\n`;
+    if (hc.consultation_available_time)
+      result += `[상담 가능 시간]: ${hc.consultation_available_time}\n`;
+    if (
+      hc.name ||
+      hc.resident_number ||
+      hc.phone ||
+      hc.consultation_available_time
+    )
+      result += "\n";
 
     // 신체 정보
     if (hc.current_height) result += `[현재 키]: ${hc.current_height}cm\n`;
@@ -920,18 +927,26 @@ export default function OrderDetailPage() {
     if (Number.isNaN(numericValue)) return "-";
     return `${numericValue.toLocaleString("ko-KR")}원`;
   };
-  const totalExplanation = amounts.addonsOnly > 0
-    ? `상품 금액 (${formatWon(amounts.productOnly)}) + 추가 상품 (${formatWon(amounts.addonsOnly)}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(formattedCouponDiscount)}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`
-    : `상품 금액 (${formatWon(amounts.productOnly)}) + 배송비 (${formatWon(formattedShippingFee)}) - 쿠폰 할인 (${formatWon(formattedCouponDiscount)}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
-  console.log(order);
+  const totalExplanation =
+    amounts.addonsOnly > 0
+      ? `상품 금액 (${formatWon(amounts.productOnly)}) + 추가 상품 (${formatWon(
+          amounts.addonsOnly
+        )}) + 배송비 (${formatWon(
+          formattedShippingFee
+        )}) - 쿠폰 할인 (${formatWon(
+          formattedCouponDiscount
+        )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`
+      : `상품 금액 (${formatWon(amounts.productOnly)}) + 배송비 (${formatWon(
+          formattedShippingFee
+        )}) - 쿠폰 할인 (${formatWon(
+          formattedCouponDiscount
+        )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
+
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/dashboard/orders")}
-          >
+          <Button variant="ghost" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             목록으로
           </Button>
@@ -983,7 +998,7 @@ export default function OrderDetailPage() {
                   onClick={() => copyToClipboard(order.user_phone, "연락처")}
                   title="클릭하여 복사"
                 >
-                  {order.user_phone}
+                  {formatPhoneNumberWithHyphen(order.user_phone)}
                 </span>
               </div>
               <div>
@@ -1077,15 +1092,17 @@ export default function OrderDetailPage() {
                 </div>
                 <div>
                   <span className="text-gray-500 block mb-1">결제 방법</span>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                    order.payment_method === "CARD"
-                      ? "bg-blue-100 text-blue-800"
-                      : order.payment_method === "TRANSFER"
-                      ? "bg-green-100 text-green-800"
-                      : order.payment_method === "VIRTUAL_ACCOUNT"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-gray-100 text-gray-600"
-                  }`}>
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                      order.payment_method === "CARD"
+                        ? "bg-blue-100 text-blue-800"
+                        : order.payment_method === "TRANSFER"
+                        ? "bg-green-100 text-green-800"
+                        : order.payment_method === "VIRTUAL_ACCOUNT"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
                     {getPaymentMethodLabel(order.payment_method)}
                   </span>
                 </div>
@@ -1277,7 +1294,9 @@ export default function OrderDetailPage() {
                       >
                         <span className="text-gray-500">연락처:</span>
                         <span className="ml-2 font-medium">
-                          {healthConsultation.phone}
+                          {formatPhoneNumberWithHyphen(
+                            healthConsultation.phone
+                          )}
                         </span>
                       </div>
 
@@ -1680,7 +1699,8 @@ export default function OrderDetailPage() {
                           const value =
                             (
                               {
-                                sustainable: "몸에 부담 없이, 무리 없는 지속 감량",
+                                sustainable:
+                                  "몸에 부담 없이, 무리 없는 지속 감량",
                                 fast: "두근거림·항진감이 확실한 빠른 감량",
                               } as Record<string, string>
                             )[healthConsultation.diet_approach ?? ""] ||
@@ -1706,7 +1726,8 @@ export default function OrderDetailPage() {
                               {
                                 stage1: "1단계: 처음 복용 / 카페인 민감",
                                 stage2: "2단계: 복용 6개월 이하 / 카페인 민감",
-                                stage3: "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
+                                stage3:
+                                  "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
                               } as Record<string, string>
                             )[healthConsultation.preferred_stage ?? ""] ||
                             healthConsultation.preferred_stage;
@@ -1719,7 +1740,8 @@ export default function OrderDetailPage() {
                           {{
                             stage1: "1단계: 처음 복용 / 카페인 민감",
                             stage2: "2단계: 복용 6개월 이하 / 카페인 민감",
-                            stage3: "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
+                            stage3:
+                              "3단계: 복용 6개월 이상 / 기존 처방 효과 미미",
                           }[healthConsultation.preferred_stage] ||
                             healthConsultation.preferred_stage}
                         </span>
@@ -2011,7 +2033,8 @@ export default function OrderDetailPage() {
                                                         <span className="text-gray-700">
                                                           {addon.name}
                                                         </span>
-                                                        {(addon.quantity || 1) > 1 && (
+                                                        {(addon.quantity || 1) >
+                                                          1 && (
                                                           <span className="text-gray-500">
                                                             x{addon.quantity}
                                                           </span>
@@ -2212,7 +2235,7 @@ export default function OrderDetailPage() {
                     <div>
                       <span className="text-gray-600">연락처:</span>
                       <span className="ml-2 font-medium">
-                        {order.shipping_phone || "-"}
+                        {formatPhoneNumberWithHyphen(order.shipping_phone)}
                       </span>
                     </div>
                     <div>

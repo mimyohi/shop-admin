@@ -63,6 +63,7 @@ export async function createAdminUser(
   role: 'admin' | 'master' = 'admin'
 ) {
   try {
+    console.log('Creating admin user, creatorId:', creatorId)
     const { data: creator, error: creatorError } = await supabase
       .from('admin_users')
       .select('id, role')
@@ -70,6 +71,13 @@ export async function createAdminUser(
       .single()
 
     if (creatorError || !creator) {
+      console.error('Creator lookup failed:', {
+        creatorId,
+        error: creatorError,
+        creator,
+        errorDetails: creatorError?.message,
+        errorCode: creatorError?.code,
+      })
       throw new Error('등록 권한이 없습니다. 다시 로그인 후 시도해주세요.')
     }
 
@@ -78,6 +86,14 @@ export async function createAdminUser(
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
+
+    console.log('Attempting to insert admin user:', {
+      username,
+      email,
+      full_name: fullName,
+      role,
+      created_by: creator.id,
+    })
 
     const { data, error } = await supabase
       .from('admin_users')
@@ -92,7 +108,16 @@ export async function createAdminUser(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Insert admin user failed:', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorDetails: error.details,
+        errorHint: error.hint,
+      })
+      throw error
+    }
 
     await logAdminActivity(
       creatorId,

@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usersQueries } from "@/queries/users.queries";
 import { parseAsString, useQueryState } from "nuqs";
 import { PermissionGuard } from "@/components/permission-guard";
+import { formatPhoneNumberWithHyphen } from "@/lib/utils/phone";
 
 interface User {
   id: string;
@@ -164,7 +165,7 @@ export default function UsersPage() {
                     <TableCell className="font-mono text-sm">
                       {user.email}
                     </TableCell>
-                    <TableCell>{user.phone || "-"}</TableCell>
+                    <TableCell>{formatPhoneNumberWithHyphen(user.phone)}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
