@@ -352,9 +352,9 @@ export function EditHealthConsultationDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1meals">1끼</SelectItem>
-                    <SelectItem value="2meals">2끼</SelectItem>
-                    <SelectItem value="3meals">3끼</SelectItem>
+                    <SelectItem value="1meals">하루 1식</SelectItem>
+                    <SelectItem value="2meals">하루 2식</SelectItem>
+                    <SelectItem value="3meals">하루 3식</SelectItem>
                     <SelectItem value="irregular">불규칙</SelectItem>
                   </SelectContent>
                 </Select>
@@ -385,7 +385,7 @@ export function EditHealthConsultationDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1L_or_less">1L 이하</SelectItem>
-                    <SelectItem value="over_1L">1L 이상</SelectItem>
+                    <SelectItem value="over_1L">1L 초과</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -406,8 +406,8 @@ export function EditHealthConsultationDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sustainable">지속 가능한</SelectItem>
-                    <SelectItem value="fast">빠른</SelectItem>
+                    <SelectItem value="sustainable">몸에 부담 없이, 무리 없는 지속 감량</SelectItem>
+                    <SelectItem value="fast">두근거림·항진감이 확실한 빠른 감량</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -421,9 +421,9 @@ export function EditHealthConsultationDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="stage1">Stage 1</SelectItem>
-                    <SelectItem value="stage2">Stage 2</SelectItem>
-                    <SelectItem value="stage3">Stage 3</SelectItem>
+                    <SelectItem value="stage1">1단계: 처음 복용 / 카페인 민감</SelectItem>
+                    <SelectItem value="stage2">2단계: 복용 6개월 이하 / 카페인 민감</SelectItem>
+                    <SelectItem value="stage3">3단계: 복용 6개월 이상 / 기존 처방 효과 미미</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
