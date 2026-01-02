@@ -315,3 +315,53 @@ export async function exportShippingExcelAndUpdateStatus(orderIds: string[]) {
   revalidatePath('/dashboard/orders')
   return { success: true, data: excelBase64, count: orders.length }
 }
+
+export async function updateHealthConsultation(orderId: string, data: {
+  name?: string;
+  resident_number?: string;
+  phone?: string;
+  current_height?: number;
+  current_weight?: number;
+  min_weight_since_20s?: number;
+  max_weight_since_20s?: number;
+  target_weight?: number;
+  target_weight_loss_period?: string;
+  previous_western_medicine?: string;
+  previous_herbal_medicine?: string;
+  previous_other_medicine?: string;
+  occupation?: string;
+  work_hours?: string;
+  has_shift_work?: boolean;
+  wake_up_time?: string;
+  bedtime?: string;
+  has_daytime_sleepiness?: boolean;
+  meal_pattern?: string;
+  alcohol_frequency?: string;
+  water_intake?: string;
+  diet_approach?: string;
+  preferred_stage?: string;
+  medical_history?: string;
+  consultation_available_time?: string;
+}) {
+  try {
+    const { error } = await supabaseServer
+      .from('order_health_consultation')
+      .update({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', orderId)
+
+    if (error) {
+      console.error('Error updating health consultation:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/dashboard/orders')
+    revalidatePath(`/dashboard/orders/${orderId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating health consultation:', error)
+    return { success: false, error: '문진표 업데이트에 실패했습니다.' }
+  }
+}

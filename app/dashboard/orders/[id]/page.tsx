@@ -50,6 +50,7 @@ import {
 import { VisitType, SelectedOptionSetting } from "@/models";
 import OptionSettingsSelector from "@/components/OptionSettingsSelector";
 import { formatPhoneNumberWithHyphen } from "@/lib/utils/phone";
+import { EditHealthConsultationDialog } from "@/components/edit-health-consultation-dialog";
 
 interface HealthConsultation {
   id: string;
@@ -314,6 +315,9 @@ export default function OrderDetailPage() {
   const [isEditingVisitType, setIsEditingVisitType] = useState(false);
   const [isSavingVisitType, setIsSavingVisitType] = useState(false);
   const [editVisitType, setEditVisitType] = useState<VisitType | "">("");
+
+  // 문진표 수정 상태
+  const [isEditHealthDialogOpen, setIsEditHealthDialogOpen] = useState(false);
 
   const {
     data: order,
@@ -1318,6 +1322,15 @@ export default function OrderDetailPage() {
                     유저 상세
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditHealthDialogOpen(true)}
+                  className="h-8"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  수정
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -2532,6 +2545,14 @@ export default function OrderDetailPage() {
             }}
           />
         )}
+
+        {/* Edit Health Consultation Dialog */}
+        <EditHealthConsultationDialog
+          open={isEditHealthDialogOpen}
+          onOpenChange={setIsEditHealthDialogOpen}
+          healthConsultation={healthConsultation || null}
+          orderId={orderId}
+        />
       </div>
     </div>
   );
