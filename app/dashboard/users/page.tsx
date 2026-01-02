@@ -159,7 +159,7 @@ export default function UsersPage() {
                     className="cursor-pointer hover:bg-muted/50"
                   >
                     <TableCell className="font-semibold text-gray-600">
-                      {index + 1}
+                      {totalCount - (displayedPage - 1) * ITEMS_PER_PAGE - index}
                     </TableCell>
                     <TableCell>{user.display_name || "이름 없음"}</TableCell>
                     <TableCell className="font-mono text-sm">
