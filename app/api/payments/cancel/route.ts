@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
 import { supabaseServer } from "@/lib/supabase-server";
 import { sendPaymentCancellationAlimtalk } from "@/lib/kakao/alimtalk";
+import { restoreCouponAndPoints } from "@/lib/order-recovery";
 
 const portoneApiSecret = env.PORTONE_API_SECRET;
 
@@ -43,6 +44,12 @@ export async function POST(request: NextRequest) {
 
     // 결제 취소 성공 시 주문 상태도 업데이트
     if (orderId) {
+      // 쿠폰 및 포인트 복구
+      const recoveryResult = await restoreCouponAndPoints(supabaseServer, orderId);
+      if (recoveryResult.success) {
+        console.log(`쿠폰 복구: ${recoveryResult.couponRestored}, 포인트 복구: ${recoveryResult.pointRestored}`);
+      }
+
       // 주문 정보 조회 (알림톡 발송을 위해)
       const { data: orderData } = await supabaseServer
         .from("orders")
