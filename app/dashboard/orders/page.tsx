@@ -223,13 +223,9 @@ const formatCurrency = (amount?: number | null) => {
 };
 
 // 최종 결제 가격 계산 함수
+// total_amount는 이미 최종 결제 금액 (상품 금액 + 배송비 - 쿠폰 할인 - 포인트 사용)
 const calculateFinalPrice = (order: OrderWithDetails): number => {
-  const totalAmount = order.total_amount || 0;
-  const shippingFee = order.shipping_fee || 0;
-  const couponDiscount = order.coupon_discount || 0;
-  const usedPoints = order.used_points || 0;
-
-  return totalAmount + shippingFee - couponDiscount - usedPoints;
+  return order.total_amount || 0;
 };
 
 const getVisitTypeLabel = (visitType?: string | null) => {
