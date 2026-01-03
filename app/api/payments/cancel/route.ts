@@ -10,11 +10,75 @@ export async function POST(request: NextRequest) {
   try {
     const { paymentId, reason, orderId } = await request.json();
 
-    if (!paymentId) {
+    if (!paymentId && !orderId) {
       return NextResponse.json(
-        { error: "결제 ID가 필요합니다." },
+        { error: "주문 ID가 필요합니다." },
         { status: 400 }
       );
+    }
+
+    // 결제 정보가 없는 0원 주문 취소 처리
+    if (!paymentId) {
+      const { data: orderData } = await supabaseServer
+        .from("orders")
+        .select("order_id, total_amount, user_name, user_phone")
+        .eq("id", orderId)
+        .single();
+
+      if (orderData?.total_amount && orderData.total_amount > 0) {
+        return NextResponse.json(
+          { error: "결제 정보가 없어 취소할 수 없습니다." },
+          { status: 400 }
+        );
+      }
+
+      const recoveryResult = await restoreCouponAndPoints(supabaseServer, orderId);
+      if (recoveryResult.success) {
+        console.log(`쿠폰 복구: ${recoveryResult.couponRestored}, 포인트 복구: ${recoveryResult.pointRestored}`);
+      }
+
+      const { error: updateError } = await supabaseServer
+        .from("orders")
+        .update({
+          status: "cancelled",
+          consultation_status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        console.error("주문 상태 업데이트 실패:", updateError);
+        return NextResponse.json({
+          success: true,
+          message: "주문은 취소되었으나 상태 업데이트에 실패했습니다.",
+          warning: "주문 상태 업데이트 실패",
+        });
+      }
+
+      if (orderData?.user_phone) {
+        try {
+          const alimtalkResult = await sendPaymentCancellationAlimtalk(
+            orderData.user_phone,
+            {
+              orderId: orderData.order_id,
+              customerName: orderData.user_name || "고객",
+              totalAmount: orderData.total_amount || 0,
+              cancelReason: reason,
+            }
+          );
+
+          if (!alimtalkResult.success) {
+            console.error("주문 취소 알림톡 발송 실패:", alimtalkResult.error);
+          }
+        } catch (alimtalkError) {
+          console.error("주문 취소 알림톡 발송 중 오류:", alimtalkError);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "주문이 취소되었습니다.",
+      });
     }
 
     // PortOne API로 결제 취소 요청

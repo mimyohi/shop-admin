@@ -817,7 +817,7 @@ export default function OrderDetailPage() {
   };
 
   const cancelOrder = async () => {
-    if (!order?.payment_key) {
+    if (!order?.payment_key && (order?.total_amount || 0) > 0) {
       toast({
         title: "취소 불가",
         description: "결제 정보가 없어 취소할 수 없습니다.",
@@ -842,7 +842,7 @@ export default function OrderDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentId: order.order_id,
+          paymentId: order.payment_key ? order.order_id : undefined,
           orderId: order.id,
           reason: cancelReason.trim(),
         }),
