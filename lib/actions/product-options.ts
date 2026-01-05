@@ -123,24 +123,13 @@ export async function updateProductOption(optionId: string, data: any) {
 
 export async function deleteProductOption(optionId: string) {
   try {
-    // First get the option to get product_id for revalidation
-    const { data: option } = await supabaseServer
+    // Soft delete: Set deleted_at timestamp instead of physical delete
+    const { data: option, error } = await supabaseServer
       .from('product_options')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', optionId)
       .select('product_id')
-      .eq('id', optionId)
       .single()
-
-    // Delete associated settings and types (cascade should handle this, but explicit is safer)
-    await supabaseServer
-      .from('product_option_settings')
-      .delete()
-      .eq('option_id', optionId)
-
-    // Delete the option
-    const { error } = await supabaseServer
-      .from('product_options')
-      .delete()
-      .eq('id', optionId)
 
     if (error) throw error
 

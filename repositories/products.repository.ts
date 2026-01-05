@@ -20,7 +20,8 @@ async function fetchRepresentativeOptions(
     .from("product_options")
     .select("id, product_id, name, price, discount_rate")
     .in("product_id", productIds)
-    .eq("is_representative", true);
+    .eq("is_representative", true)
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error fetching representative options:", error);
@@ -325,11 +326,12 @@ export const productsRepository = {
       throw new Error("Failed to create duplicate product");
     }
 
-    // 3. 옵션 복사
+    // 3. 옵션 복사 (삭제되지 않은 것만)
     const { data: options, error: optionsError } = await supabase
       .from("product_options")
       .select("*")
-      .eq("product_id", id);
+      .eq("product_id", id)
+      .is("deleted_at", null);
 
     if (!optionsError && options && options.length > 0) {
       for (const option of options) {

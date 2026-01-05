@@ -20,6 +20,7 @@ export const productOptionsRepository = {
       .from('product_options')
       .select('*')
       .is('product_id', null)
+      .is('deleted_at', null)
       .order('name')
 
     if (error) {
@@ -44,6 +45,7 @@ export const productOptionsRepository = {
         )
       `)
       .eq('product_id', productId)
+      .is('deleted_at', null)
       .order('display_order')
 
     if (error) {
@@ -103,6 +105,7 @@ export const productOptionsRepository = {
       .from('product_options')
       .select('*')
       .eq('id', optionId)
+      .is('deleted_at', null)
       .single()
 
     if (error) {
