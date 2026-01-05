@@ -224,7 +224,7 @@ export async function updateProductWithOptions(data: {
   if (deletedOptionIds.length > 0) {
     await supabaseServer
       .from('product_options')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString() } as any)
       .in('id', deletedOptionIds)
   }
 

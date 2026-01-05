@@ -126,7 +126,7 @@ export async function deleteProductOption(optionId: string) {
     // Soft delete: Set deleted_at timestamp instead of physical delete
     const { data: option, error } = await supabaseServer
       .from('product_options')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString() } as any)
       .eq('id', optionId)
       .select('product_id')
       .single()

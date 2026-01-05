@@ -817,7 +817,16 @@ export default function OrderDetailPage() {
   };
 
   const cancelOrder = async () => {
-    if (!order?.payment_key && (order?.total_amount || 0) > 0) {
+    if (!order) {
+      toast({
+        title: "오류",
+        description: "주문 정보를 불러올 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!order.payment_key && (order.total_amount || 0) > 0) {
       toast({
         title: "취소 불가",
         description: "결제 정보가 없어 취소할 수 없습니다.",
