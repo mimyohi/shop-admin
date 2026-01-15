@@ -295,6 +295,10 @@ export default function OrderDetailPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  // 가상계좌 환불 정보
+  const [refundBank, setRefundBank] = useState("");
+  const [refundAccount, setRefundAccount] = useState("");
+  const [refundHolder, setRefundHolder] = useState("");
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [groupOptionsDialogOpen, setGroupOptionsDialogOpen] = useState(false);
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItem | null>(
@@ -366,6 +370,9 @@ export default function OrderDetailPage() {
     setIsCancelModalOpen(open);
     if (!open) {
       setCancelReason("");
+      setRefundBank("");
+      setRefundAccount("");
+      setRefundHolder("");
     }
   };
 
@@ -816,6 +823,8 @@ export default function OrderDetailPage() {
     }
   };
 
+  const isVirtualAccountPayment = order?.payment_method === "VIRTUAL_ACCOUNT";
+
   const cancelOrder = async () => {
     if (!order) {
       toast({
@@ -844,17 +853,56 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // 가상계좌 결제인 경우 환불 정보 검증
+    if (isVirtualAccountPayment && order.payment_key) {
+      if (!refundBank) {
+        toast({
+          title: "환불 은행 필요",
+          description: "환불받을 은행을 선택해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!refundAccount.trim()) {
+        toast({
+          title: "계좌번호 필요",
+          description: "환불받을 계좌번호를 입력해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!refundHolder.trim()) {
+        toast({
+          title: "예금주 필요",
+          description: "환불받을 계좌의 예금주를 입력해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsCancelling(true);
 
     try {
+      const requestBody: Record<string, unknown> = {
+        paymentId: order.payment_key ? order.order_id : undefined,
+        orderId: order.id,
+        reason: cancelReason.trim(),
+      };
+
+      // 가상계좌인 경우 환불 정보 추가
+      if (isVirtualAccountPayment && order.payment_key) {
+        requestBody.refundAccount = {
+          bank: refundBank,
+          number: refundAccount.trim().replace(/[^0-9]/g, ""),
+          holderName: refundHolder.trim(),
+        };
+      }
+
       const response = await fetch("/api/payments/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paymentId: order.payment_key ? order.order_id : undefined,
-          orderId: order.id,
-          reason: cancelReason.trim(),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -865,11 +913,16 @@ export default function OrderDetailPage() {
 
       toast({
         title: "성공",
-        description: "주문이 취소되었습니다.",
+        description: isVirtualAccountPayment
+          ? "환불 요청이 접수되었습니다. 영업일 기준 1~2일 내에 입금됩니다."
+          : "주문이 취소되었습니다.",
       });
 
       setIsCancelModalOpen(false);
       setCancelReason("");
+      setRefundBank("");
+      setRefundAccount("");
+      setRefundHolder("");
       refetchOrder();
     } catch (error: any) {
       console.error("Error cancelling order:", error);
@@ -2498,14 +2551,15 @@ export default function OrderDetailPage() {
         </Card>
 
         <Dialog open={isCancelModalOpen} onOpenChange={handleCancelModalToggle}>
-          <DialogContent>
+          <DialogContent className={isVirtualAccountPayment ? "max-w-lg" : ""}>
             <DialogHeader>
               <DialogTitle>주문 취소</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                결제가 즉시 취소되며 재고/혜택이 모두 회수됩니다. 고객에게
-                안내한 후 진행해주세요.
+                {isVirtualAccountPayment
+                  ? "가상계좌 결제건의 환불은 아래 입력한 계좌로 영업일 기준 1~2일 내에 입금됩니다."
+                  : "결제가 즉시 취소되며 재고/혜택이 모두 회수됩니다. 고객에게 안내한 후 진행해주세요."}
               </p>
               <div className="space-y-2">
                 <Label htmlFor="cancel-reason">취소 사유</Label>
@@ -2514,10 +2568,75 @@ export default function OrderDetailPage() {
                   placeholder="취소 사유를 입력하세요"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  rows={4}
+                  rows={3}
                   disabled={isCancelling}
                 />
               </div>
+
+              {/* 가상계좌 환불 정보 입력 */}
+              {isVirtualAccountPayment && order?.payment_key && (
+                <div className="space-y-3 pt-2 border-t">
+                  <p className="text-sm font-medium text-gray-700">
+                    환불 계좌 정보
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="refund-bank">은행 선택</Label>
+                    <Select
+                      value={refundBank}
+                      onValueChange={setRefundBank}
+                      disabled={isCancelling}
+                    >
+                      <SelectTrigger id="refund-bank">
+                        <SelectValue placeholder="은행을 선택하세요" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="KOOKMIN_BANK">KB국민은행</SelectItem>
+                        <SelectItem value="SHINHAN_BANK">신한은행</SelectItem>
+                        <SelectItem value="WOORI_BANK">우리은행</SelectItem>
+                        <SelectItem value="HANA_BANK">하나은행</SelectItem>
+                        <SelectItem value="NH_NONGHYUP_BANK">NH농협은행</SelectItem>
+                        <SelectItem value="INDUSTRIAL_BANK_OF_KOREA">IBK기업은행</SelectItem>
+                        <SelectItem value="SC_BANK_KOREA">SC제일은행</SelectItem>
+                        <SelectItem value="CITI_BANK_KOREA">한국씨티은행</SelectItem>
+                        <SelectItem value="KAKAO_BANK">카카오뱅크</SelectItem>
+                        <SelectItem value="K_BANK">케이뱅크</SelectItem>
+                        <SelectItem value="TOSS_BANK">토스뱅크</SelectItem>
+                        <SelectItem value="BUSAN_BANK">부산은행</SelectItem>
+                        <SelectItem value="DAEGU_BANK">대구은행</SelectItem>
+                        <SelectItem value="GWANGJU_BANK">광주은행</SelectItem>
+                        <SelectItem value="JEONBUK_BANK">전북은행</SelectItem>
+                        <SelectItem value="JEJU_BANK">제주은행</SelectItem>
+                        <SelectItem value="KYONGNAM_BANK">경남은행</SelectItem>
+                        <SelectItem value="SUHYUP_BANK">수협은행</SelectItem>
+                        <SelectItem value="KFCC">새마을금고</SelectItem>
+                        <SelectItem value="SHINHYUP">신협</SelectItem>
+                        <SelectItem value="EPOST">우체국</SelectItem>
+                        <SelectItem value="KOREA_DEVELOPMENT_BANK">KDB산업은행</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="refund-account">계좌번호</Label>
+                    <Input
+                      id="refund-account"
+                      placeholder="- 없이 숫자만 입력"
+                      value={refundAccount}
+                      onChange={(e) => setRefundAccount(e.target.value)}
+                      disabled={isCancelling}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="refund-holder">예금주</Label>
+                    <Input
+                      id="refund-holder"
+                      placeholder="예금주명을 입력하세요"
+                      value={refundHolder}
+                      onChange={(e) => setRefundHolder(e.target.value)}
+                      disabled={isCancelling}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -2532,7 +2651,11 @@ export default function OrderDetailPage() {
                 onClick={cancelOrder}
                 disabled={isCancelling}
               >
-                {isCancelling ? "취소 처리 중..." : "결제 취소"}
+                {isCancelling
+                  ? "취소 처리 중..."
+                  : isVirtualAccountPayment
+                  ? "환불 요청"
+                  : "결제 취소"}
               </Button>
             </DialogFooter>
           </DialogContent>

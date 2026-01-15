@@ -6,9 +6,21 @@ import { restoreCouponAndPoints } from "@/lib/order-recovery";
 
 const portoneApiSecret = env.PORTONE_API_SECRET;
 
+// 가상계좌 환불 정보 타입
+interface RefundAccount {
+  bank: string;
+  number: string;
+  holderName: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { paymentId, reason, orderId } = await request.json();
+    const { paymentId, reason, orderId, refundAccount } = await request.json() as {
+      paymentId?: string;
+      reason?: string;
+      orderId?: string;
+      refundAccount?: RefundAccount;
+    };
 
     if (!paymentId && !orderId) {
       return NextResponse.json(
@@ -19,10 +31,13 @@ export async function POST(request: NextRequest) {
 
     // 결제 정보가 없는 0원 주문 취소 처리
     if (!paymentId) {
+      // orderId는 위에서 검증되어 이 시점에 반드시 존재함
+      const validOrderId = orderId!;
+
       const { data: orderData } = await supabaseServer
         .from("orders")
         .select("order_id, total_amount, user_name, user_phone")
-        .eq("id", orderId)
+        .eq("id", validOrderId)
         .single();
 
       if (orderData?.total_amount && orderData.total_amount > 0) {
@@ -32,7 +47,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const recoveryResult = await restoreCouponAndPoints(supabaseServer, orderId);
+      const recoveryResult = await restoreCouponAndPoints(supabaseServer, validOrderId);
       if (recoveryResult.success) {
         console.log(`쿠폰 복구: ${recoveryResult.couponRestored}, 포인트 복구: ${recoveryResult.pointRestored}`);
       }
@@ -44,7 +59,7 @@ export async function POST(request: NextRequest) {
           consultation_status: "cancelled",
           updated_at: new Date().toISOString(),
         })
-        .eq("id", orderId);
+        .eq("id", validOrderId);
 
       if (updateError) {
         console.error("주문 상태 업데이트 실패:", updateError);
@@ -81,6 +96,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // PortOne API 요청 body 구성
+    const cancelRequestBody: Record<string, unknown> = {
+      reason: reason || "관리자 요청",
+    };
+
+    // 가상계좌 환불인 경우 환불 계좌 정보 추가
+    if (refundAccount) {
+      cancelRequestBody.refundAccount = {
+        bank: refundAccount.bank,
+        number: refundAccount.number,
+        holderName: refundAccount.holderName,
+      };
+      console.log("가상계좌 환불 요청:", {
+        bank: refundAccount.bank,
+        number: refundAccount.number.slice(0, 4) + "****", // 계좌번호 마스킹
+        holderName: refundAccount.holderName,
+      });
+    }
+
     // PortOne API로 결제 취소 요청
     const response = await fetch(
       `https://api.portone.io/payments/${encodeURIComponent(paymentId)}/cancel`,
@@ -90,9 +124,7 @@ export async function POST(request: NextRequest) {
           Authorization: `PortOne ${portoneApiSecret}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          reason: reason || "관리자 요청",
-        }),
+        body: JSON.stringify(cancelRequestBody),
       }
     );
 
