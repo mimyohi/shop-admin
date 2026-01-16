@@ -2590,28 +2590,28 @@ export default function OrderDetailPage() {
                         <SelectValue placeholder="은행을 선택하세요" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="KOOKMIN_BANK">KB국민은행</SelectItem>
-                        <SelectItem value="SHINHAN_BANK">신한은행</SelectItem>
-                        <SelectItem value="WOORI_BANK">우리은행</SelectItem>
-                        <SelectItem value="HANA_BANK">하나은행</SelectItem>
-                        <SelectItem value="NH_NONGHYUP_BANK">NH농협은행</SelectItem>
-                        <SelectItem value="INDUSTRIAL_BANK_OF_KOREA">IBK기업은행</SelectItem>
-                        <SelectItem value="SC_BANK_KOREA">SC제일은행</SelectItem>
-                        <SelectItem value="CITI_BANK_KOREA">한국씨티은행</SelectItem>
-                        <SelectItem value="KAKAO_BANK">카카오뱅크</SelectItem>
+                        <SelectItem value="KOOKMIN">KB국민은행</SelectItem>
+                        <SelectItem value="SHINHAN">신한은행</SelectItem>
+                        <SelectItem value="WOORI">우리은행</SelectItem>
+                        <SelectItem value="HANA">하나은행</SelectItem>
+                        <SelectItem value="NONGHYUP">NH농협은행</SelectItem>
+                        <SelectItem value="IBK">IBK기업은행</SelectItem>
+                        <SelectItem value="STANDARD_CHARTERED">SC제일은행</SelectItem>
+                        <SelectItem value="CITI">한국씨티은행</SelectItem>
+                        <SelectItem value="KAKAO">카카오뱅크</SelectItem>
                         <SelectItem value="K_BANK">케이뱅크</SelectItem>
-                        <SelectItem value="TOSS_BANK">토스뱅크</SelectItem>
-                        <SelectItem value="BUSAN_BANK">부산은행</SelectItem>
-                        <SelectItem value="DAEGU_BANK">대구은행</SelectItem>
-                        <SelectItem value="GWANGJU_BANK">광주은행</SelectItem>
-                        <SelectItem value="JEONBUK_BANK">전북은행</SelectItem>
-                        <SelectItem value="JEJU_BANK">제주은행</SelectItem>
-                        <SelectItem value="KYONGNAM_BANK">경남은행</SelectItem>
-                        <SelectItem value="SUHYUP_BANK">수협은행</SelectItem>
+                        <SelectItem value="TOSS">토스뱅크</SelectItem>
+                        <SelectItem value="BUSAN">부산은행</SelectItem>
+                        <SelectItem value="DAEGU">대구은행</SelectItem>
+                        <SelectItem value="KWANGJU">광주은행</SelectItem>
+                        <SelectItem value="JEONBUK">전북은행</SelectItem>
+                        <SelectItem value="JEJU">제주은행</SelectItem>
+                        <SelectItem value="KYONGNAM">경남은행</SelectItem>
+                        <SelectItem value="SUHYUP">수협은행</SelectItem>
                         <SelectItem value="KFCC">새마을금고</SelectItem>
                         <SelectItem value="SHINHYUP">신협</SelectItem>
-                        <SelectItem value="EPOST">우체국</SelectItem>
-                        <SelectItem value="KOREA_DEVELOPMENT_BANK">KDB산업은행</SelectItem>
+                        <SelectItem value="POST">우체국</SelectItem>
+                        <SelectItem value="KDB">KDB산업은행</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
