@@ -18,6 +18,7 @@ export interface ShippingExcelRow {
   발송방식: string;
   주문번호: string;
   주문상세번호: string;
+  결제금액: number;
 }
 
 export interface OrderWithItems extends Order {
@@ -46,6 +47,9 @@ export function convertOrdersToShippingExcel(
 
     const orderItems = order.order_items || [];
 
+    // 주문당 결제금액 (첫 번째 행에만 표시)
+    const paymentAmount = order.total_amount || 0;
+
     if (orderItems.length === 0) {
       // 주문 항목이 없는 경우 주문 정보만 출력
       rows.push({
@@ -64,13 +68,17 @@ export function convertOrdersToShippingExcel(
         발송방식: "택배",
         주문번호: order.order_id || "",
         주문상세번호: "",
+        결제금액: paymentAmount,
       });
     } else {
       // 각 주문 항목별로 행 생성
       for (const item of orderItems) {
         // 옵션명 + 선택된 타입들 조합
         let optionDisplay = item.option_name || "";
-        if (item.selected_option_settings && item.selected_option_settings.length > 0) {
+        if (
+          item.selected_option_settings &&
+          item.selected_option_settings.length > 0
+        ) {
           const typeNames = item.selected_option_settings
             .map((s) => s.type_name)
             .filter(Boolean);
@@ -79,7 +87,7 @@ export function convertOrdersToShippingExcel(
           }
         }
 
-        // 본 상품 행 추가
+        // 본 상품 행 추가 (같은 주문의 모든 행에 동일한 결제금액 표시)
         rows.push({
           주문일: orderDate,
           주문자: order.user_name || "",
@@ -96,6 +104,7 @@ export function convertOrdersToShippingExcel(
           발송방식: "택배",
           주문번호: order.order_id || "",
           주문상세번호: item.id || "",
+          결제금액: paymentAmount,
         });
 
         // 추가 상품(addons)이 있는 경우 각각 별도 행으로 추가
@@ -117,6 +126,7 @@ export function convertOrdersToShippingExcel(
               발송방식: "택배",
               주문번호: order.order_id || "",
               주문상세번호: item.id || "",
+              결제금액: paymentAmount,
             });
           }
         }
@@ -154,7 +164,62 @@ export function generateShippingExcel(orders: OrderWithItems[]): string {
     { wch: 10 }, // 발송방식
     { wch: 20 }, // 주문번호
     { wch: 36 }, // 주문상세번호
+    { wch: 15 }, // 결제금액
   ];
+
+  // 같은 주문번호의 셀 병합 (주문번호: N열, 주문상세번호: O열, 결제금액: P열)
+  const merges: XLSX.Range[] = [];
+  const orderNumberCol = 13; // N열 (0-indexed)
+  const orderDetailCol = 14; // O열 (0-indexed)
+  const paymentAmountCol = 15; // P열 (0-indexed)
+
+  let currentOrderId = "";
+  let mergeStartRow = 1; // 헤더가 0행이므로 데이터는 1행부터
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const rowIndex = i + 1; // 헤더 때문에 +1
+
+    if (row.주문번호 !== currentOrderId) {
+      // 이전 주문의 병합 처리 (2행 이상일 때만)
+      if (currentOrderId && rowIndex - mergeStartRow > 1) {
+        merges.push({
+          s: { r: mergeStartRow, c: orderNumberCol },
+          e: { r: rowIndex - 1, c: orderNumberCol },
+        });
+        merges.push({
+          s: { r: mergeStartRow, c: orderDetailCol },
+          e: { r: rowIndex - 1, c: orderDetailCol },
+        });
+        merges.push({
+          s: { r: mergeStartRow, c: paymentAmountCol },
+          e: { r: rowIndex - 1, c: paymentAmountCol },
+        });
+      }
+      currentOrderId = row.주문번호;
+      mergeStartRow = rowIndex;
+    }
+  }
+
+  // 마지막 주문의 병합 처리
+  if (currentOrderId && data.length + 1 - mergeStartRow > 1) {
+    merges.push({
+      s: { r: mergeStartRow, c: orderNumberCol },
+      e: { r: data.length, c: orderNumberCol },
+    });
+    merges.push({
+      s: { r: mergeStartRow, c: orderDetailCol },
+      e: { r: data.length, c: orderDetailCol },
+    });
+    merges.push({
+      s: { r: mergeStartRow, c: paymentAmountCol },
+      e: { r: data.length, c: paymentAmountCol },
+    });
+  }
+
+  if (merges.length > 0) {
+    worksheet["!merges"] = merges;
+  }
 
   // base64로 변환
   const excelBuffer = XLSX.write(workbook, {

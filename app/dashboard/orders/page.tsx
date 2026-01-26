@@ -48,6 +48,8 @@ import {
   setAssignedAdmin,
   setHandlerAdmin,
   exportShippingExcelAndUpdateStatus,
+  exportShippingExcel,
+  fetchAllOrderIds,
 } from "@/lib/actions/orders";
 import { OrderWithDetails } from "@/types/orders.types";
 import { ConsultationStatus } from "@/models/order.model";
@@ -576,8 +578,54 @@ export default function OrdersPage() {
     }
   };
 
-  const handleExportExcel = async () => {
-    const selected = selectedOrders["consultation_completed"] || [];
+  const [isSelectingAll, setIsSelectingAll] = useState(false);
+
+  const handleSelectAllFiltered = async () => {
+    try {
+      setIsSelectingAll(true);
+      const filters = {
+        consultationStatus: activeTab,
+        search: searchTerm || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        assignedAdminId:
+          assignedAdminFilter !== DEFAULT_FILTERS.assignedAdmin
+            ? assignedAdminFilter
+            : undefined,
+        handlerAdminId:
+          handlerAdminFilter !== DEFAULT_FILTERS.handlerAdmin
+            ? handlerAdminFilter
+            : undefined,
+        productId:
+          productFilter !== DEFAULT_FILTERS.product ? productFilter : undefined,
+      };
+
+      const allIds = await fetchAllOrderIds(filters);
+
+      setSelectedOrders((prev) => ({
+        ...prev,
+        [activeTab]: allIds,
+      }));
+
+      toast({
+        title: "전체 선택 완료",
+        description: `${allIds.length}건의 주문이 선택되었습니다.`,
+      });
+    } catch (error) {
+      console.error("Error selecting all orders:", error);
+      toast({
+        title: "오류",
+        description: "전체 선택에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSelectingAll(false);
+    }
+  };
+
+  const handleExportExcel = async (updateStatus: boolean = true) => {
+    const sourceTab = updateStatus ? "consultation_completed" : activeTab;
+    const selected = selectedOrders[sourceTab] || [];
     if (selected.length === 0) {
       toast({
         title: "알림",
@@ -589,7 +637,10 @@ export default function OrdersPage() {
 
     try {
       setIsExporting(true);
-      const result = await exportShippingExcelAndUpdateStatus(selected);
+      // 배송준비 탭에서는 상태 변경과 함께, shipped 탭에서는 추출만
+      const result = updateStatus
+        ? await exportShippingExcelAndUpdateStatus(selected)
+        : await exportShippingExcel(selected);
 
       if (!result.success) {
         throw new Error(result.error || "엑셀 추출에 실패했습니다.");
@@ -617,18 +668,25 @@ export default function OrdersPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
+      const message = updateStatus
+        ? `${result.count}건의 주문이 엑셀로 추출되었고, 배송중 상태로 변경되었습니다.`
+        : `${result.count}건의 주문이 엑셀로 추출되었습니다.`;
+
       toast({
         title: "성공",
-        description: `${result.count}건의 주문이 엑셀로 추출되었고, 배송중 상태로 변경되었습니다.`,
+        description: message,
       });
 
       setSelectedOrders((prev) => ({
         ...prev,
-        consultation_completed: [],
+        [sourceTab]: [],
       }));
-      // 모든 주문 목록 쿼리 무효화 (배송준비 -> 배송중 이동)
-      await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
-      await refetchStatusCounts();
+
+      if (updateStatus) {
+        // 모든 주문 목록 쿼리 무효화 (배송준비 -> 배송중 이동)
+        await queryClient.invalidateQueries({ queryKey: ordersQueries.lists() });
+        await refetchStatusCounts();
+      }
     } catch (error) {
       console.error("Error exporting excel:", error);
       toast({
@@ -734,19 +792,29 @@ export default function OrdersPage() {
                 {action.label}
               </Button>
             ))}
-            {activeTab === "consultation_completed" && (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={
-                  currentSelected.length === 0 || isExporting || ordersLoading
-                }
-                onClick={handleExportExcel}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-1" />
-                {isExporting ? "추출 중..." : "엑셀 추출"}
-              </Button>
+            {(activeTab === "consultation_completed" || activeTab === "shipped") && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isSelectingAll || ordersLoading}
+                  onClick={handleSelectAllFiltered}
+                >
+                  {isSelectingAll ? "선택 중..." : `전체 선택 (${totalCount}건)`}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={
+                    currentSelected.length === 0 || isExporting || ordersLoading
+                  }
+                  onClick={() => handleExportExcel(activeTab === "consultation_completed")}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  {isExporting ? "추출 중..." : "엑셀 추출"}
+                </Button>
+              </>
             )}
           </div>
         </div>

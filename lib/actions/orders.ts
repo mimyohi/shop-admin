@@ -9,6 +9,10 @@ export async function fetchOrders(filters: OrderFilters = {}) {
   return ordersRepository.findMany(filters)
 }
 
+export async function fetchAllOrderIds(filters: OrderFilters = {}) {
+  return ordersRepository.findAllIds(filters)
+}
+
 export async function fetchOrder(id: string) {
   return ordersRepository.findById(id)
 }

@@ -147,6 +147,79 @@ export const ordersRepository = {
   },
 
   /**
+   * 필터 조건에 맞는 모든 주문 ID 조회 (전체 선택용)
+   */
+  async findAllIds(filters: OrderFilters = {}): Promise<string[]> {
+    const {
+      consultationStatus,
+      assignedAdminId,
+      handlerAdminId,
+      productId,
+      search,
+      startDate,
+      endDate,
+    } = filters;
+
+    let query = supabase
+      .from("orders")
+      .select("id")
+      .not("status", "in", "(payment_pending,pending)");
+
+    if (consultationStatus) {
+      query = query.eq("consultation_status", consultationStatus);
+    }
+
+    if (assignedAdminId) {
+      query = query.eq("assigned_admin_id", assignedAdminId);
+    }
+
+    if (handlerAdminId) {
+      query = query.eq("handler_admin_id", handlerAdminId);
+    }
+
+    if (search) {
+      query = query.or(
+        `order_id.ilike.%${search}%,user_email.ilike.%${search}%,user_name.ilike.%${search}%,user_phone.ilike.%${search}%`
+      );
+    }
+
+    if (startDate) {
+      query = query.gte("created_at", startDate);
+    }
+
+    if (endDate) {
+      query = query.lte("created_at", endDate);
+    }
+
+    // productId 필터는 order_items와 join이 필요하므로 별도 처리
+    if (productId) {
+      const { data: orderItemsData } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .eq("product_id", productId);
+
+      const orderIdsWithProduct = [...new Set(
+        (orderItemsData || [])
+          .map(item => item.order_id)
+          .filter((id): id is string => id !== null)
+      )];
+      if (orderIdsWithProduct.length === 0) {
+        return [];
+      }
+      query = query.in("id", orderIdsWithProduct);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching order ids:", error);
+      throw new Error("Failed to fetch order ids");
+    }
+
+    return (data || []).map((order) => order.id);
+  },
+
+  /**
    * 주문 상세 조회
    */
   async findById(id: string): Promise<OrderWithDetails | null> {
