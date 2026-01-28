@@ -302,7 +302,7 @@ export default function OrderDetailPage() {
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [groupOptionsDialogOpen, setGroupOptionsDialogOpen] = useState(false);
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItem | null>(
-    null
+    null,
   );
 
   // 배송지 정보 수정 상태
@@ -330,7 +330,7 @@ export default function OrderDetailPage() {
     refetch: refetchOrder,
   } = useQuery(ordersQueries.detail(orderId));
   const { data: admins = [] } = useQuery(
-    adminUsersQueries.list({ is_active: true })
+    adminUsersQueries.list({ is_active: true }),
   );
 
   useEffect(() => {
@@ -530,7 +530,7 @@ export default function OrderDetailPage() {
     try {
       const result = await setAssignedAdmin(
         orderId as string,
-        adminId === "none" ? null : adminId
+        adminId === "none" ? null : adminId,
       );
 
       if (!result.success) {
@@ -557,7 +557,7 @@ export default function OrderDetailPage() {
     try {
       const result = await setHandlerAdmin(
         orderId as string,
-        adminId === "none" ? null : adminId
+        adminId === "none" ? null : adminId,
       );
 
       if (!result.success) {
@@ -581,7 +581,7 @@ export default function OrderDetailPage() {
   };
 
   const updateConsultationStatus = async (
-    newStatus: Order["consultation_status"]
+    newStatus: Order["consultation_status"],
   ) => {
     // 상담 필요 -> 상담 완료로 이동 시 옵션 설정 검증
     if (
@@ -612,7 +612,7 @@ export default function OrderDetailPage() {
       toast({
         title: "성공",
         description: `상담 상태가 "${getStatusLabel(
-          newStatus
+          newStatus,
         )}"(으)로 변경되었습니다.`,
       });
 
@@ -662,7 +662,7 @@ export default function OrderDetailPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ orderId }),
-          }
+          },
         );
 
         if (emailResponse.ok) {
@@ -835,14 +835,8 @@ export default function OrderDetailPage() {
       return;
     }
 
-    if (!order.payment_key && (order.total_amount || 0) > 0) {
-      toast({
-        title: "취소 불가",
-        description: "결제 정보가 없어 취소할 수 없습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // pending 상태가 아닌 유료 주문은 포트원 환불이 필요
+    // order_id가 포트원 paymentId로 사용됨
 
     if (!cancelReason.trim()) {
       toast({
@@ -853,8 +847,13 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // pending이 아니고 유료 주문인 경우에만 포트원 환불 필요
+    // 0원 결제는 포트원에 기록이 없음
+    const needsPortoneRefund =
+      order.status !== "pending" && (order.total_amount || 0) > 0;
+
     // 가상계좌 결제인 경우 환불 정보 검증
-    if (isVirtualAccountPayment && order.payment_key) {
+    if (isVirtualAccountPayment && needsPortoneRefund) {
       if (!refundBank) {
         toast({
           title: "환불 은행 필요",
@@ -885,13 +884,13 @@ export default function OrderDetailPage() {
 
     try {
       const requestBody: Record<string, unknown> = {
-        paymentId: order.payment_key ? order.order_id : undefined,
+        paymentId: needsPortoneRefund ? order.order_id : undefined,
         orderId: order.id,
         reason: cancelReason.trim(),
       };
 
       // 가상계좌인 경우 환불 정보 추가
-      if (isVirtualAccountPayment && order.payment_key) {
+      if (isVirtualAccountPayment && needsPortoneRefund) {
         requestBody.refundAccount = {
           bank: refundBank,
           number: refundAccount.trim().replace(/[^0-9]/g, ""),
@@ -1050,16 +1049,16 @@ export default function OrderDetailPage() {
   const totalExplanation =
     amounts.addonsOnly > 0
       ? `상품 금액 (${formatWon(amounts.productOnly)}) + 추가 상품 (${formatWon(
-          amounts.addonsOnly
+          amounts.addonsOnly,
         )}) + 배송비 (${formatWon(
-          formattedShippingFee
+          formattedShippingFee,
         )}) - 쿠폰 할인 (${formatWon(
-          formattedCouponDiscount
+          formattedCouponDiscount,
         )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`
       : `상품 금액 (${formatWon(amounts.productOnly)}) + 배송비 (${formatWon(
-          formattedShippingFee
+          formattedShippingFee,
         )}) - 쿠폰 할인 (${formatWon(
-          formattedCouponDiscount
+          formattedCouponDiscount,
         )}) - 포인트 사용 (${formatWon(formattedUsedPoints)})`;
 
   return (
@@ -1179,7 +1178,9 @@ export default function OrderDetailPage() {
                   {isEditingVisitType ? (
                     <Select
                       value={editVisitType}
-                      onValueChange={(value) => setEditVisitType(value as VisitType)}
+                      onValueChange={(value) =>
+                        setEditVisitType(value as VisitType)
+                      }
                     >
                       <SelectTrigger className="text-xs h-8">
                         <SelectValue placeholder="초진/재진 선택" />
@@ -1200,8 +1201,8 @@ export default function OrderDetailPage() {
                         getOrderVisitType() === "first"
                           ? "bg-green-100 text-green-800"
                           : getOrderVisitType() === "revisit_with_consult"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {getVisitTypeLabel(getOrderVisitType())}
@@ -1269,10 +1270,10 @@ export default function OrderDetailPage() {
                       order.payment_method === "CARD"
                         ? "bg-blue-100 text-blue-800"
                         : order.payment_method === "TRANSFER"
-                        ? "bg-green-100 text-green-800"
-                        : order.payment_method === "VIRTUAL_ACCOUNT"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-800"
+                          : order.payment_method === "VIRTUAL_ACCOUNT"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-gray-100 text-gray-600"
                     }`}
                   >
                     {getPaymentMethodLabel(order.payment_method)}
@@ -1375,7 +1376,7 @@ export default function OrderDetailPage() {
                     variant="secondary"
                     onClick={() =>
                       router.push(
-                        `/dashboard/users/${healthConsultation.user_id}`
+                        `/dashboard/users/${healthConsultation.user_id}`,
                       )
                     }
                     className="h-8"
@@ -1455,7 +1456,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "주민등록번호",
-                            healthConsultation.resident_number
+                            healthConsultation.resident_number,
                           )
                         }
                         title="클릭하여 복사"
@@ -1476,7 +1477,7 @@ export default function OrderDetailPage() {
                         <span className="text-gray-500">연락처:</span>
                         <span className="ml-2 font-medium">
                           {formatPhoneNumberWithHyphen(
-                            healthConsultation.phone
+                            healthConsultation.phone,
                           )}
                         </span>
                       </div>
@@ -1487,7 +1488,7 @@ export default function OrderDetailPage() {
                           onClick={() =>
                             copyHealthField(
                               "상담 가능 시간",
-                              healthConsultation.consultation_available_time
+                              healthConsultation.consultation_available_time,
                             )
                           }
                           title="클릭하여 복사"
@@ -1517,16 +1518,16 @@ export default function OrderDetailPage() {
                             `${
                               healthConsultation.current_height
                                 ? `${Number(
-                                    healthConsultation.current_height
+                                    healthConsultation.current_height,
                                   ).toFixed(1)}cm`
                                 : "-"
                             } / ${
                               healthConsultation.current_weight
                                 ? `${Number(
-                                    healthConsultation.current_weight
+                                    healthConsultation.current_weight,
                                   ).toFixed(1)}kg`
                                 : "-"
-                            }`
+                            }`,
                           )
                         }
                         title="클릭하여 복사"
@@ -1535,13 +1536,13 @@ export default function OrderDetailPage() {
                         <span className="ml-2 font-medium">
                           {healthConsultation.current_height
                             ? `${Number(
-                                healthConsultation.current_height
+                                healthConsultation.current_height,
                               ).toFixed(1)}cm`
                             : "-"}{" "}
                           /{" "}
                           {healthConsultation.current_weight
                             ? `${Number(
-                                healthConsultation.current_weight
+                                healthConsultation.current_weight,
                               ).toFixed(1)}kg`
                             : "-"}
                         </span>
@@ -1554,16 +1555,16 @@ export default function OrderDetailPage() {
                             `${
                               healthConsultation.min_weight_since_20s
                                 ? `${Number(
-                                    healthConsultation.min_weight_since_20s
+                                    healthConsultation.min_weight_since_20s,
                                   ).toFixed(1)}kg`
                                 : "-"
                             } ~ ${
                               healthConsultation.max_weight_since_20s
                                 ? `${Number(
-                                    healthConsultation.max_weight_since_20s
+                                    healthConsultation.max_weight_since_20s,
                                   ).toFixed(1)}kg`
                                 : "-"
-                            }`
+                            }`,
                           )
                         }
                         title="클릭하여 복사"
@@ -1574,13 +1575,13 @@ export default function OrderDetailPage() {
                         <span className="ml-2 font-medium">
                           {healthConsultation.min_weight_since_20s
                             ? `${Number(
-                                healthConsultation.min_weight_since_20s
+                                healthConsultation.min_weight_since_20s,
                               ).toFixed(1)}kg`
                             : "-"}{" "}
                           ~{" "}
                           {healthConsultation.max_weight_since_20s
                             ? `${Number(
-                                healthConsultation.max_weight_since_20s
+                                healthConsultation.max_weight_since_20s,
                               ).toFixed(1)}kg`
                             : "-"}
                         </span>
@@ -1591,8 +1592,8 @@ export default function OrderDetailPage() {
                           copyHealthField(
                             "목표 체중",
                             `${Number(healthConsultation.target_weight).toFixed(
-                              1
-                            )}kg`
+                              1,
+                            )}kg`,
                           )
                         }
                         title="클릭하여 복사"
@@ -1608,7 +1609,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "목표 감량 기간",
-                            healthConsultation.target_weight_loss_period
+                            healthConsultation.target_weight_loss_period,
                           )
                         }
                         title="클릭하여 복사"
@@ -1634,7 +1635,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "양약",
-                            healthConsultation.previous_western_medicine
+                            healthConsultation.previous_western_medicine,
                           )
                         }
                         title="클릭하여 복사"
@@ -1649,7 +1650,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "한약",
-                            healthConsultation.previous_herbal_medicine
+                            healthConsultation.previous_herbal_medicine,
                           )
                         }
                         title="클릭하여 복사"
@@ -1664,7 +1665,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "기타",
-                            healthConsultation.previous_other_medicine
+                            healthConsultation.previous_other_medicine,
                           )
                         }
                         title="클릭하여 복사"
@@ -1702,7 +1703,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "근무 시간",
-                            healthConsultation.work_hours
+                            healthConsultation.work_hours,
                           )
                         }
                         title="클릭하여 복사"
@@ -1717,7 +1718,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "교대 근무",
-                            healthConsultation.has_shift_work ? "예" : "아니오"
+                            healthConsultation.has_shift_work ? "예" : "아니오",
                           )
                         }
                         title="클릭하여 복사"
@@ -1734,7 +1735,7 @@ export default function OrderDetailPage() {
                             "주간 졸림",
                             healthConsultation.has_daytime_sleepiness
                               ? "있음"
-                              : "없음"
+                              : "없음",
                           )
                         }
                         title="클릭하여 복사"
@@ -1751,7 +1752,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "기상 시간",
-                            healthConsultation.wake_up_time
+                            healthConsultation.wake_up_time,
                           )
                         }
                         title="클릭하여 복사"
@@ -1766,7 +1767,7 @@ export default function OrderDetailPage() {
                         onClick={() =>
                           copyHealthField(
                             "취침 시간",
-                            healthConsultation.bedtime
+                            healthConsultation.bedtime,
                           )
                         }
                         title="클릭하여 복사"
@@ -1941,7 +1942,7 @@ export default function OrderDetailPage() {
                     onClick={() =>
                       copyHealthField(
                         "병력",
-                        healthConsultation.medical_history
+                        healthConsultation.medical_history,
                       )
                     }
                     title="클릭하여 복사"
@@ -2064,7 +2065,7 @@ export default function OrderDetailPage() {
                           (item) =>
                             item.option_id &&
                             (!item.selected_option_settings ||
-                              item.selected_option_settings.length === 0)
+                              item.selected_option_settings.length === 0),
                         );
 
                         // 그룹에 아이템이 1개만 있으면 헤더 없이 간단히 표시
@@ -2169,9 +2170,9 @@ export default function OrderDetailPage() {
                                             {item.visit_type === "first"
                                               ? "초진"
                                               : item.visit_type ===
-                                                "revisit_with_consult"
-                                              ? "재진(상담)"
-                                              : "재진(상담X)"}
+                                                  "revisit_with_consult"
+                                                ? "재진(상담)"
+                                                : "재진(상담X)"}
                                           </div>
                                         )}
                                         {item.option_id &&
@@ -2188,7 +2189,7 @@ export default function OrderDetailPage() {
                                                     {setting.setting_name}:{" "}
                                                     {setting.type_name}
                                                   </span>
-                                                )
+                                                ),
                                               )}
                                             </div>
                                           )}
@@ -2226,11 +2227,11 @@ export default function OrderDetailPage() {
                                                         {formatWon(
                                                           addon.price *
                                                             (addon.quantity ||
-                                                              1)
+                                                              1),
                                                         )}
                                                       </span>
                                                     </div>
-                                                  )
+                                                  ),
                                                 )}
                                               </div>
                                             </div>
@@ -2239,7 +2240,7 @@ export default function OrderDetailPage() {
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">
                                           {formatWon(
-                                            item.product_price * item.quantity
+                                            item.product_price * item.quantity,
                                           )}
                                         </span>
                                         {item.option_id && (
@@ -2272,7 +2273,7 @@ export default function OrderDetailPage() {
                             </div>
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 ) : (
@@ -2542,8 +2543,8 @@ export default function OrderDetailPage() {
                   {isSavingMemo
                     ? "저장 중..."
                     : memoChanged
-                    ? "메모 저장"
-                    : "최신 상태"}
+                      ? "메모 저장"
+                      : "최신 상태"}
                 </Button>
               </div>
             </div>
@@ -2573,70 +2574,74 @@ export default function OrderDetailPage() {
                 />
               </div>
 
-              {/* 가상계좌 환불 정보 입력 */}
-              {isVirtualAccountPayment && order?.payment_key && (
-                <div className="space-y-3 pt-2 border-t">
-                  <p className="text-sm font-medium text-gray-700">
-                    환불 계좌 정보
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="refund-bank">은행 선택</Label>
-                    <Select
-                      value={refundBank}
-                      onValueChange={setRefundBank}
-                      disabled={isCancelling}
-                    >
-                      <SelectTrigger id="refund-bank">
-                        <SelectValue placeholder="은행을 선택하세요" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="KOOKMIN">KB국민은행</SelectItem>
-                        <SelectItem value="SHINHAN">신한은행</SelectItem>
-                        <SelectItem value="WOORI">우리은행</SelectItem>
-                        <SelectItem value="HANA">하나은행</SelectItem>
-                        <SelectItem value="NONGHYUP">NH농협은행</SelectItem>
-                        <SelectItem value="IBK">IBK기업은행</SelectItem>
-                        <SelectItem value="STANDARD_CHARTERED">SC제일은행</SelectItem>
-                        <SelectItem value="CITI">한국씨티은행</SelectItem>
-                        <SelectItem value="KAKAO">카카오뱅크</SelectItem>
-                        <SelectItem value="K_BANK">케이뱅크</SelectItem>
-                        <SelectItem value="TOSS">토스뱅크</SelectItem>
-                        <SelectItem value="BUSAN">부산은행</SelectItem>
-                        <SelectItem value="DAEGU">대구은행</SelectItem>
-                        <SelectItem value="KWANGJU">광주은행</SelectItem>
-                        <SelectItem value="JEONBUK">전북은행</SelectItem>
-                        <SelectItem value="JEJU">제주은행</SelectItem>
-                        <SelectItem value="KYONGNAM">경남은행</SelectItem>
-                        <SelectItem value="SUHYUP">수협은행</SelectItem>
-                        <SelectItem value="KFCC">새마을금고</SelectItem>
-                        <SelectItem value="SHINHYUP">신협</SelectItem>
-                        <SelectItem value="POST">우체국</SelectItem>
-                        <SelectItem value="KDB">KDB산업은행</SelectItem>
-                      </SelectContent>
-                    </Select>
+              {/* 가상계좌 환불 정보 입력 (유료 결제가 진행된 경우에만) */}
+              {isVirtualAccountPayment &&
+                order?.status !== "pending" &&
+                (order?.total_amount || 0) > 0 && (
+                  <div className="space-y-3 pt-2 border-t">
+                    <p className="text-sm font-medium text-gray-700">
+                      환불 계좌 정보
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-bank">은행 선택</Label>
+                      <Select
+                        value={refundBank}
+                        onValueChange={setRefundBank}
+                        disabled={isCancelling}
+                      >
+                        <SelectTrigger id="refund-bank">
+                          <SelectValue placeholder="은행을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="KOOKMIN">KB국민은행</SelectItem>
+                          <SelectItem value="SHINHAN">신한은행</SelectItem>
+                          <SelectItem value="WOORI">우리은행</SelectItem>
+                          <SelectItem value="HANA">하나은행</SelectItem>
+                          <SelectItem value="NONGHYUP">NH농협은행</SelectItem>
+                          <SelectItem value="IBK">IBK기업은행</SelectItem>
+                          <SelectItem value="STANDARD_CHARTERED">
+                            SC제일은행
+                          </SelectItem>
+                          <SelectItem value="CITI">한국씨티은행</SelectItem>
+                          <SelectItem value="KAKAO">카카오뱅크</SelectItem>
+                          <SelectItem value="K_BANK">케이뱅크</SelectItem>
+                          <SelectItem value="TOSS">토스뱅크</SelectItem>
+                          <SelectItem value="BUSAN">부산은행</SelectItem>
+                          <SelectItem value="DAEGU">대구은행</SelectItem>
+                          <SelectItem value="KWANGJU">광주은행</SelectItem>
+                          <SelectItem value="JEONBUK">전북은행</SelectItem>
+                          <SelectItem value="JEJU">제주은행</SelectItem>
+                          <SelectItem value="KYONGNAM">경남은행</SelectItem>
+                          <SelectItem value="SUHYUP">수협은행</SelectItem>
+                          <SelectItem value="KFCC">새마을금고</SelectItem>
+                          <SelectItem value="SHINHYUP">신협</SelectItem>
+                          <SelectItem value="POST">우체국</SelectItem>
+                          <SelectItem value="KDB">KDB산업은행</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-account">계좌번호</Label>
+                      <Input
+                        id="refund-account"
+                        placeholder="- 없이 숫자만 입력"
+                        value={refundAccount}
+                        onChange={(e) => setRefundAccount(e.target.value)}
+                        disabled={isCancelling}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-holder">예금주</Label>
+                      <Input
+                        id="refund-holder"
+                        placeholder="예금주명을 입력하세요"
+                        value={refundHolder}
+                        onChange={(e) => setRefundHolder(e.target.value)}
+                        disabled={isCancelling}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="refund-account">계좌번호</Label>
-                    <Input
-                      id="refund-account"
-                      placeholder="- 없이 숫자만 입력"
-                      value={refundAccount}
-                      onChange={(e) => setRefundAccount(e.target.value)}
-                      disabled={isCancelling}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="refund-holder">예금주</Label>
-                    <Input
-                      id="refund-holder"
-                      placeholder="예금주명을 입력하세요"
-                      value={refundHolder}
-                      onChange={(e) => setRefundHolder(e.target.value)}
-                      disabled={isCancelling}
-                    />
-                  </div>
-                </div>
-              )}
+                )}
             </div>
             <DialogFooter>
               <Button
@@ -2654,8 +2659,8 @@ export default function OrderDetailPage() {
                 {isCancelling
                   ? "취소 처리 중..."
                   : isVirtualAccountPayment
-                  ? "환불 요청"
-                  : "결제 취소"}
+                    ? "환불 요청"
+                    : "결제 취소"}
               </Button>
             </DialogFooter>
           </DialogContent>
