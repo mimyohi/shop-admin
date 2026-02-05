@@ -55,10 +55,6 @@ export const ordersRepository = {
       query = query.eq("handler_admin_id", handlerAdminId);
     }
 
-    if (productId) {
-      query = query.eq("order_items.product_id", productId);
-    }
-
     if (search) {
       query = query.or(
         `order_id.ilike.%${search}%,user_email.ilike.%${search}%,user_name.ilike.%${search}%,user_phone.ilike.%${search}%`
@@ -71,6 +67,43 @@ export const ordersRepository = {
 
     if (endDate) {
       query = query.lte("created_at", endDate);
+    }
+
+    // Embedded relation 필터만으로는 상위 orders 행이 좁혀지지 않아서
+    // order_items에서 order_id를 먼저 찾아 orders.id 기준으로 필터링한다.
+    if (productId) {
+      let orderItemsQuery = supabase
+        .from("order_items")
+        .select("order_id");
+
+      orderItemsQuery = orderItemsQuery.eq("product_id", productId);
+
+      const { data: orderItemsData, error: orderItemsError } =
+        await orderItemsQuery;
+
+      if (orderItemsError) {
+        console.error("Error fetching product-matched order ids:", orderItemsError);
+        throw new Error("Failed to fetch orders");
+      }
+
+      const orderIdsWithProduct = [
+        ...new Set(
+          (orderItemsData || [])
+            .map((item) => item.order_id)
+            .filter((id): id is string => id !== null)
+        ),
+      ];
+
+      if (orderIdsWithProduct.length === 0) {
+        return {
+          orders: [],
+          totalCount: 0,
+          totalPages: 1,
+          currentPage: shouldPaginate ? page : 1,
+        };
+      }
+
+      query = query.in("id", orderIdsWithProduct);
     }
 
     switch (sortBy) {
@@ -193,16 +226,28 @@ export const ordersRepository = {
 
     // productId 필터는 order_items와 join이 필요하므로 별도 처리
     if (productId) {
-      const { data: orderItemsData } = await supabase
+      let orderItemsQuery = supabase
         .from("order_items")
-        .select("order_id")
-        .eq("product_id", productId);
+        .select("order_id");
 
-      const orderIdsWithProduct = [...new Set(
-        (orderItemsData || [])
-          .map(item => item.order_id)
-          .filter((id): id is string => id !== null)
-      )];
+      orderItemsQuery = orderItemsQuery.eq("product_id", productId);
+
+      const { data: orderItemsData, error: orderItemsError } =
+        await orderItemsQuery;
+
+      if (orderItemsError) {
+        console.error("Error fetching product-matched order ids:", orderItemsError);
+        throw new Error("Failed to fetch order ids");
+      }
+
+      const orderIdsWithProduct = [
+        ...new Set(
+          (orderItemsData || [])
+            .map((item) => item.order_id)
+            .filter((id): id is string => id !== null)
+        ),
+      ];
+
       if (orderIdsWithProduct.length === 0) {
         return [];
       }

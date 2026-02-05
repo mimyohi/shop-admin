@@ -1071,7 +1071,8 @@ export default function OrdersPage() {
               <Select
                 value={productFilter}
                 onValueChange={(value) => {
-                  setProductFilter(value);
+                  void setProductFilter(value);
+                  void setPage(1);
                 }}
               >
                 <SelectTrigger id="product-filter">
