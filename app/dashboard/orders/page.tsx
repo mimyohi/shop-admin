@@ -69,7 +69,9 @@ type ConsultationTabConfig = {
 type SortOption = "latest" | "oldest" | "amount_high" | "amount_low";
 
 const DEFAULT_TAB: ConsultationStatus = "chatting_required";
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 100;
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
+const PAGE_SIZE_STORAGE_KEY = "orders-table-page-size";
 const DEFAULT_FILTERS = {
   search: "",
   sortBy: "latest" as SortOption,
@@ -294,6 +296,32 @@ export default function OrdersPage() {
 
   const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
 
+  // 페이지 크기 설정 (localStorage)
+  const [pageSize, setPageSize] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_PAGE_SIZE;
+    try {
+      const saved = localStorage.getItem(PAGE_SIZE_STORAGE_KEY);
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (PAGE_SIZE_OPTIONS.includes(parsed)) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_PAGE_SIZE;
+  });
+
+  const handlePageSizeChange = (value: string) => {
+    const newSize = parseInt(value, 10);
+    setPageSize(newSize);
+    try {
+      localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(newSize));
+    } catch {
+      // ignore
+    }
+    void setPage(1);
+  };
+
   // 필터 상태
   const [searchTerm, setSearchTerm] = useQueryState(
     "search",
@@ -351,7 +379,7 @@ export default function OrdersPage() {
         productFilter !== DEFAULT_FILTERS.product ? productFilter : undefined,
       sortBy: sortBy,
       page,
-      limit: PAGE_SIZE,
+      limit: pageSize,
     };
 
     return filters;
@@ -365,6 +393,7 @@ export default function OrdersPage() {
     productFilter,
     sortBy,
     page,
+    pageSize,
   ]);
 
   const {
@@ -377,8 +406,8 @@ export default function OrdersPage() {
   const currentPage = ordersResult?.currentPage ?? 1;
   const totalCount = ordersResult?.totalCount ?? orderList.length;
   const displayedRangeStart =
-    totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const displayedRangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
+    totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const displayedRangeEnd = Math.min(currentPage * pageSize, totalCount);
 
   const { data: adminList } = useQuery(
     adminUsersQueries.list({ is_active: true })
@@ -984,32 +1013,52 @@ export default function OrdersPage() {
               ? "표시할 주문이 없습니다."
               : `${displayedRangeStart}-${displayedRangeEnd} / ${totalCount}건`}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={ordersLoading || currentPage <= 1}
-              onClick={(event) => {
-                event.stopPropagation();
-                handlePageChange(currentPage - 1);
-              }}
-            >
-              이전
-            </Button>
-            <span className="text-sm font-medium">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={ordersLoading || currentPage >= totalPages}
-              onClick={(event) => {
-                event.stopPropagation();
-                handlePageChange(currentPage + 1);
-              }}
-            >
-              다음
-            </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-gray-600">개씩 보기</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={handlePageSizeChange}
+              >
+                <SelectTrigger className="h-8 w-20 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}개
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={ordersLoading || currentPage <= 1}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handlePageChange(currentPage - 1);
+                }}
+              >
+                이전
+              </Button>
+              <span className="text-sm font-medium">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={ordersLoading || currentPage >= totalPages}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handlePageChange(currentPage + 1);
+                }}
+              >
+                다음
+              </Button>
+            </div>
           </div>
         </div>
       </>
