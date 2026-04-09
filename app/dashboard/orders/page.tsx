@@ -226,6 +226,7 @@ const formatCurrency = (amount?: number | null) => {
   return `${numericAmount.toLocaleString("ko-KR")}원`;
 };
 
+
 // 최종 결제 가격 계산 함수
 // total_amount는 이미 최종 결제 금액 (상품 금액 + 배송비 - 쿠폰 할인 - 포인트 사용)
 const calculateFinalPrice = (order: OrderWithDetails): number => {

@@ -48,7 +48,20 @@ export const productSalesRepository = {
     }
 
     console.log("📊 Product sales raw data count:", data?.length || 0);
-    console.log("📊 First item:", data?.[0]);
+
+    // 현재 존재하는 상품 이름 조회 (삭제된 상품 제외 + 최신 이름 반영)
+    const productIds = [...new Set(
+      data?.map((item: any) => item.product_id).filter(Boolean) ?? []
+    )] as string[];
+
+    const productNameMap = new Map<string, string>();
+    if (productIds.length > 0) {
+      const { data: productsData } = await supabase
+        .from("products")
+        .select("id, name")
+        .in("id", productIds);
+      productsData?.forEach((p: any) => productNameMap.set(p.id, p.name));
+    }
 
     // 1단계: 상품별로 그룹화 (옵션별, 애드온별 매출 포함)
     const productMap = new Map<string, {
@@ -79,7 +92,15 @@ export const productSalesRepository = {
 
     data?.forEach((item: any) => {
       const productId = item.product_id;
-      const productName = item.product_name;
+
+      // 삭제된 상품(products 테이블에 없는 것)은 건너뜀
+      if (productId && !productNameMap.has(productId)) return;
+
+      // 현재 상품명 사용 (이름 변경 반영), product_id 없는 경우 기존 이름 유지
+      const productName = productId && productNameMap.has(productId)
+        ? productNameMap.get(productId)!
+        : item.product_name;
+
       const optionId = item.option_id || null;
       const optionName = item.option_name || "옵션 없음";
       const optionKey = optionId || "no_option";
