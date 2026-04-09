@@ -7,6 +7,5 @@ export const productSalesQueries = {
     queryOptions({
       queryKey: ["product-sales", filters] as const,
       queryFn: () => fetchProductSales(filters),
-      staleTime: 5 * 60 * 1000, // 5분
     }),
 }

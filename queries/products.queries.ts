@@ -39,7 +39,6 @@ export const productsQueries = {
     queryOptions({
       queryKey: [...productsQueries.all(), 'categories'] as const,
       queryFn: () => fetchProductCategories(),
-      staleTime: 5 * 60 * 1000,
     }),
 }
 

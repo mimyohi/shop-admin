@@ -34,13 +34,11 @@ export const ordersQueries = {
     queryOptions({
       queryKey: [...ordersQueries.all(), 'stats'] as const,
       queryFn: () => fetchOrderStats(),
-      staleTime: 60 * 1000, // 1분
     }),
   consultationStatusCounts: (statuses: string[]) =>
     queryOptions({
       queryKey: [...ordersQueries.all(), 'consultation-status-counts', statuses] as const,
       queryFn: () => fetchConsultationStatusCounts(statuses),
-      staleTime: 5 * 60 * 1000,
     }),
 }
 

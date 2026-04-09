@@ -6,6 +6,5 @@ export const dashboardQueries = {
     queryOptions({
       queryKey: ['admin-dashboard', 'summary'] as const,
       queryFn: () => fetchDashboardSummary(),
-      staleTime: 60 * 1000,
     }),
 }

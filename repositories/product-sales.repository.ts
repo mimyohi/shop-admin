@@ -59,7 +59,8 @@ export const productSalesRepository = {
       const { data: productsData } = await supabase
         .from("products")
         .select("id, name")
-        .in("id", productIds);
+        .in("id", productIds)
+        .is("deleted_at", null);
       productsData?.forEach((p: any) => productNameMap.set(p.id, p.name));
     }
 

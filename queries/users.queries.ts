@@ -28,6 +28,5 @@ export const usersQueries = {
     queryOptions({
       queryKey: [...usersQueries.all(), 'stats'] as const,
       queryFn: () => fetchUserStats(),
-      staleTime: 60 * 1000, // 1분
     }),
 }

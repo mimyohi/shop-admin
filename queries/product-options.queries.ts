@@ -7,6 +7,5 @@ export const productOptionsQueries = {
       queryKey: ['admin-productOptions', productId] as const,
       queryFn: () => fetchProductConfiguration(productId),
       enabled: !!productId,
-      staleTime: 5 * 60 * 1000,
     }),
 }
