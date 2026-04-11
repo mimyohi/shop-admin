@@ -386,3 +386,15 @@ export async function deleteAddon(addonId: string) {
     return { success: false, error: error.message }
   }
 }
+
+export async function fetchProductsForOrder() {
+  return productsRepository.findAllForOrder()
+}
+
+export async function updateProductOrder(
+  orders: { id: string; display_order: number }[]
+) {
+  await productsRepository.updateDisplayOrders(orders)
+  revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/products/order')
+}
