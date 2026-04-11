@@ -82,7 +82,7 @@ export const productsRepository = {
       query = query.eq("is_visible_on_main", isVisibleOnMain);
     }
 
-    query = query.order("created_at", { ascending: false });
+    query = query.order("display_order", { ascending: true });
 
     if (shouldPaginate && typeof from === "number" && typeof to === "number") {
       query = query.range(from, to);
