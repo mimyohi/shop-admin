@@ -32,6 +32,7 @@ import {
   Tag,
   Copy,
   ExternalLink,
+  ArrowUpDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -211,10 +212,19 @@ export default function ProductsPage() {
             <h1 className="text-3xl font-bold">상품 관리</h1>
             <p className="text-gray-500">상품을 등록하고 관리하세요</p>
           </div>
-          <Button onClick={() => router.push("/dashboard/products/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            상품 등록
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/dashboard/products/order")}
+            >
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              순서 변경
+            </Button>
+            <Button onClick={() => router.push("/dashboard/products/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              상품 등록
+            </Button>
+          </div>
         </div>
 
         <Card>
