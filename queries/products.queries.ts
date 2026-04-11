@@ -10,6 +10,8 @@ import {
   toggleProductNewBadge as toggleProductNewBadgeAction,
   toggleProductSaleBadge as toggleProductSaleBadgeAction,
   duplicateProduct as duplicateProductAction,
+  fetchProductsForOrder,
+  updateProductOrder,
 } from '@/lib/actions/products'
 import { ProductFilters, CreateProductData, UpdateProductData } from '@/types/products.types'
 
@@ -39,6 +41,12 @@ export const productsQueries = {
     queryOptions({
       queryKey: [...productsQueries.all(), 'categories'] as const,
       queryFn: () => fetchProductCategories(),
+    }),
+
+  allForOrder: () =>
+    queryOptions({
+      queryKey: [...productsQueries.all(), 'order'] as const,
+      queryFn: () => fetchProductsForOrder(),
     }),
 }
 
@@ -152,6 +160,21 @@ export function useDuplicateProduct() {
     mutationFn: (id: string) => duplicateProductAction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productsQueries.lists() })
+    },
+  })
+}
+
+/**
+ * 상품 순서 일괄 저장 mutation
+ */
+export function useUpdateProductOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (orders: { id: string; display_order: number }[]) =>
+      updateProductOrder(orders),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsQueries.all() })
     },
   })
 }
