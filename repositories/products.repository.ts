@@ -461,4 +461,48 @@ export const productsRepository = {
 
     return newProduct as any;
   },
+
+  /**
+   * 순서 변경 페이지용: 전체 상품 목록 (display_order ASC)
+   */
+  async findAllForOrder(): Promise<
+    Pick<Product, "id" | "name" | "category" | "image_url"> & {
+      display_order: number;
+    }[]
+  > {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, category, image_url, display_order")
+      .is("deleted_at", null)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error("Failed to fetch products for ordering");
+    }
+
+    return (data || []) as any;
+  },
+
+  /**
+   * 상품 display_order 일괄 업데이트
+   */
+  async updateDisplayOrders(
+    orders: { id: string; display_order: number }[]
+  ): Promise<void> {
+    if (orders.length === 0) return;
+
+    const updates = orders.map(({ id, display_order }) =>
+      supabase
+        .from("products")
+        .update({ display_order, updated_at: new Date().toISOString() })
+        .eq("id", id)
+    );
+
+    const results = await Promise.all(updates);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      throw new Error(`Failed to update display orders: ${failed.error.message}`);
+    }
+  },
 };
