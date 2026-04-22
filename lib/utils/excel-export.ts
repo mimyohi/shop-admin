@@ -5,6 +5,7 @@ import { formatPhoneNumberWithHyphen } from "./phone";
 export interface ShippingExcelRow {
   주문일: string;
   주문자: string;
+  이메일: string;
   주문자연락처: string;
   수령자: string;
   수령자연락처: string;
@@ -55,6 +56,7 @@ export function convertOrdersToShippingExcel(
       rows.push({
         주문일: orderDate,
         주문자: order.user_name || "",
+        이메일: order.user_email || "",
         주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
         수령자: order.shipping_name || "",
         수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
@@ -91,6 +93,7 @@ export function convertOrdersToShippingExcel(
         rows.push({
           주문일: orderDate,
           주문자: order.user_name || "",
+          이메일: order.user_email || "",
           주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
           수령자: order.shipping_name || "",
           수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
@@ -113,6 +116,7 @@ export function convertOrdersToShippingExcel(
             rows.push({
               주문일: orderDate,
               주문자: order.user_name || "",
+              이메일: order.user_email || "",
               주문자연락처: formatPhoneNumberWithHyphen(order.user_phone),
               수령자: order.shipping_name || "",
               수령자연락처: formatPhoneNumberWithHyphen(order.shipping_phone),
@@ -151,6 +155,7 @@ export function generateShippingExcel(orders: OrderWithItems[]): string {
   worksheet["!cols"] = [
     { wch: 12 }, // 주문일
     { wch: 10 }, // 주문자
+    { wch: 30 }, // 이메일
     { wch: 15 }, // 주문자연락처
     { wch: 10 }, // 수령자
     { wch: 15 }, // 수령자연락처
@@ -167,11 +172,11 @@ export function generateShippingExcel(orders: OrderWithItems[]): string {
     { wch: 15 }, // 결제금액
   ];
 
-  // 같은 주문번호의 셀 병합 (주문번호: N열, 주문상세번호: O열, 결제금액: P열)
+  // 같은 주문번호의 셀 병합 (주문번호: O열, 주문상세번호: P열, 결제금액: Q열)
   const merges: XLSX.Range[] = [];
-  const orderNumberCol = 13; // N열 (0-indexed)
-  const orderDetailCol = 14; // O열 (0-indexed)
-  const paymentAmountCol = 15; // P열 (0-indexed)
+  const orderNumberCol = 14; // O열 (0-indexed)
+  const orderDetailCol = 15; // P열 (0-indexed)
+  const paymentAmountCol = 16; // Q열 (0-indexed)
 
   let currentOrderId = "";
   let mergeStartRow = 1; // 헤더가 0행이므로 데이터는 1행부터
